@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/RentFlowMini/">
+    <Project Path="RentFlowMini/RentFlowApp/RentFlowApp.csproj" />
+  </Folder>
+  <Project Path="RentFlowApp.Tests/RentFlowApp.Tests.csproj" />
+</Solution>
