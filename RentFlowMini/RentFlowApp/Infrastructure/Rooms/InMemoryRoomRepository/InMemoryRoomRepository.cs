@@ -10,6 +10,14 @@ public sealed class InMemoryRoomRepository : IRoomRepository
     public void Add(Room room)
     {
         ArgumentNullException.ThrowIfNull(room);
+
+        if (ExistsByRoomNumber(room.RoomNumber.Value))
+        {
+            throw new InvalidOperationException(
+                $"Room number '{room.RoomNumber.Value}' already exists."
+            );
+        }
+
         _rooms.Add(room);
     }
 

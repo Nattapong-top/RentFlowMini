@@ -2,6 +2,7 @@
 using RentFlowApp;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Infrastructure.Rooms;
+using Xunit;
 
 namespace RentFlowApp.Tests.Infrastructure.Rooms;
 
@@ -47,4 +48,85 @@ public class InMemoryRoomRepositoryTests
         Assert.Contains(room101, rooms);
         Assert.Contains(room102, rooms);
     }
+
+    [Fact]
+    public void Add_WithValidRoom_StoresRoom()
+    {
+        // Arrange
+        var repository = new InMemoryRoomRepository();
+
+        var room = new Room(
+            RoomId.New(),
+            new RoomNumber("101")
+        );
+
+        // Act
+        repository.Add(room);
+
+        // Assert
+        var rooms = repository.GetAll();
+
+        Assert.Single(rooms);
+        Assert.Contains(room, rooms);
+    }
+
+    [Fact]
+    public void ExistsByRoomNumber_WithExistingRoom_ReturnsTrue()
+    {
+        // Arrange
+        var repository = new InMemoryRoomRepository();
+
+        var room = new Room(
+            RoomId.New(),
+            new RoomNumber("101")
+        );
+
+        repository.Add(room);
+
+        // Act
+        bool exists = repository.ExistsByRoomNumber("101");
+
+        // Assert
+        Assert.True(exists);
+    }
+
+    [Fact]
+    public void ExistsByRoomNumber_WithUnknownRoom_ReturnsFalse()
+    {
+        // Arrange
+        var repository = new InMemoryRoomRepository();
+
+        // Act
+        bool exists = repository.ExistsByRoomNumber("999");
+
+        // Assert
+        Assert.False(exists);
+    }
+
+
+    [Fact]
+    public void Add_WithDuplicateRoomNumber_ThrowsException()
+    {
+        // Arrange
+        var repository = new InMemoryRoomRepository();
+
+        var firstRoom = new Room(
+            RoomId.New(),
+            new RoomNumber("101")
+        );
+
+        var duplicateRoom = new Room(
+            RoomId.New(),
+            new RoomNumber("101")
+        );
+
+        repository.Add(firstRoom);
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(
+            () => repository.Add(duplicateRoom)
+        );
+    }
+
+
 }
