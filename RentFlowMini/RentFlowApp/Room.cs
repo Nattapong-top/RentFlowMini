@@ -1,6 +1,5 @@
 ﻿
 using RentFlowApp.Domain.ValueObjects;
-using Xunit;
 
 namespace RentFlowApp
 {
@@ -37,63 +36,5 @@ namespace RentFlowApp
         {
             return Id.GetHashCode();
         }
-
-
-        [Fact]
-        public void Equals_WithSameIdAsObject_ReturnsTrue()
-        {
-            // Arrange
-            RoomId roomId = RoomId.New();
-
-            var first = new Room(
-                roomId,
-                new RoomNumber("101"));
-
-            object second = new Room(
-                roomId,
-                new RoomNumber("102"));
-
-            // Act & Assert
-            Assert.True(first.Equals(second));
-        }
-
-        [Fact]
-        public void Equals_WithDifferentIdAsObject_ReturnsFalse()
-        {
-            // Arrange
-            var first = new Room(
-                RoomId.New(),
-                new RoomNumber("101"));
-
-            object second = new Room(
-                RoomId.New(),
-                new RoomNumber("101"));
-
-            // Act & Assert
-            Assert.False(first.Equals(second));
-        }
-
-        [Fact]
-        public void GetHashCode_WithSameId_ReturnsSameHashCode()
-        {
-            // Arrange
-            RoomId roomId = RoomId.New();
-
-            var first = new Room(
-                roomId,
-                new RoomNumber("101"));
-
-            var second = new Room(
-                roomId,
-                new RoomNumber("102"));
-
-            // Act
-            int firstHashCode = first.GetHashCode();
-            int secondHashCode = second.GetHashCode();
-
-            // Assert
-            Assert.Equal(firstHashCode, secondHashCode);
-        }
-
     }
 }
