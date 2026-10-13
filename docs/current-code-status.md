@@ -40,8 +40,9 @@ RentFlowMini/
 - ใช้ `MeterReading` Value Object กับมิเตอร์น้ำและมิเตอร์ไฟ
 - มี `BillId`, `IBillRepository`, `InMemoryBillRepository` และ `SqlServerBillRepository`
 - มี SQL script `002_CreateBills.sql` สำหรับตาราง `dbo.Bills`
-- Test ล่าสุดผ่านทั้งหมด 50 รายการด้วย `dotnet test`
-
+- หน้าจอ WinForms `RoomForm` มีแท็บ "ห้องพัก" และแท็บ "สร้างบิลประจำเดือน" (UC-01) เชื่อมต่อ Use Case
+- Test ล่าสุดผ่านทั้งหมด 54 รายการด้วย `dotnet test`
+ 
 - เพิ่มห้องพักผ่าน `CreateRoomService`
 - ตรวจสอบและ normalize เลขห้องด้วย `RoomNumber`
 - สร้างและตรวจสอบ `RoomId` ที่ไม่เป็นค่า GUID ว่าง
@@ -50,22 +51,29 @@ RentFlowMini/
 - จัดเก็บข้อมูลใน SQL Server ผ่าน ADO.NET
 - รองรับการใช้ Connection String จาก environment variable `RENTFLOW_CONNECTION_STRING`
 - แสดงข้อความที่ผู้ใช้เข้าใจได้เมื่อโหลดข้อมูลจาก SQL Server ไม่สำเร็จ
-
+ 
 ## 3. Flow การทำงานหลัก
-
+ 
 ```text
-WinForms RoomForm
+[จัดการห้องพัก]
+WinForms RoomForm (แท็บห้องพัก)
     ↓
 CreateRoomService
     ↓
-IRoomRepository
-    ↓
-SqlServerRoomRepository หรือ InMemoryRoomRepository
-    ↓
-SQL Server / memory
-```
+IRoomRepository → SqlServerRoomRepository / InMemoryRoomRepository → SQL Server / memory
 
-เมื่อเพิ่มห้อง ระบบจะสร้าง `RoomNumber`, ตรวจสอบเลขซ้ำ, สร้าง `RoomId`, บันทึกผ่าน repository และ refresh รายการบนหน้าจอ
+[สร้างบิลประจำเดือน]
+WinForms RoomForm (แท็บสร้างบิล)
+    ↓
+CreateMonthlyBillService
+    ↓
+BillingCalculator → Domain Models (Bill, Money, BillingPeriod)
+    ↓
+IBillRepository → SqlServerBillRepository / InMemoryBillRepository → SQL Server / memory
+```
+ 
+เมื่อเพิ่มห้อง ระบบจะตรวจสอบเลขซ้ำ บันทึก และ refresh รายการ
+เมื่อสร้างบิล ระบบจะอ่านห้อง รอบบิล ค่าเช่า และมิเตอร์ คำนวณยอด และบันทึกผ่าน repository พร้อมแสดงผลลัพธ์และข้อความสถานะภาษาไทย
 
 ## 4. Database
  
@@ -88,11 +96,11 @@ SQL Server Repository ใช้ parameter ที่ระบุชนิดแ�
  
 ## 5. การทดสอบและ Build
  
-- มี automated tests ทั้งหมด 50 รายการ
-- รัน test ผ่านครบ 50 รายการด้วยคำสั่ง `dotnet test`
+- มี automated tests ทั้งหมด 54 รายการ
+- รัน test ผ่านครบ 54 รายการด้วยคำสั่ง `dotnet test`
 - Release build ของ App ผ่าน
 - Release build ของ Test project ผ่าน
-- มี unit tests สำหรับ Domain, Application และ In-Memory Repository
+- มี unit tests สำหรับ Domain, Application, In-Memory Repository และ UI
 - มี integration tests สำหรับ SQL Server connection และ repository (Rooms และ Bills)
  
 ## 6. GitHub Actions
@@ -127,7 +135,9 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 - เพิ่ม `BillId`, `IBillRepository` และ `InMemoryBillRepository`
 - เพิ่ม `002_CreateBills.sql` สร้างตาราง `dbo.Bills` พร้อม Unique Constraint
 - เพิ่ม `SqlServerBillRepository` และ Integration Tests (ผ่านครบ 50 tests)
-- อัปเดต GitHub Actions workflow ให้รันสคริปต์ `002_CreateBills.sql`
+- ปรับปรุง `RoomForm` เพิ่มแท็บสร้างบิลประจำเดือน (UC-01) พร้อมอัตราค่าน้ำ 19 บาท และค่าไฟ 8 บาท
+- เพิ่ม UI Unit Tests สำหรับ RoomForm flow (ผ่านครบ 54 tests)
+- อัปเดต `Program.cs` เพื่อเชื่อมต่อ Use Case กับ Form จริง
  
 ## 8. สิ่งที่ยังไม่อยู่ในขอบเขตปัจจุบัน
  
@@ -135,7 +145,6 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 - การจัดการผู้เช่า
 - การแก้ไขและลบห้องพัก
 - การจัดการมิเตอร์น้ำและไฟ
-- การเชื่อมต่อ Use Case สำหรับสร้างบิลกับหน้าจอ UI (Phase 5)
 - การยืนยันผล GitHub Actions รอบล่าสุดจนจบทุกขั้นตอน
 
 ## 9. ความเสี่ยงและข้อจำกัด
