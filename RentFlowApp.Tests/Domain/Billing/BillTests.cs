@@ -18,6 +18,7 @@ public class BillTests
 
         var bill = Bill.Create(roomId, billingPeriod, calculation);
 
+        Assert.NotEqual(Guid.Empty, bill.Id.Value);
         Assert.Equal(roomId, bill.RoomId);
         Assert.Equal(billingPeriod, bill.BillingPeriod);
         Assert.Equal(2800m, bill.Rent.Amount);

@@ -139,18 +139,28 @@ Commit หลักของ Phase 1:
 - ป้องกัน Bill ซ้ำ
 - บันทึก Bill
 
-### Phase 4: ป้องกันบิลซ้ำและบันทึกข้อมูล — ยังไม่เริ่ม
+### Phase 4.1: Domain และ In-Memory Repository — เสร็จแล้ว
 
 เป้าหมาย: ทำให้การสร้างบิลมีความถูกต้องเมื่อมีข้อมูลเดิมอยู่แล้ว
 
-พฤติกรรมย่อยที่เสนอ:
+สิ่งที่ทำแล้ว:
 
 1. เพิ่ม `IBillRepository`
 2. กำหนดและสร้าง `BillId`
 3. ตรวจสอบ Room + Billing Period ซ้ำก่อนบันทึก
 4. ปฏิเสธการสร้างบิลซ้ำ
 5. เพิ่ม In-Memory Repository สำหรับทดสอบ
-6. เชื่อม SQL Server หลัง Domain และ Application ผ่านครบแล้ว
+
+### Phase 4.2: SQL Server Persistence — ยังไม่เริ่ม
+
+เป้าหมาย: บันทึกและอ่าน Bill จาก SQL Server จริง
+
+งานที่เสนอ:
+
+1. เพิ่ม SQL script สำหรับตาราง Bills
+2. สร้าง `SqlServerBillRepository`
+3. เพิ่ม Integration Test สำหรับบันทึกและอ่าน Bill
+4. เพิ่มการสร้างตาราง Bills ใน GitHub Actions
 
 ### Phase 5: เชื่อมหน้าจอ — ยังไม่เริ่ม
 

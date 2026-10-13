@@ -4,6 +4,14 @@ namespace RentFlowApp.Application.Billing;
 
 public sealed class CreateMonthlyBillService
 {
+    private readonly IBillRepository _repository;
+
+    public CreateMonthlyBillService(IBillRepository repository)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        _repository = repository;
+    }
+
     public Bill Create(CreateMonthlyBillRequest request)
     {
         var calculation = BillingCalculator.Calculate(
@@ -15,9 +23,13 @@ public sealed class CreateMonthlyBillService
             waterRate: request.WaterRate,
             electricityRate: request.ElectricityRate);
 
-        return Bill.Create(
+        var bill = Bill.Create(
             request.RoomId,
             request.BillingPeriod,
             calculation);
+
+        _repository.Add(bill);
+
+        return bill;
     }
 }

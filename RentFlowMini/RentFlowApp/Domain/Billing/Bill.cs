@@ -9,6 +9,7 @@ public sealed class Bill
         BillingPeriod billingPeriod,
         BillingCalculationResult calculation)
     {
+        Id = BillId.New();
         RoomId = roomId;
         BillingPeriod = billingPeriod;
         Rent = calculation.Rent;
@@ -16,6 +17,8 @@ public sealed class Bill
         Electricity = calculation.Electricity;
         Total = calculation.Total;
     }
+
+    public BillId Id { get; }
 
     public RoomId RoomId { get; }
 
