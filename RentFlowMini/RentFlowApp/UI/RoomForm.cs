@@ -1,4 +1,5 @@
 
+using Microsoft.Data.SqlClient;
 using RentFlowApp.Application.Rooms;
 
 namespace RentFlowApp.Forms;
@@ -24,7 +25,16 @@ public class RoomForm : Form
         _roomRepository = roomRepository;
 
         InitializeForm();
-        RefreshRoomList();
+
+        try
+        {
+            RefreshRoomList();
+        }
+        catch (SqlException)
+        {
+            ShowError(
+                "ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาตรวจสอบ SQL Server และลองใหม่อีกครั้ง");
+        }
     }
 
     private void InitializeForm()
