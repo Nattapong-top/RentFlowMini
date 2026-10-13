@@ -11,8 +11,12 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
-        const string connectionString =
+        const string defaultConnectionString =
             @"Server=localhost\SQLEXPRESS;Database=RentFlowDb;Integrated Security=True;TrustServerCertificate=True;";
+
+        string connectionString =
+            Environment.GetEnvironmentVariable("RENTFLOW_CONNECTION_STRING")
+            ?? defaultConnectionString;
 
         IRoomRepository roomRepository =
             new SqlServerRoomRepository(connectionString);
