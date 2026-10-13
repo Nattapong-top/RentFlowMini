@@ -50,6 +50,8 @@ jobs:
         run: |
           sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" `
             -d RentFlowDb -i "$env:GITHUB_WORKSPACE\RentFlowMini\RentFlowApp\Database\001_CreateRooms.sql"
+          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" `
+            -d RentFlowDb -i "$env:GITHUB_WORKSPACE\RentFlowMini\RentFlowApp\Database\002_CreateBills.sql"
 
       - name: Restore
         run: dotnet restore

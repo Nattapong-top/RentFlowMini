@@ -38,8 +38,9 @@ RentFlowMini/
 - Domain billing MVP มี `BillingCalculator`, `Bill`, `BillingPeriod` และ `Money`
 - มี `CreateMonthlyBillRequest` และ `CreateMonthlyBillService` สำหรับสร้าง Bill จาก Request
 - ใช้ `MeterReading` Value Object กับมิเตอร์น้ำและมิเตอร์ไฟ
-- มี `BillId`, `IBillRepository` และ `InMemoryBillRepository` สำหรับ Phase 4.1
-- Test ล่าสุดผ่านทั้งหมด 47 รายการด้วย `dotnet test`
+- มี `BillId`, `IBillRepository`, `InMemoryBillRepository` และ `SqlServerBillRepository`
+- มี SQL script `002_CreateBills.sql` สำหรับตาราง `dbo.Bills`
+- Test ล่าสุดผ่านทั้งหมด 50 รายการด้วย `dotnet test`
 
 - เพิ่มห้องพักผ่าน `CreateRoomService`
 - ตรวจสอบและ normalize เลขห้องด้วย `RoomNumber`
@@ -67,42 +68,52 @@ SQL Server / memory
 เมื่อเพิ่มห้อง ระบบจะสร้าง `RoomNumber`, ตรวจสอบเลขซ้ำ, สร้าง `RoomId`, บันทึกผ่าน repository และ refresh รายการบนหน้าจอ
 
 ## 4. Database
+ 
+ตารางหลักประกอบด้วย:
 
-ตารางหลักคือ `dbo.Rooms` ประกอบด้วย:
-
-- `Id UNIQUEIDENTIFIER` เป็น primary key
-- `RoomNumber NVARCHAR(50)` เป็นข้อมูลบังคับและมี unique constraint
-
+1. `dbo.Rooms`:
+   - `Id UNIQUEIDENTIFIER` เป็น primary key
+   - `RoomNumber NVARCHAR(50)` เป็นข้อมูลบังคับและมี unique constraint
+2. `dbo.Bills`:
+   - `Id UNIQUEIDENTIFIER` เป็น primary key
+   - `RoomId UNIQUEIDENTIFIER` เป็น foreign key อ้างอิง `dbo.Rooms(Id)`
+   - `BillingPeriod NVARCHAR(7)` รูปแบบ `YYYY-MM`
+   - `RentAmount DECIMAL(18, 2)`
+   - `WaterAmount DECIMAL(18, 2)`
+   - `ElectricityAmount DECIMAL(18, 2)`
+   - `TotalAmount DECIMAL(18, 2)`
+   - Unique constraint บน `(RoomId, BillingPeriod)` ป้องกันบิลซ้ำ
+ 
 SQL Server Repository ใช้ parameter ที่ระบุชนิดและขนาดตรงกับ schema แล้ว
-
+ 
 ## 5. การทดสอบและ Build
-
-- มี automated tests ทั้งหมด 47 รายการ
-- ป๋ายืนยันว่ารัน test ผ่านครบ 47 รายการด้วยคำสั่ง `dotnet test`
+ 
+- มี automated tests ทั้งหมด 50 รายการ
+- รัน test ผ่านครบ 50 รายการด้วยคำสั่ง `dotnet test`
 - Release build ของ App ผ่าน
 - Release build ของ Test project ผ่าน
 - มี unit tests สำหรับ Domain, Application และ In-Memory Repository
-- มี integration tests สำหรับ SQL Server connection และ repository
-
+- มี integration tests สำหรับ SQL Server connection และ repository (Rooms และ Bills)
+ 
 ## 6. GitHub Actions
-
+ 
 Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำงานตามลำดับดังนี้:
-
+ 
 1. Checkout repository
 2. ติดตั้ง .NET 10
 3. ติดตั้ง SQL Server บน runner
 4. สร้างฐานข้อมูล `RentFlowDb`
-5. สร้างตารางจาก `001_CreateRooms.sql`
+5. สร้างตารางจาก `001_CreateRooms.sql` และ `002_CreateBills.sql`
 6. Restore
 7. Build แบบ Release
 8. Run tests
-
+ 
 รหัสผ่าน SQL Server ของ CI ถูกอ่านจาก GitHub Actions Secret ชื่อ `RENTFLOWMINI_SECRET` และไม่เก็บค่าไว้ใน workflow
-
+ 
 ข้อสังเกต: GitHub-hosted runner เป็นเครื่องชั่วคราว จึงต้องติดตั้ง SQL Server ใหม่ทุกครั้ง ทำให้ขั้นตอน CI ใช้เวลาหลายนาที
-
+ 
 ## 7. สถานะการแก้ไขล่าสุด
-
+ 
 - แก้ path ของ SQL script ใน CI
 - จัดการกรณี SQL Server เชื่อมต่อไม่ได้ตอนเปิดหน้าจอ
 - รองรับการ override Connection String ผ่าน environment variable
@@ -114,17 +125,17 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 - เพิ่ม `CreateMonthlyBillService` และ `CreateMonthlyBillRequest`
 - เพิ่ม `MeterReading` Value Object และ refactor BillingCalculator ให้รับ MeterReading
 - เพิ่ม `BillId`, `IBillRepository` และ `InMemoryBillRepository`
-
+- เพิ่ม `002_CreateBills.sql` สร้างตาราง `dbo.Bills` พร้อม Unique Constraint
+- เพิ่ม `SqlServerBillRepository` และ Integration Tests (ผ่านครบ 50 tests)
+- อัปเดต GitHub Actions workflow ให้รันสคริปต์ `002_CreateBills.sql`
+ 
 ## 8. สิ่งที่ยังไม่อยู่ในขอบเขตปัจจุบัน
-
+ 
 - UC-01 รุ่น MVP จะเริ่มจากค่าเช่า ค่าน้ำ และค่าไฟเท่านั้น ดูรายละเอียดที่ [UC-01: สร้างบิลประจำเดือน](uc-01-create-monthly-bill.md)
 - การจัดการผู้เช่า
 - การแก้ไขและลบห้องพัก
 - การจัดการมิเตอร์น้ำและไฟ
-- การคำนวณบิลรายเดือน
-- Use Case สำหรับสร้างบิลและการเชื่อมกับ UI
-- การสร้าง `BillId` และการบันทึก Bill ผ่าน Repository
-- SQL Server Bill Repository และตาราง Bills
+- การเชื่อมต่อ Use Case สำหรับสร้างบิลกับหน้าจอ UI (Phase 5)
 - การยืนยันผล GitHub Actions รอบล่าสุดจนจบทุกขั้นตอน
 
 ## 9. ความเสี่ยงและข้อจำกัด

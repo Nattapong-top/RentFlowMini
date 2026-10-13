@@ -151,16 +151,16 @@ Commit หลักของ Phase 1:
 4. ปฏิเสธการสร้างบิลซ้ำ
 5. เพิ่ม In-Memory Repository สำหรับทดสอบ
 
-### Phase 4.2: SQL Server Persistence — ยังไม่เริ่ม
+### Phase 4.2: SQL Server Persistence — เสร็จแล้ว
 
 เป้าหมาย: บันทึกและอ่าน Bill จาก SQL Server จริง
 
-งานที่เสนอ:
+สิ่งที่ทำแล้ว:
 
-1. เพิ่ม SQL script สำหรับตาราง Bills
-2. สร้าง `SqlServerBillRepository`
-3. เพิ่ม Integration Test สำหรับบันทึกและอ่าน Bill
-4. เพิ่มการสร้างตาราง Bills ใน GitHub Actions
+1. เพิ่ม SQL script สำหรับตาราง Bills (`002_CreateBills.sql`)
+2. สร้าง `SqlServerBillRepository` พร้อมการตรวจสอบและจัดการข้อผิดพลาดบิลซ้ำ
+3. เพิ่ม Integration Test สำหรับบันทึกและตรวจสอบบิลผ่าน SQL Server จริง
+4. เพิ่มการสร้างตาราง Bills ใน GitHub Actions workflow
 
 ### Phase 5: เชื่อมหน้าจอ — ยังไม่เริ่ม
 
@@ -209,9 +209,5 @@ Commit หลักของ Phase 1:
 ข้อจำกัดเหล่านี้ไม่ควรขยายขอบเขตของ Phase 2 จนกว่าจะมีอาการกระทบการใช้งานจริง
 
 ## 6. ขั้นตอนถัดไปที่แนะนำ
-
-เริ่ม Phase 3 ด้วยพฤติกรรมเดียวก่อน:
-
-> สร้างคำขอสร้างบิลจาก Room และ Billing Period แล้วส่งต่อไปยัง Domain เพื่อสร้าง Bill
-
-จากนั้นเขียน RED test หนึ่งเรื่อง ให้ป๋าตรวจสอบ ก่อน implement ให้เป็น GREEN
+ 
+เริ่ม Phase 5 (เชื่อมหน้าจอ) ด้วยการสร้างส่วนรับข้อมูลรอบบิลและมิเตอร์ และเชื่อมต่อกับ Use Case การสร้างบิล
