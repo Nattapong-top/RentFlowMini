@@ -49,7 +49,7 @@ jobs:
         shell: pwsh
         run: |
           sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" `
-            -d RentFlowDb -i "RentFlowMini/RentFlowApp/Database/001_CreateRooms.sql"
+            -d RentFlowDb -i "\RentFlowApp\Database\001_CreateRooms.sql"
 
       - name: Restore
         run: dotnet restore
