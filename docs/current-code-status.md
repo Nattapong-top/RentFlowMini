@@ -36,7 +36,9 @@ RentFlowMini/
 ## 2. ฟังก์ชันที่มีในปัจจุบัน
 
 - Domain billing MVP มี `BillingCalculator`, `Bill`, `BillingPeriod` และ `Money`
-- Test ล่าสุดผ่านทั้งหมด 41 รายการด้วย `dotnet test`
+- มี `CreateMonthlyBillRequest` และ `CreateMonthlyBillService` สำหรับสร้าง Bill จาก Request
+- ใช้ `MeterReading` Value Object กับมิเตอร์น้ำและมิเตอร์ไฟ
+- Test ล่าสุดผ่านทั้งหมด 44 รายการด้วย `dotnet test`
 
 - เพิ่มห้องพักผ่าน `CreateRoomService`
 - ตรวจสอบและ normalize เลขห้องด้วย `RoomNumber`
@@ -74,8 +76,8 @@ SQL Server Repository ใช้ parameter ที่ระบุชนิดแ�
 
 ## 5. การทดสอบและ Build
 
-- มี automated tests ทั้งหมด 41 รายการ
-- ป๋ายืนยันว่ารัน test ผ่านครบ 41 รายการด้วยคำสั่ง `dotnet test`
+- มี automated tests ทั้งหมด 44 รายการ
+- ป๋ายืนยันว่ารัน test ผ่านครบ 44 รายการด้วยคำสั่ง `dotnet test`
 - Release build ของ App ผ่าน
 - Release build ของ Test project ผ่าน
 - มี unit tests สำหรับ Domain, Application และ In-Memory Repository
@@ -108,6 +110,8 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 - เปลี่ยน CI ให้ใช้ GitHub Secret แทน credential ที่ฝังใน workflow
 - เพิ่ม `BillingCalculator`, `Bill`, `BillingPeriod` และ `Money` สำหรับ Domain ของ UC-01 MVP
 - แยก Test ของ Billing, BillingPeriod และ Money ตามความรับผิดชอบ
+- เพิ่ม `CreateMonthlyBillService` และ `CreateMonthlyBillRequest`
+- เพิ่ม `MeterReading` Value Object และ refactor BillingCalculator ให้รับ MeterReading
 
 ## 8. สิ่งที่ยังไม่อยู่ในขอบเขตปัจจุบัน
 

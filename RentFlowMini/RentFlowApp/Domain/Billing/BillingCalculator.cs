@@ -12,10 +12,10 @@ public static class BillingCalculator
 {
     public static BillingCalculationResult Calculate(
         decimal monthlyRent,
-        decimal? previousWaterMeter,
-        decimal? currentWaterMeter,
-        decimal? previousElectricityMeter,
-        decimal? currentElectricityMeter,
+        MeterReading? previousWaterMeter,
+        MeterReading? currentWaterMeter,
+        MeterReading? previousElectricityMeter,
+        MeterReading? currentElectricityMeter,
         decimal waterRate,
         decimal electricityRate)
     {
@@ -46,17 +46,17 @@ public static class BillingCalculator
 
     private static (decimal Previous, decimal Current) ValidateMeterReading(
         string meterType,
-        decimal? previousReading,
-        decimal? currentReading)
+        MeterReading? previousReading,
+        MeterReading? currentReading)
     {
-        if (!previousReading.HasValue || !currentReading.HasValue)
+        if (previousReading is null || currentReading is null)
         {
             throw new InvalidMeterReadingException(
                 meterType,
                 "ต้องระบุค่ามิเตอร์ก่อนหน้าและค่าปัจจุบัน");
         }
 
-        if (currentReading < previousReading)
+        if (currentReading.Value < previousReading.Value)
         {
             throw new InvalidMeterReadingException(
                 meterType,

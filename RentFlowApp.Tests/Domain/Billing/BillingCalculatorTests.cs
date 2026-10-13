@@ -10,10 +10,10 @@ public class BillingCalculatorTests
     {
         var result = BillingCalculator.Calculate(
             monthlyRent: 2800m,
-            previousWaterMeter: 120m,
-            currentWaterMeter: 125m,
-            previousElectricityMeter: 1000m,
-            currentElectricityMeter: 1010m,
+            previousWaterMeter: MeterReading.Create(120m),
+            currentWaterMeter: MeterReading.Create(125m),
+            previousElectricityMeter: MeterReading.Create(1000m),
+            currentElectricityMeter: MeterReading.Create(1010m),
             waterRate: 30m,
             electricityRate: 4m);
 
@@ -29,10 +29,10 @@ public class BillingCalculatorTests
         Assert.Throws<InvalidMeterReadingException>(() =>
             BillingCalculator.Calculate(
                 monthlyRent: 2800m,
-                previousWaterMeter: 120m,
-                currentWaterMeter: 119m,
-                previousElectricityMeter: 1000m,
-                currentElectricityMeter: 1010m,
+                previousWaterMeter: MeterReading.Create(120m),
+                currentWaterMeter: MeterReading.Create(119m),
+                previousElectricityMeter: MeterReading.Create(1000m),
+                currentElectricityMeter: MeterReading.Create(1010m),
                 waterRate: 30m,
                 electricityRate: 4m));
     }
@@ -43,10 +43,10 @@ public class BillingCalculatorTests
         Assert.Throws<InvalidMeterReadingException>(() =>
             BillingCalculator.Calculate(
                 monthlyRent: 2800m,
-                previousWaterMeter: 120m,
-                currentWaterMeter: 125m,
-                previousElectricityMeter: 1000m,
-                currentElectricityMeter: 999m,
+                previousWaterMeter: MeterReading.Create(120m),
+                currentWaterMeter: MeterReading.Create(125m),
+                previousElectricityMeter: MeterReading.Create(1000m),
+                currentElectricityMeter: MeterReading.Create(999m),
                 waterRate: 30m,
                 electricityRate: 4m));
     }
@@ -58,9 +58,9 @@ public class BillingCalculatorTests
             BillingCalculator.Calculate(
                 monthlyRent: 2800m,
                 previousWaterMeter: null,
-                currentWaterMeter: 125m,
-                previousElectricityMeter: 1000m,
-                currentElectricityMeter: 1010m,
+                currentWaterMeter: MeterReading.Create(125m),
+                previousElectricityMeter: MeterReading.Create(1000m),
+                currentElectricityMeter: MeterReading.Create(1010m),
                 waterRate: 30m,
                 electricityRate: 4m));
 
@@ -74,9 +74,9 @@ public class BillingCalculatorTests
         var exception = Assert.Throws<InvalidMeterReadingException>(() =>
             BillingCalculator.Calculate(
                 monthlyRent: 2800m,
-                previousWaterMeter: 120m,
-                currentWaterMeter: 125m,
-                previousElectricityMeter: 1000m,
+                previousWaterMeter: MeterReading.Create(120m),
+                currentWaterMeter: MeterReading.Create(125m),
+                previousElectricityMeter: MeterReading.Create(1000m),
                 currentElectricityMeter: null,
                 waterRate: 30m,
                 electricityRate: 4m));
