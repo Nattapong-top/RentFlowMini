@@ -1,10 +1,12 @@
+using RentFlowApp.Domain.ValueObjects;
+
 namespace RentFlowApp.Domain.Billing;
 
 public sealed record BillingCalculationResult(
-    decimal Rent,
-    decimal Water,
-    decimal Electricity,
-    decimal Total);
+    Money Rent,
+    Money Water,
+    Money Electricity,
+    Money Total);
 
 public static class BillingCalculator
 {
@@ -36,10 +38,10 @@ public static class BillingCalculator
         decimal total = monthlyRent + waterAmount + electricityAmount;
 
         return new BillingCalculationResult(
-            monthlyRent,
-            waterAmount,
-            electricityAmount,
-            total);
+            Money.Create(monthlyRent),
+            Money.Create(waterAmount),
+            Money.Create(electricityAmount),
+            Money.Create(total));
     }
 
     private static (decimal Previous, decimal Current) ValidateMeterReading(

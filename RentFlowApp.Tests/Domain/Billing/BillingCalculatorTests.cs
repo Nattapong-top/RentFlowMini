@@ -1,4 +1,5 @@
 using RentFlowApp.Domain.Billing;
+using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Tests.Domain.Billing;
 
@@ -16,10 +17,10 @@ public class BillingCalculatorTests
             waterRate: 30m,
             electricityRate: 4m);
 
-        Assert.Equal(2800m, result.Rent);
-        Assert.Equal(150m, result.Water);
-        Assert.Equal(40m, result.Electricity);
-        Assert.Equal(2990m, result.Total);
+        Assert.Equal(2800m, result.Rent.Amount);
+        Assert.Equal(150m, result.Water.Amount);
+        Assert.Equal(40m, result.Electricity.Amount);
+        Assert.Equal(2990m, result.Total.Amount);
     }
 
     [Fact]
