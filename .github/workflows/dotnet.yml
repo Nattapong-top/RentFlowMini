@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      MSSQL_SA_PASSWORD: "RentFlow_CI_StrongPwd2026!"
+      MSSQL_SA_PASSWORD: ${{ secrets.RENTFLOWMINI_SECRET }}
 
     steps:
       - name: Checkout
