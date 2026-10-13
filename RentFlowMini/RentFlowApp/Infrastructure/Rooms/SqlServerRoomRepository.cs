@@ -1,4 +1,5 @@
 ﻿
+using System.Data;
 using Microsoft.Data.SqlClient;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Domain.ValueObjects;
@@ -29,9 +30,11 @@ public sealed class SqlServerRoomRepository : IRoomRepository
             using var connection = new SqlConnection(_connectionString);
             using var command = new SqlCommand(sql, connection);
 
-            command.Parameters.AddWithValue("@Id", room.Id.Value);
-            command.Parameters.AddWithValue(
-                "@RoomNumber", room.RoomNumber.Value);
+            command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier)
+                .Value = room.Id.Value;
+            command.Parameters.Add(
+                "@RoomNumber", SqlDbType.NVarChar, 50)
+                .Value = room.RoomNumber.Value;
 
             connection.Open();
             command.ExecuteNonQuery();
@@ -61,7 +64,9 @@ public sealed class SqlServerRoomRepository : IRoomRepository
         using var connection = new SqlConnection(_connectionString);
         using var command = new SqlCommand(sql, connection);
 
-        command.Parameters.AddWithValue("@RoomNumber", roomNumber);
+        command.Parameters.Add(
+            "@RoomNumber", SqlDbType.NVarChar, 50)
+            .Value = roomNumber;
 
         connection.Open();
 
