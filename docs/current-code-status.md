@@ -3,7 +3,7 @@
 เอกสารนี้สรุปสถานะโค้ดปัจจุบันของ RentFlowMini จาก repository, การ build, test ที่ป๋ายืนยัน และ GitHub Actions
 
 **วันที่สรุป:** 2026-10-13
-**สถานะโดยรวม:** ฟีเจอร์จัดการห้องพักพื้นฐานพร้อมใช้งานในระดับโปรเจกต์ฝึกพัฒนา และมี CI สำหรับ build/test กับ SQL Server
+**สถานะโดยรวม:** ฟีเจอร์จัดการห้องพักและสร้างบิลประจำเดือน (UC-01 MVP) พร้อมใช้งานครบวงจร ทั้ง Domain, Application, SQL Server Persistence, WinForms UI และ CI พร้อม automated tests 54 รายการ
 
 ## 1. โครงสร้างโปรเจกต์
 
@@ -11,25 +11,76 @@
 RentFlowMini/
 ├── RentFlowMini/RentFlowApp/
 │   ├── Domain/
+│   │   ├── Billing/
+│   │   │   ├── Bill.cs
+│   │   │   ├── BillingCalculator.cs
+│   │   │   └── InvalidMeterReadingException.cs
 │   │   └── ValueObjects/
+│   │       ├── BillId.cs
+│   │       ├── BillingPeriod.cs
+│   │       ├── MeterReading.cs
+│   │       ├── Money.cs
 │   │       ├── RoomId.cs
 │   │       └── RoomNumber.cs
-│   ├── Application/Rooms/
-│   │   ├── CreateRoomService.cs
-│   │   └── IRoomRepository.cs
-│   ├── Infrastructure/Rooms/
-│   │   ├── InMemoryRoomRepository/
-│   │   └── SqlServerRoomRepository.cs
-│   ├── UI/RoomForm.cs
-│   ├── Database/001_CreateRooms.sql
+│   ├── Application/
+│   │   ├── Billing/
+│   │   │   ├── CreateMonthlyBillRequest.cs
+│   │   │   ├── CreateMonthlyBillService.cs
+│   │   │   └── IBillRepository.cs
+│   │   └── Rooms/
+│   │       ├── CreateRoomService.cs
+│   │       └── IRoomRepository.cs
+│   ├── Infrastructure/
+│   │   ├── Billing/
+│   │   │   ├── InMemoryBillRepository.cs
+│   │   │   └── SqlServerBillRepository.cs
+│   │   └── Rooms/
+│   │       ├── InMemoryRoomRepository/
+│   │       │   └── InMemoryRoomRepository.cs
+│   │       └── SqlServerRoomRepository.cs
+│   ├── Database/
+│   │   ├── 001_CreateRooms.sql
+│   │   └── 002_CreateBills.sql
+│   ├── UI/
+│   │   ├── RoomForm.cs
+│   │   └── RoomForm.resx
+│   ├── Room.cs
 │   ├── Program.cs
 │   └── RentFlowApp.csproj
 ├── RentFlowApp.Tests/
-│   ├── Domain tests
-│   ├── Application tests
-│   ├── In-Memory Repository tests
-│   └── SQL Server integration tests
+│   ├── Domain/
+│   │   ├── Billing/
+│   │   │   ├── BillTests.cs
+│   │   │   ├── BillingCalculatorTests.cs
+│   │   │   └── BillingPeriodTests.cs
+│   │   └── ValueObjects/
+│   │       ├── MeterReadingTests.cs
+│   │       └── MoneyTests.cs
+│   ├── Application/
+│   │   ├── Billing/
+│   │   │   └── CreateMonthlyBillServiceTests.cs
+│   │   └── Rooms/
+│   │       └── CreateRoomServiceTests.cs
+│   ├── Infrastructure/
+│   │   └── Billing/
+│   │       ├── InMemoryBillRepositoryTests.cs
+│   │       └── SqlServerBillRepositoryTests.cs
+│   ├── Infrastucture/
+│   │   └── Rooms/
+│   │       ├── InMemoryRoomRepositoryTests.cs
+│   │       ├── SqlServerConnectionTests.cs
+│   │       └── SqlServerRoomRepositoryTests.cs
+│   ├── UI/
+│   │   └── RoomFormTests.cs
+│   ├── RoomIdTests.cs
+│   ├── RoomNumberTests.cs
+│   ├── RoomTests.cs
+│   └── RentFlowApp.Tests.csproj
 ├── .github/workflows/dotnet.yml
+├── docs/
+│   ├── current-code-status.md
+│   ├── implementation-plan.md
+│   └── uc-01-create-monthly-bill.md
 └── README.md
 ```
 
@@ -138,6 +189,7 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 - ปรับปรุง `RoomForm` เพิ่มแท็บสร้างบิลประจำเดือน (UC-01) พร้อมอัตราค่าน้ำ 19 บาท และค่าไฟ 8 บาท
 - เพิ่ม UI Unit Tests สำหรับ RoomForm flow (ผ่านครบ 54 tests)
 - อัปเดต `Program.cs` เพื่อเชื่อมต่อ Use Case กับ Form จริง
+- ตรวจสอบความถูกต้องของ CI workflow และยืนยัน Release Build / Tests ผ่านครบ 54 รายการ (Phase 6)
  
 ## 8. สิ่งที่ยังไม่อยู่ในขอบเขตปัจจุบัน
  
@@ -145,7 +197,7 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 - การจัดการผู้เช่า
 - การแก้ไขและลบห้องพัก
 - การจัดการมิเตอร์น้ำและไฟ
-- การยืนยันผล GitHub Actions รอบล่าสุดจนจบทุกขั้นตอน
+- การ Recalculate บิลเดิม
 
 ## 9. ความเสี่ยงและข้อจำกัด
 

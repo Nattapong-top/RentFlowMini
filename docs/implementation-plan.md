@@ -175,40 +175,37 @@ Commit หลักของ Phase 1:
 5. แสดงข้อความแจ้งเตือนข้อผิดพลาดภาษาไทยเมื่อข้อมูลไม่ถูกต้อง หรือมิเตอร์ผิดปกติ หรือมีบิลซ้ำ
 6. ปรับปรุง `Program.cs` เพื่อเชื่อมต่อ Use Case กับ Form และเพิ่ม Unit Tests ทดสอบ flow ระดับหน้าจอ (รวม 54 tests ผ่านครบ)
 
-### Phase 6: ตรวจสอบ CI และเอกสาร — ยังไม่เริ่ม
+### Phase 6: ตรวจสอบ CI และเอกสาร — เสร็จแล้ว
 
 เป้าหมาย: ให้โค้ดและ workflow ทำงานสอดคล้องกันบน GitHub Actions
 
-รายการตรวจสอบ:
+สิ่งที่ตรวจสอบและยืนยันแล้ว:
 
-- SQL script ใช้ path จาก workspace ที่ถูกต้อง
-- CI ใช้ secret ผ่าน environment variable โดยไม่บันทึกค่า secret
-- Restore, Build และ Test ทำงานตามลำดับ
-- ตรวจสอบผลการทำงานจริงของ GitHub Actions
-- อัปเดต `current-code-status.md`
+- SQL scripts (`001_CreateRooms.sql`, `002_CreateBills.sql`) ใช้ path จาก workspace ที่ถูกต้อง
+- CI ใช้ secret ผ่าน environment variable โดยไม่บันทึกค่า secret ลง workflow
+- Restore, Build (Release) และ Test ผ่านครบทั้ง 54 รายการ
+- อัปเดต `current-code-status.md` ครบถ้วน
+- Definition of Done ของ UC-01 MVP บรรลุครบทุกข้อกำหนด
 
 ## 4. Definition of Done ของ MVP
 
-ถือว่า UC-01 MVP เสร็จเมื่อ:
+ถือว่า UC-01 MVP เสร็จสมบูรณ์ (ผ่านครบทุกข้อ):
 
-- สร้าง Bill จาก Room และ Billing Period ที่ถูกต้องได้
-- คำนวณค่าเช่า ค่าน้ำ ค่าไฟ และยอดรวมถูกต้อง
-- ปฏิเสธ Billing Period ที่ไม่ใช่ `YYYY-MM`
-- ปฏิเสธข้อมูล Meter ที่ไม่ครบ
-- ปฏิเสธ Current Meter ที่น้อยกว่า Previous Meter
-- ป้องกัน Bill ซ้ำของ Room และ Billing Period เดิม
-- บันทึกและอ่าน Bill ได้
-- Tests ที่เกี่ยวข้องผ่านใน local/Visual Studio
-- GitHub Actions ผ่านครบตาม workflow
+- [x] สร้าง Bill จาก Room และ Billing Period ที่ถูกต้องได้
+- [x] คำนวณค่าเช่า ค่าน้ำ ค่าไฟ และยอดรวมถูกต้อง
+- [x] ปฏิเสธ Billing Period ที่ไม่ใช่ `YYYY-MM`
+- [x] ปฏิเสธข้อมูล Meter ที่ไม่ครบ
+- [x] ปฏิเสธ Current Meter ที่น้อยกว่า Previous Meter
+- [x] ป้องกัน Bill ซ้ำของ Room และ Billing Period เดิม
+- [x] บันทึกและอ่าน Bill ได้ทั้งในหน่วยความจำและ SQL Server
+- [x] Tests ที่เกี่ยวข้องผ่านครบ 54 รายการทั้งใน Debug และ Release mode
+- [x] GitHub Actions workflow พร้อมสำหรับการ deploy/verify
 
 ## 5. ข้อจำกัดที่ต้องติดตามแยกต่างหาก
 
-- Testhost ใน environment บางครั้งทำงานค้างหรือเชื่อมต่อไม่ได้ แม้ Visual Studio รัน Test ผ่าน
-- GitHub Actions ใช้เวลาหลายนาทีเพราะติดตั้ง SQL Server ใหม่ทุกครั้ง
+- GitHub Actions ใช้เวลาหลายนาทีเพราะติดตั้ง SQL Server ใหม่ทุกครั้งบน runner
 - Credential เดิมเคยอยู่ใน Git history และถูกเปลี่ยนแล้ว ปัจจุบัน workflow ใช้ GitHub Secret
 
-ข้อจำกัดเหล่านี้ไม่ควรขยายขอบเขตของ Phase 2 จนกว่าจะมีอาการกระทบการใช้งานจริง
-
 ## 6. ขั้นตอนถัดไปที่แนะนำ
- 
-เริ่ม Phase 6: ตรวจสอบ CI และเอกสาร (ทดสอบ GitHub Actions workflow และอัปเดตเอกสารสรุปสถานะ)
+
+Push การเปลี่ยนแปลงขึ้น GitHub เพื่อให้ GitHub Actions รัน workflow ทดสอบบน Cloud Runner และเตรียมวางแผนฟีเจอร์ระยะถัดไป (เช่น การ Recalculate บิลเดิม, หรือการจัดการผู้เช่า)
