@@ -4,13 +4,18 @@ using RentFlowApp;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Infrastructure.Rooms;
 using Xunit;
+using System;
 
 namespace RentFlowApp.Tests.Infrastructure.Rooms;
 
 public class SqlServerRoomRepositoryTests
 {
-    private const string ConnectionString =
-        @"Server=NATTAPONG_PC_i5\SQLEXPRESS;Database=RentFlowDb;Integrated Security=True;TrustServerCertificate=True;";
+    private static readonly string ConnectionString =
+        Environment.GetEnvironmentVariable("RENTFLOW_TEST_CONNECTION")
+        ?? @"Server=localhost\SQLEXPRESS;
+            Database=RentFlowDb;
+            Integrated Security=True;
+            TrustServerCertificate=True;";
 
     [Fact]
     public void Add_WithValidRoom_StoresRoomInDatabase()
