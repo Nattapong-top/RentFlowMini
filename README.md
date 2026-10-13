@@ -85,6 +85,8 @@ GO
 
 ก่อนเปิดใช้งานโปรแกรม ให้ตั้งค่า Connection String ให้ตรงกับ SQL Server ในเครื่องของคุณ
 
+โปรแกรมสามารถรับค่า Connection String ผ่าน environment variable ชื่อ `RENTFLOW_CONNECTION_STRING` ได้ หากไม่กำหนดจะใช้ค่าเริ่มต้นสำหรับ SQL Server Express ในเครื่องเดียวกัน
+
 ## วิธีเปิดใช้งานโปรแกรม
 
 เปิด PowerShell ที่ Root ของ Repository แล้วรันคำสั่ง:
