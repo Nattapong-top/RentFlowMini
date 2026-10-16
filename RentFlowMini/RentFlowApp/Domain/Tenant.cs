@@ -21,7 +21,7 @@ public sealed class Tenant : IEquatable<Tenant>
 
         Id = id;
         FirstName = NormalizeFirstName(firstName);
-        LastName = NormalizeRequired(lastName, nameof(lastName));
+        LastName = NormalizeLastName(lastName);
         PhoneNumber = NormalizeOptional(phoneNumber);
         RoomId = roomId;
     }
@@ -41,23 +41,21 @@ public sealed class Tenant : IEquatable<Tenant>
         return Id.GetHashCode();
     }
 
-    private static string NormalizeRequired(string value, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException(
-                "Value cannot be empty or whitespace.",
-                parameterName);
-        }
-
-        return value.Trim();
-    }
-
     private static string NormalizeFirstName(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             throw new TenantFirstNameRequiredException();
+        }
+
+        return value.Trim();
+    }
+
+    private static string NormalizeLastName(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new TenantLastNameRequiredException();
         }
 
         return value.Trim();
@@ -73,6 +71,14 @@ public sealed class TenantFirstNameRequiredException : ArgumentException
 {
     public TenantFirstNameRequiredException()
         : base("ต้องระบุชื่อและนามสกุลผู้เช่า")
+    {
+    }
+}
+
+public sealed class TenantLastNameRequiredException : ArgumentException
+{
+    public TenantLastNameRequiredException()
+        : base("ต้องระบุนามสกุลผู้เช่า")
     {
     }
 }

@@ -9,5 +9,7 @@ public interface ITenantRepository
 
     Tenant? GetById(TenantId tenantId);
 
+    bool ExistsByRoomId(RoomId roomId);
+
     IReadOnlyList<Tenant> GetAll();
 }

@@ -40,6 +40,21 @@ public class CreateTenantServiceTests
         Assert.Same(roomId, tenant.RoomId);
     }
 
+    [Fact]
+    public void Create_WithOccupiedRoom_ThrowsException()
+    {
+        var repository = new FakeTenantRepository();
+        var service = new CreateTenantService(repository);
+        var roomId = RoomId.New();
+
+        service.Create("สมชาย", "ใจดี", roomId: roomId);
+
+        Assert.Throws<InvalidOperationException>(() => service.Create(
+            "สมหญิง",
+            "ใจดี",
+            roomId: roomId));
+    }
+
     private sealed class FakeTenantRepository : ITenantRepository
     {
         public List<Tenant> Tenants { get; } = [];
@@ -52,6 +67,11 @@ public class CreateTenantServiceTests
         public Tenant? GetById(TenantId tenantId)
         {
             return Tenants.Find(tenant => tenant.Id == tenantId);
+        }
+
+        public bool ExistsByRoomId(RoomId roomId)
+        {
+            return Tenants.Exists(tenant => tenant.RoomId == roomId);
         }
 
         public IReadOnlyList<Tenant> GetAll()

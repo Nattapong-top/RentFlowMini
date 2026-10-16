@@ -19,6 +19,12 @@ public sealed class CreateTenantService
         string? phoneNumber = null,
         RoomId? roomId = null)
     {
+        if (roomId is not null && _repository.ExistsByRoomId(roomId))
+        {
+            throw new InvalidOperationException(
+                "ห้องพักนี้มีผู้เช่าอยู่แล้ว ไม่สามารถผูกผู้เช่าซ้ำได้");
+        }
+
         var tenant = new Tenant(
             TenantId.New(),
             firstName,

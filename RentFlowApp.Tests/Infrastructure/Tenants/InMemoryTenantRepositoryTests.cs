@@ -38,14 +38,29 @@ public class InMemoryTenantRepositoryTests
     }
 
     [Fact]
-    public void Add_WithSameRoomForDifferentTenants_IsAllowed()
+    public void Add_WithOccupiedRoom_ThrowsException()
     {
         var repository = new InMemoryTenantRepository();
         var roomId = RoomId.New();
 
         repository.Add(new Tenant(TenantId.New(), "สมชาย", "ใจดี", roomId: roomId));
-        repository.Add(new Tenant(TenantId.New(), "สมหญิง", "ใจดี", roomId: roomId));
 
-        Assert.Equal(2, repository.GetAll().Count);
+        Assert.Throws<InvalidOperationException>(() => repository.Add(
+            new Tenant(TenantId.New(), "สมหญิง", "ใจดี", roomId: roomId)));
+    }
+
+    [Fact]
+    public void ExistsByRoomId_WhenRoomHasTenant_ReturnsTrue()
+    {
+        var repository = new InMemoryTenantRepository();
+        var roomId = RoomId.New();
+
+        repository.Add(new Tenant(
+            TenantId.New(),
+            "สมชาย",
+            "ใจดี",
+            roomId: roomId));
+
+        Assert.True(repository.ExistsByRoomId(roomId));
     }
 }

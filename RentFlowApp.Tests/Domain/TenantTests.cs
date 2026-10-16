@@ -35,9 +35,9 @@ public class TenantTests
     }
 
     [Fact]
-    public void Create_WithEmptyLastName_ThrowsException()
+    public void Create_WithEmptyLastName_ThrowsTenantLastNameRequiredException()
     {
-        Assert.Throws<ArgumentException>(() => new Tenant(
+        Assert.Throws<TenantLastNameRequiredException>(() => new Tenant(
             TenantId.New(),
             "สมชาย",
             " "));
