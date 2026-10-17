@@ -4,7 +4,7 @@
 
 **สถานะ:** TODO รอการยืนยัน business rule
 **ขอบเขตเบื้องต้น:** Tenant และ Room occupancy
-**เอกสารอ้างอิง:** `docs/room-ui-design.md`, `docs/room-rent-cable-tv-design.md`
+**เอกสารอ้างอิง:** `docs/room-ui-design.md`, `docs/room-rent-cable-tv-design.md`, `docs/billing-charges-design.md`
 
 ## สถานะปัจจุบัน
 
