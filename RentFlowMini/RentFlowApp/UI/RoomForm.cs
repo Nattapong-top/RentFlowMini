@@ -5,6 +5,7 @@ using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
+using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Tenants;
 
 namespace RentFlowApp.Forms;
@@ -14,6 +15,7 @@ public class RoomForm : Form
     private readonly CreateRoomService _createRoomService;
     private readonly IRoomRepository _roomRepository;
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
+    private readonly IMonthlyMeterReadingRepository _monthlyMeterReadingRepository;
     private readonly CreateTenantService _createTenantService;
     private readonly ITenantRepository _tenantRepository;
 
@@ -30,6 +32,7 @@ public class RoomForm : Form
     private readonly TextBox _currElecTextBox = new();
     private readonly TextBox _elecRateTextBox = new();
     private readonly Button _createBillButton = new();
+    private readonly Button _saveMeterReadingButton = new();
     private readonly Label _resultRentLabel = new();
     private readonly Label _resultWaterLabel = new();
     private readonly Label _resultElecLabel = new();
@@ -59,7 +62,8 @@ public class RoomForm : Form
         IRoomEditor roomRepository,
         CreateMonthlyBillService? createMonthlyBillService = null,
         CreateTenantService? createTenantService = null,
-        ITenantRepository? tenantRepository = null)
+        ITenantRepository? tenantRepository = null,
+        IMonthlyMeterReadingRepository? monthlyMeterReadingRepository = null)
     {
         ArgumentNullException.ThrowIfNull(createRoomService);
         ArgumentNullException.ThrowIfNull(roomRepository);
@@ -67,6 +71,8 @@ public class RoomForm : Form
         _createRoomService = createRoomService;
         _roomRepository = roomRepository;
         _createMonthlyBillService = createMonthlyBillService;
+        _monthlyMeterReadingRepository = monthlyMeterReadingRepository ??
+                                         new InMemoryMonthlyMeterReadingRepository();
 
         _tenantRepository = tenantRepository ?? new InMemoryTenantRepository();
         _createTenantService = createTenantService ?? new CreateTenantService(_tenantRepository);
@@ -230,6 +236,12 @@ public class RoomForm : Form
         _createBillButton.SetBounds(20, 300, 180, 38);
         _createBillButton.Click += CreateBillButton_Click;
 
+        _saveMeterReadingButton.Name = "SaveMeterReadingButton";
+        _saveMeterReadingButton.Text = "บันทึกมิเตอร์ประจำเดือน";
+        _saveMeterReadingButton.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+        _saveMeterReadingButton.SetBounds(215, 300, 220, 38);
+        _saveMeterReadingButton.Click += SaveMeterReadingButton_Click;
+
         // Bill Message / Error Label
         _billMessageLabel.Name = "BillMessageLabel";
         _billMessageLabel.SetBounds(215, 308, 545, 30);
@@ -293,9 +305,60 @@ public class RoomForm : Form
             waterGroup,
             elecGroup,
             _createBillButton,
+            _saveMeterReadingButton,
             _billMessageLabel,
             resultGroup
         ]);
+    }
+
+    private void SaveMeterReadingButton_Click(object? sender, EventArgs e)
+    {
+        if (_billRoomComboBox.SelectedItem is not RoomItem selectedRoom)
+        {
+            ShowBillError("กรุณาเลือกห้องพัก");
+            return;
+        }
+
+        try
+        {
+            var billingPeriod = BillingPeriod.Create(_billingPeriodTextBox.Text.Trim());
+            var reading = MonthlyMeterReading.Create(
+                selectedRoom.Id,
+                billingPeriod,
+                ParseRequiredMeterReading(_prevWaterTextBox.Text, "มิเตอร์น้ำก่อนหน้า"),
+                ParseRequiredMeterReading(_currWaterTextBox.Text, "มิเตอร์น้ำปัจจุบัน"),
+                ParseRequiredMeterReading(_prevElecTextBox.Text, "มิเตอร์ไฟฟ้าก่อนหน้า"),
+                ParseRequiredMeterReading(_currElecTextBox.Text, "มิเตอร์ไฟฟ้าปัจจุบัน"));
+
+            _monthlyMeterReadingRepository.Add(reading);
+            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.Text =
+                $"บันทึกมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบ {billingPeriod.Value} สำเร็จเรียบร้อย";
+        }
+        catch (InvalidMeterReadingException ex)
+        {
+            ShowBillError(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowBillError(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            ShowBillError(ex.Message);
+        }
+    }
+
+    private static MeterReading ParseRequiredMeterReading(string text, string meterName)
+    {
+        if (!decimal.TryParse(text.Trim(), out var value))
+        {
+            throw new InvalidMeterReadingException(
+                meterName,
+                "ต้องระบุเป็นตัวเลขที่ถูกต้อง");
+        }
+
+        return MeterReading.Create(value);
     }
 
     private void CreateBillButton_Click(object? sender, EventArgs e)
