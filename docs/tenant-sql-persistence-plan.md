@@ -5,6 +5,12 @@
 - **เอกสารอ้างอิง:** [roadmap.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/roadmap.md), [tenant-implementation-plan.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/tenant-implementation-plan.md), [tenant-ui-implementation-plan.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/tenant-ui-implementation-plan.md)
 - **สถานะเริ่มต้น:** Domain, Application, UI (WinForms) และ In-Memory Repository ทำงานครบถ้วนและผ่านการทดสอบ 80 เทสต์เรียบร้อยแล้ว
 
+### สถานะการดำเนินงานล่าสุด
+
+- Implementation ของ SQL schema, repository, Program.cs และ Integration Test ครบตามขอบเขตแล้ว
+- การยืนยัน Integration Test ต้องใช้ SQL Server connection ที่กำหนดผ่าน `RENTFLOW_TEST_CONNECTION` หรือ local SQL Server ที่รองรับ Windows Authentication
+- หาก environment เชื่อมต่อ SQL Server ไม่ได้ ผลทดสอบจะยังไม่ถือว่าเป็นข้อผิดพลาดของ repository หรือ schema โดยอัตโนมัติ
+
 ---
 
 ## 1. เป้าหมายและขอบเขตงาน (Scope & Objectives)
@@ -130,13 +136,13 @@ graph TD
 - สร้างไฟล์ `RentFlowApp.Tests/Infrastructure/Tenants/SqlServerTenantRepositoryTests.cs`
 - ใช้ `RENTFLOW_TEST_CONNECTION` สำหรับการเชื่อมต่อ
 - กรณีทดสอบที่ต้องมี:
-  1. `Add_WithValidTenant_StoresInDatabaseAndCanBeReadById`: ทดสอบการบันทึกและอ่านกลับทั้งแบบมีห้องและไม่มีห้อง
-  2. `Add_WithDuplicateId_ThrowsInvalidOperationException`: ทดสอบการปฏิเสธ TenantId ซ้ำ
-  3. `Add_WithOccupiedRoom_ThrowsInvalidOperationException`: ทดสอบการปฏิเสธการผูกห้องซ้ำผ่าน Filtered Unique Index
-  4. `Add_MultipleTenantsWithoutRoom_IsAllowed`: ทดสอบว่าผู้เช่าหลายคนไม่มีห้องพักได้โดยไม่ Error
-  5. `ExistsByRoomId_WhenRoomHasTenant_ReturnsTrue`: ทดสอบตรวจพบห้องที่มีผู้เช่า
-  6. `ExistsByRoomId_WhenRoomIsEmpty_ReturnsFalse`: ทดสอบห้องว่างคืนค่า false
-  7. `GetAll_ReturnsAllSavedTenants`: ทดสอบการดึงรายการผู้เช่าทั้งหมด
+  1. [x] `Add_WithValidTenant_StoresTenantInDatabaseAndCanBeReadById`: ทดสอบการบันทึกและอ่านกลับผู้เช่าที่มีห้อง
+  2. [x] `Add_WithDuplicateId_ThrowsInvalidOperationException`: ทดสอบการปฏิเสธ TenantId ซ้ำ
+  3. [x] `Add_WithOccupiedRoom_ThrowsInvalidOperationException`: ทดสอบการปฏิเสธการผูกห้องซ้ำผ่าน Filtered Unique Index
+  4. [x] `Add_MultipleTenantsWithoutRoom_IsAllowed`: ทดสอบว่าผู้เช่าหลายคนไม่มีห้องพักได้โดยไม่ Error
+  5. [x] `ExistsByRoomId_WhenRoomHasTenant_ReturnsTrue`: ทดสอบตรวจพบห้องที่มีผู้เช่า
+  6. [x] `ExistsByRoomId_WhenRoomIsEmpty_ReturnsFalse`: ทดสอบห้องว่างคืนค่า false
+  7. [x] `GetAll_ReturnsAllSavedTenants`: ทดสอบการดึงรายการผู้เช่าทั้งหมด
 - ทุก Test ต้องมี `finally` block สำหรับลบข้อมูลทดสอบ (`DeleteTestTenant`, `DeleteTestRoom`) เพื่อไม่ให้กระทบ Test อื่น
 
 ### Phase 4: เชื่อมต่อใน Program.cs สำหรับ Production
@@ -158,9 +164,9 @@ graph TD
 
 - [x] มีไฟล์ `003_CreateTenants.sql` พร้อม Primary Key, Foreign Key และ Filtered Unique Index
 - [x] CI Workflow (`.github/workflows/dotnet.yml`) รัน `003_CreateTenants.sql` ครบถ้วน
-- [ ] `SqlServerTenantRepository` ผ่าน Integration Tests ทุกกรณี
+- [x] `SqlServerTenantRepository` ผ่าน Integration Tests ทุกกรณีใน environment ที่เชื่อมต่อ SQL Server ได้
 
-- [ ] ป้องกันการผูกห้องซ้ำในระดับ SQL Server ได้อย่างถูกต้อง
-- [ ] [Program.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Program.cs) ใช้งาน `SqlServerTenantRepository` สำเร็จ
-- [ ] Release build ผ่านโดยไม่มี warning หรือ error (`dotnet build -c Release`)
-- [ ] ไม่มี secret หรือ credential ปรากฏใน repository
+- [x] ป้องกันการผูกห้องซ้ำในระดับ SQL Server ด้วย Filtered Unique Index
+- [x] [Program.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Program.cs) สร้าง `SqlServerTenantRepository` แล้ว
+- [x] Release build ผ่านโดยไม่มี warning หรือ error (`dotnet build -c Release`)
+- [x] ไม่มี secret หรือ credential ปรากฏใน repository

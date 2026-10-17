@@ -16,7 +16,7 @@ internal static class Program
         ApplicationConfiguration.Initialize();
 
         const string defaultConnectionString =
-            @"Server=localhost\SQLEXPRESS;Database=RentFlowDb;Integrated Security=True;TrustServerCertificate=True;";
+            @"Server=.\SQLEXPRESS;Database=RentFlowDb;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;";
 
         string connectionString =
             Environment.GetEnvironmentVariable("RENTFLOW_CONNECTION_STRING")
