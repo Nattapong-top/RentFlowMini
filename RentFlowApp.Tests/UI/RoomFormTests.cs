@@ -92,6 +92,60 @@ public class RoomFormTests
     }
 
     [Fact]
+    public void RoomForm_RoomTab_UsesResponsiveLayoutAndHidesRoomId()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            createRoomService.Create("201", 2800, false);
+            createRoomService.Create("101", 2500, true);
+
+            using var form = new RoomForm(createRoomService, roomRepo);
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var roomTab = tabControl.TabPages[0];
+            var grid = (DataGridView)roomTab.Controls.Find("RoomGrid", true).First();
+
+            Assert.Equal(FormWindowState.Maximized, form.WindowState);
+            Assert.NotNull(roomTab.Controls.Find("RoomInputGroup", true).FirstOrDefault());
+            Assert.NotNull(roomTab.Controls.Find("RoomListGroup", true).FirstOrDefault());
+            Assert.Equal(6, grid.Columns.Count);
+            Assert.Equal("Sequence", grid.Columns[0].Name);
+            Assert.DoesNotContain(grid.Columns.Cast<DataGridViewColumn>(), column => column.Name == "RoomId");
+            Assert.Equal("101", grid.Rows[0].Cells["RoomNumber"].Value);
+            Assert.Equal("201", grid.Rows[1].Cells["RoomNumber"].Value);
+            Assert.Equal(1, grid.Rows[0].Cells["Sequence"].Value);
+            Assert.Equal("2,500.00", grid.Rows[0].Cells["MonthlyRent"].Value);
+            Assert.Equal("ว่าง", grid.Rows[0].Cells["OccupancyStatus"].Value);
+            Assert.Equal("-", grid.Rows[0].Cells["TenantName"].Value);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_RoomTab_ShowsOccupancyAndTenantName()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var tenantRepo = new InMemoryTenantRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createTenantService = new CreateTenantService(tenantRepo);
+            var room = createRoomService.Create("101", 2500, false);
+            createTenantService.Create("สมชาย", "ใจดี", null, room.Id);
+
+            using var form = new RoomForm(
+                createRoomService,
+                roomRepo,
+                tenantRepository: tenantRepo);
+            var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
+            var grid = (DataGridView)roomTab.Controls.Find("RoomGrid", true).First();
+
+            Assert.Equal("ไม่ว่าง", grid.Rows[0].Cells["OccupancyStatus"].Value);
+            Assert.Equal("สมชาย ใจดี", grid.Rows[0].Cells["TenantName"].Value);
+        });
+    }
+
+    [Fact]
     public void RoomForm_AddRoom_WithRentAndExemption_SavesRoom()
     {
         RunInSta(() =>
@@ -151,6 +205,41 @@ public class RoomFormTests
             var updatedRoom = roomRepo.GetById(room.Id)!;
             Assert.Equal(0, updatedRoom.MonthlyRent.Amount);
             Assert.True(updatedRoom.IsCableTvExempt);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_DoubleClickRoomRow_StartsRentEditingImmediately()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var room = createRoomService.Create("101", 5000, true);
+
+            using var form = new RoomForm(createRoomService, roomRepo);
+            form.Show();
+            var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
+            var grid = (DataGridView)roomTab.Controls.Find("RoomGrid", true).First();
+            var roomNumberBox = (TextBox)roomTab.Controls.Find("RoomNumberTextBox", true).First();
+            var rentBox = (TextBox)roomTab.Controls.Find("RoomMonthlyRentTextBox", true).First();
+            var exemptCheckBox = (CheckBox)roomTab.Controls.Find("RoomCableTvExemptCheckBox", true).First();
+            var addButton = (Button)roomTab.Controls.Find("AddRoomButton", true).First();
+            var editButton = (Button)roomTab.Controls.Find("EditRoomRentButton", true).First();
+
+            var onCellDoubleClick = typeof(DataGridView).GetMethod(
+                "OnCellDoubleClick",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            onCellDoubleClick!.Invoke(grid, [new DataGridViewCellEventArgs(1, 0)]);
+
+            Assert.Equal(room.RoomNumber.Value, roomNumberBox.Text);
+            Assert.Equal("5,000.00", rentBox.Text);
+            Assert.True(exemptCheckBox.Checked);
+            Assert.True(roomNumberBox.ReadOnly);
+            Assert.False(exemptCheckBox.Enabled);
+            Assert.False(addButton.Enabled);
+            Assert.True(editButton.Enabled);
+            Assert.Equal("บันทึกค่าเช่า", editButton.Text);
         });
     }
 
