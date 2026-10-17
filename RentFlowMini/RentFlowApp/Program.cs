@@ -15,19 +15,12 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
-        const string defaultConnectionString =
-            @"Server=.\SQLEXPRESS;Database=RentFlowDb;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;";
-
-        string connectionString =
-            Environment.GetEnvironmentVariable("RENTFLOW_CONNECTION_STRING")
-            ?? defaultConnectionString;
-
         IRoomRepository roomRepository =
-            new SqlServerRoomRepository(connectionString);
+            new InMemoryRoomRepository();
         IBillRepository billRepository =
-            new SqlServerBillRepository(connectionString);
+            new InMemoryBillRepository();
         ITenantRepository tenantRepository =
-            new SqlServerTenantRepository(connectionString);
+            new InMemoryTenantRepository();
 
         var createRoomService =
             new CreateRoomService(roomRepository);

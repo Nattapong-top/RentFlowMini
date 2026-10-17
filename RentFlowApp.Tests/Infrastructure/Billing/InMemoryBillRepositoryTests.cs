@@ -43,4 +43,34 @@ public class InMemoryBillRepositoryTests
         Assert.Throws<InvalidOperationException>(() =>
             repository.Add(duplicateBill));
     }
+
+    [Fact]
+    public void Exists_WhenRoomAndPeriodDoNotExist_ReturnsFalse()
+    {
+        var repository = new InMemoryBillRepository();
+
+        Assert.False(repository.Exists(
+            RoomId.New(),
+            BillingPeriod.Create("2026-09")));
+    }
+
+    [Fact]
+    public void Exists_WithNullRoomId_ThrowsArgumentNullException()
+    {
+        var repository = new InMemoryBillRepository();
+
+        Assert.Throws<ArgumentNullException>(() => repository.Exists(
+            null!,
+            BillingPeriod.Create("2026-09")));
+    }
+
+    [Fact]
+    public void Exists_WithNullBillingPeriod_ThrowsArgumentNullException()
+    {
+        var repository = new InMemoryBillRepository();
+
+        Assert.Throws<ArgumentNullException>(() => repository.Exists(
+            RoomId.New(),
+            null!));
+    }
 }

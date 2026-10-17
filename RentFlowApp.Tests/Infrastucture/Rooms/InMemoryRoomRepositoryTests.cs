@@ -128,5 +128,47 @@ public class InMemoryRoomRepositoryTests
         );
     }
 
+    [Fact]
+    public void Add_WithDuplicateRoomId_ThrowsException()
+    {
+        var repository = new InMemoryRoomRepository();
+        var roomId = RoomId.New();
+
+        repository.Add(new Room(roomId, new RoomNumber("101")));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(new Room(roomId, new RoomNumber("102"))));
+    }
+
+    [Fact]
+    public void GetAll_ReturnsRoomsOrderedByRoomNumber()
+    {
+        var repository = new InMemoryRoomRepository();
+        var room102 = new Room(RoomId.New(), new RoomNumber("102"));
+        var room101 = new Room(RoomId.New(), new RoomNumber("101"));
+
+        repository.Add(room102);
+        repository.Add(room101);
+
+        var rooms = repository.GetAll();
+
+        Assert.Equal("101", rooms[0].RoomNumber.Value);
+        Assert.Equal("102", rooms[1].RoomNumber.Value);
+    }
+
+    [Fact]
+    public void GetAll_ReturnsRoomsWithPersistedValues()
+    {
+        var repository = new InMemoryRoomRepository();
+        var room = new Room(RoomId.New(), new RoomNumber("101"));
+        repository.Add(room);
+
+        var savedRoom = Assert.Single(repository.GetAll());
+
+        Assert.Equal(room.Id, savedRoom.Id);
+        Assert.Equal(room.RoomNumber.Value, savedRoom.RoomNumber.Value);
+        Assert.NotSame(room, savedRoom);
+    }
+
 
 }

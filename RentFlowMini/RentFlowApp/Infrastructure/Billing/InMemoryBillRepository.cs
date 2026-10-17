@@ -23,6 +23,9 @@ public sealed class InMemoryBillRepository : IBillRepository
 
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)
     {
+        ArgumentNullException.ThrowIfNull(roomId);
+        ArgumentNullException.ThrowIfNull(billingPeriod);
+
         return _bills.Exists(
             bill => bill.RoomId == roomId &&
                     bill.BillingPeriod == billingPeriod);

@@ -1,5 +1,6 @@
 using RentFlowApp;
 using RentFlowApp.Application.Rooms;
+using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Infrastructure.Rooms;
 
@@ -11,7 +12,9 @@ public sealed class InMemoryRoomRepository : IRoomRepository
     {
         ArgumentNullException.ThrowIfNull(room);
 
-        if (ExistsByRoomNumber(room.RoomNumber.Value))
+        if (_rooms.Exists(existingRoom =>
+                existingRoom.Id == room.Id ||
+                existingRoom.RoomNumber.Value == room.RoomNumber.Value))
         {
             throw new InvalidOperationException(
                 $"Room number '{room.RoomNumber.Value}' already exists."
@@ -30,6 +33,12 @@ public sealed class InMemoryRoomRepository : IRoomRepository
 
     public IReadOnlyList<Room> GetAll()
     {
-        return _rooms.AsReadOnly();
+        return _rooms
+            .OrderBy(room => room.RoomNumber.Value)
+            .Select(room => new Room(
+                RoomId.From(room.Id.Value),
+                new RoomNumber(room.RoomNumber.Value)))
+            .ToList()
+            .AsReadOnly();
     }
 }

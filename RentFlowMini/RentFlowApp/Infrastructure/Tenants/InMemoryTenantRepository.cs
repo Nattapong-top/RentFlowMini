@@ -15,7 +15,7 @@ public sealed class InMemoryTenantRepository : ITenantRepository
         if (GetById(tenant.Id) is not null)
         {
             throw new InvalidOperationException(
-                $"Tenant '{tenant.Id.Value}' already exists.");
+                "ผู้เช่ารายนี้มีอยู่แล้ว ไม่สามารถเพิ่มข้อมูลซ้ำได้");
         }
 
         var roomId = tenant.RoomId;
@@ -32,7 +32,8 @@ public sealed class InMemoryTenantRepository : ITenantRepository
     {
         ArgumentNullException.ThrowIfNull(tenantId);
 
-        return _tenants.Find(tenant => tenant.Id == tenantId);
+        var tenant = _tenants.Find(item => item.Id == tenantId);
+        return tenant is null ? null : CopyTenant(tenant);
     }
 
     public bool ExistsByRoomId(RoomId roomId)
@@ -44,6 +45,21 @@ public sealed class InMemoryTenantRepository : ITenantRepository
 
     public IReadOnlyList<Tenant> GetAll()
     {
-        return _tenants.AsReadOnly();
+        return _tenants
+            .OrderBy(tenant => tenant.FirstName)
+            .ThenBy(tenant => tenant.LastName)
+            .Select(CopyTenant)
+            .ToList()
+            .AsReadOnly();
+    }
+
+    private static Tenant CopyTenant(Tenant tenant)
+    {
+        return new Tenant(
+            TenantId.From(tenant.Id.Value),
+            tenant.FirstName,
+            tenant.LastName,
+            tenant.PhoneNumber,
+            tenant.RoomId is null ? null : RoomId.From(tenant.RoomId.Value));
     }
 }
