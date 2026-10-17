@@ -170,5 +170,44 @@ public class InMemoryRoomRepositoryTests
         Assert.NotSame(room, savedRoom);
     }
 
+    [Fact]
+    public void GetAll_ReturnsPersistedRentAndCableTvExemption()
+    {
+        var repository = new InMemoryRoomRepository();
+        var room = new Room(
+            RoomId.New(),
+            new RoomNumber("101"),
+            Money.Create(5000),
+            true);
+
+        repository.Add(room);
+
+        var savedRoom = Assert.Single(repository.GetAll());
+
+        Assert.Equal(5000, savedRoom.MonthlyRent.Amount);
+        Assert.True(savedRoom.IsCableTvExempt);
+    }
+
+    [Fact]
+    public void Update_UpdatesRentAndPreservesOtherRoomValues()
+    {
+        var repository = new InMemoryRoomRepository();
+        var room = new Room(
+            RoomId.New(),
+            new RoomNumber("101"),
+            Money.Create(5000),
+            true);
+        repository.Add(room);
+
+        var editableRoom = repository.GetById(room.Id)!;
+        editableRoom.ChangeMonthlyRent(Money.Create(0));
+        repository.Update(editableRoom);
+
+        var savedRoom = repository.GetById(room.Id)!;
+        Assert.Equal(0, savedRoom.MonthlyRent.Amount);
+        Assert.Equal("101", savedRoom.RoomNumber.Value);
+        Assert.True(savedRoom.IsCableTvExempt);
+    }
+
 
 }

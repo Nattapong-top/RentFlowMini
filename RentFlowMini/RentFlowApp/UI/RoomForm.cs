@@ -13,13 +13,18 @@ public class RoomForm : Form
 {
     private readonly CreateRoomService _createRoomService;
     private readonly IRoomRepository _roomRepository;
+    private readonly IRoomEditor _roomEditor;
+    private readonly UpdateRoomRentService _updateRoomRentService;
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
     private readonly CreateTenantService _createTenantService;
     private readonly ITenantRepository _tenantRepository;
 
     // Room tab controls
     private readonly TextBox _roomNumberTextBox = new();
+    private readonly TextBox _roomMonthlyRentTextBox = new();
+    private readonly CheckBox _roomCableTvExemptCheckBox = new();
     private readonly Button _addRoomButton = new();
+    private readonly Button _editRoomRentButton = new();
     private readonly DataGridView _roomGrid = new();
     private readonly Label _roomMessageLabel = new();
 
@@ -39,6 +44,7 @@ public class RoomForm : Form
     private readonly Label _resultElecLabel = new();
     private readonly Label _resultTotalLabel = new();
     private readonly Label _billMessageLabel = new();
+    private RoomId? _editingRoomId;
 
     // Tenant tab controls
     private readonly TextBox _tenantFirstNameTextBox = new();
@@ -54,6 +60,12 @@ public class RoomForm : Form
         public override string ToString() => RoomNumber;
     }
 
+    private sealed record RoomGridItem(
+        RoomId RoomId,
+        string RoomNumber,
+        string MonthlyRent,
+        string CableTvExempt);
+
     private sealed record TenantRoomOption(RoomId? Id, string DisplayName)
     {
         public override string ToString() => DisplayName;
@@ -61,7 +73,7 @@ public class RoomForm : Form
 
     public RoomForm(
         CreateRoomService createRoomService,
-        IRoomRepository roomRepository,
+        IRoomEditor roomRepository,
         CreateMonthlyBillService? createMonthlyBillService = null,
         CreateTenantService? createTenantService = null,
         ITenantRepository? tenantRepository = null)
@@ -71,6 +83,8 @@ public class RoomForm : Form
 
         _createRoomService = createRoomService;
         _roomRepository = roomRepository;
+        _roomEditor = roomRepository;
+        _updateRoomRentService = new UpdateRoomRentService(_roomEditor);
         _createMonthlyBillService = createMonthlyBillService;
 
         _tenantRepository = tenantRepository ?? new InMemoryTenantRepository();
@@ -149,16 +163,42 @@ public class RoomForm : Form
             Height = 25
         };
 
+        _roomNumberTextBox.Name = "RoomNumberTextBox";
         _roomNumberTextBox.SetBounds(135, 72, 180, 27);
 
+        var roomMonthlyRentLabel = new Label
+        {
+            Text = "ค่าเช่ารายเดือน:",
+            Left = 20,
+            Top = 112,
+            Width = 110,
+            Height = 25
+        };
+
+        _roomMonthlyRentTextBox.Name = "RoomMonthlyRentTextBox";
+        _roomMonthlyRentTextBox.SetBounds(135, 109, 180, 27);
+
+        _roomCableTvExemptCheckBox.Name = "RoomCableTvExemptCheckBox";
+        _roomCableTvExemptCheckBox.Text = "ยกเว้นค่า Cable TV";
+        _roomCableTvExemptCheckBox.SetBounds(325, 109, 180, 27);
+
+        _addRoomButton.Name = "AddRoomButton";
         _addRoomButton.Text = "เพิ่มห้อง";
-        _addRoomButton.SetBounds(325, 70, 110, 30);
+        _addRoomButton.SetBounds(520, 107, 110, 30);
         _addRoomButton.Click += AddRoomButton_Click;
 
-        _roomMessageLabel.SetBounds(20, 110, 780, 25);
+        _editRoomRentButton.Name = "EditRoomRentButton";
+        _editRoomRentButton.Text = "แก้ไขค่าเช่า";
+        _editRoomRentButton.SetBounds(640, 107, 130, 30);
+        _editRoomRentButton.Enabled = false;
+        _editRoomRentButton.Click += EditRoomRentButton_Click;
+
+        _roomMessageLabel.SetBounds(20, 145, 780, 25);
         _roomMessageLabel.ForeColor = Color.DarkGreen;
 
-        _roomGrid.SetBounds(20, 145, 780, 420);
+        _roomGrid.Name = "RoomGrid";
+        _roomGrid.SelectionChanged += RoomGrid_SelectionChanged;
+        _roomGrid.SetBounds(20, 180, 780, 385);
         _roomGrid.Anchor =
             AnchorStyles.Top |
             AnchorStyles.Bottom |
@@ -190,12 +230,30 @@ public class RoomForm : Form
             DataPropertyName = "RoomId"
         });
 
+        _roomGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "MonthlyRent",
+            HeaderText = "ค่าเช่ารายเดือน",
+            DataPropertyName = "MonthlyRent"
+        });
+
+        _roomGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "CableTvExempt",
+            HeaderText = "ยกเว้น Cable TV",
+            DataPropertyName = "CableTvExempt"
+        });
+
         page.Controls.AddRange(
         [
             titleLabel,
             roomNumberLabel,
             _roomNumberTextBox,
+            roomMonthlyRentLabel,
+            _roomMonthlyRentTextBox,
+            _roomCableTvExemptCheckBox,
             _addRoomButton,
+            _editRoomRentButton,
             _roomMessageLabel,
             _roomGrid
         ]);
@@ -205,7 +263,7 @@ public class RoomForm : Form
     {
         var titleLabel = new Label
         {
-            Text = "สร้างบิลประจำเดือน (UC-01)",
+            Text = "สร้างบิลประจำเดือน",
             Left = 20,
             Top = 20,
             Width = 400,
@@ -371,10 +429,23 @@ public class RoomForm : Form
     {
         try
         {
-            var room = _createRoomService.Create(_roomNumberTextBox.Text);
+            if (!decimal.TryParse(
+                    _roomMonthlyRentTextBox.Text.Trim(),
+                    out var monthlyRent) || monthlyRent < 0)
+            {
+                ShowRoomError("กรุณาระบุค่าเช่ารายเดือนเป็นจำนวนเงินที่ถูกต้อง");
+                return;
+            }
+
+            var room = _createRoomService.Create(
+                _roomNumberTextBox.Text,
+                monthlyRent,
+                _roomCableTvExemptCheckBox.Checked);
             RefreshRoomList();
 
             _roomNumberTextBox.Clear();
+            _roomMonthlyRentTextBox.Clear();
+            _roomCableTvExemptCheckBox.Checked = false;
             _roomNumberTextBox.Focus();
 
             _roomMessageLabel.ForeColor = Color.DarkGreen;
@@ -388,6 +459,64 @@ public class RoomForm : Form
         {
             ShowRoomError(ex.Message);
         }
+    }
+
+    private void RoomGrid_SelectionChanged(object? sender, EventArgs e)
+    {
+        _editRoomRentButton.Enabled = _roomGrid.SelectedRows.Count > 0;
+    }
+
+    private void EditRoomRentButton_Click(object? sender, EventArgs e)
+    {
+        if (_editingRoomId is null)
+        {
+            if (_roomGrid.CurrentRow?.DataBoundItem is not RoomGridItem selectedRoom)
+            {
+                ShowRoomError("กรุณาเลือกห้องพักที่ต้องการแก้ไข");
+                return;
+            }
+
+            _editingRoomId = selectedRoom.RoomId;
+            _roomMonthlyRentTextBox.Text = selectedRoom.MonthlyRent;
+            _editRoomRentButton.Text = "บันทึกค่าเช่า";
+            _addRoomButton.Enabled = false;
+            _roomMonthlyRentTextBox.Focus();
+            return;
+        }
+
+        if (!decimal.TryParse(
+                _roomMonthlyRentTextBox.Text.Trim(),
+                out var monthlyRent) || monthlyRent < 0)
+        {
+            ShowRoomError("กรุณาระบุค่าเช่ารายเดือนเป็นจำนวนเงินที่ถูกต้อง");
+            return;
+        }
+
+        try
+        {
+            var room = _updateRoomRentService.Update(_editingRoomId, monthlyRent);
+            RefreshRoomList();
+            ResetRoomRentEditing();
+            _roomMessageLabel.ForeColor = Color.DarkGreen;
+            _roomMessageLabel.Text =
+                $"แก้ไขค่าเช่าห้อง {room.RoomNumber.Value} สำเร็จแล้ว";
+        }
+        catch (ArgumentException ex)
+        {
+            ShowRoomError(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowRoomError(ex.Message);
+        }
+    }
+
+    private void ResetRoomRentEditing()
+    {
+        _editingRoomId = null;
+        _editRoomRentButton.Text = "แก้ไขค่าเช่า";
+        _addRoomButton.Enabled = true;
+        _roomMonthlyRentTextBox.Clear();
     }
 
     private void CreateBillButton_Click(object? sender, EventArgs e)
@@ -498,11 +627,11 @@ public class RoomForm : Form
         var rooms = _roomRepository.GetAll();
 
         _roomGrid.DataSource = rooms
-            .Select(room => new
-            {
-                RoomNumber = room.RoomNumber.Value,
-                RoomId = room.Id.Value
-            })
+            .Select(room => new RoomGridItem(
+                RoomId: room.Id,
+                RoomNumber: room.RoomNumber.Value,
+                MonthlyRent: room.MonthlyRent.Amount.ToString("N2"),
+                CableTvExempt: room.IsCableTvExempt ? "ใช่" : "ไม่"))
             .ToList();
 
         PopulateBillingRoomOptions();
@@ -769,5 +898,3 @@ public class RoomForm : Form
         }
     }
 }
-
-

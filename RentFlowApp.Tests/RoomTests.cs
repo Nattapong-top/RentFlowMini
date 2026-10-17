@@ -44,6 +44,74 @@ public class RoomTests
         Assert.Same(roomNumber, room.RoomNumber);
     }
 
+    [Fact]
+    public void Constructor_WithRentAndCableTvExemption_StoresRoomCharges()
+    {
+        // Arrange
+        RoomId roomId = RoomId.New();
+        RoomNumber roomNumber = new RoomNumber("101");
+        Money monthlyRent = Money.Create(5000);
+
+        // Act
+        var room = new Room(roomId, roomNumber, monthlyRent, true);
+
+        // Assert
+        Assert.Same(monthlyRent, room.MonthlyRent);
+        Assert.True(room.IsCableTvExempt);
+    }
+
+    [Fact]
+    public void Constructor_WithNullMonthlyRent_ThrowsArgumentNullException()
+    {
+        // Arrange
+        RoomId roomId = RoomId.New();
+        RoomNumber roomNumber = new RoomNumber("101");
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(
+            () => new Room(roomId, roomNumber, null!, false));
+    }
+
+    [Fact]
+    public void ChangeMonthlyRent_WithZero_UpdatesRentOnly()
+    {
+        var room = new Room(
+            RoomId.New(),
+            new RoomNumber("101"),
+            Money.Create(5000),
+            true);
+
+        room.ChangeMonthlyRent(Money.Create(0));
+
+        Assert.Equal(0, room.MonthlyRent.Amount);
+        Assert.Equal("101", room.RoomNumber.Value);
+        Assert.True(room.IsCableTvExempt);
+    }
+
+    [Fact]
+    public void ChangeMonthlyRent_WithNull_ThrowsArgumentNullException()
+    {
+        var room = new Room(
+            RoomId.New(),
+            new RoomNumber("101"),
+            Money.Create(5000),
+            false);
+
+        Assert.Throws<ArgumentNullException>(
+            () => room.ChangeMonthlyRent(null!));
+    }
+
+    [Fact]
+    public void LegacyConstructor_UsesZeroRentAndDoesNotExemptCableTv()
+    {
+        // Act
+        var room = new Room(RoomId.New(), new RoomNumber("101"));
+
+        // Assert
+        Assert.Equal(0, room.MonthlyRent.Amount);
+        Assert.False(room.IsCableTvExempt);
+    }
+
 
     [Fact]
     public void Constructor_WithNullId_ThrowsArgumentNullException()

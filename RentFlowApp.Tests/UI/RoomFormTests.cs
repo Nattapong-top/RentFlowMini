@@ -69,6 +69,92 @@ public class RoomFormTests
     }
 
     [Fact]
+    public void RoomForm_RoomTab_ContainsRentAndCableTvExemptionControls()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+
+            using var form = new RoomForm(createRoomService, roomRepo);
+            var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
+
+            var rentBox = roomTab.Controls
+                .Find("RoomMonthlyRentTextBox", true)
+                .FirstOrDefault() as TextBox;
+            var exemptCheckBox = roomTab.Controls
+                .Find("RoomCableTvExemptCheckBox", true)
+                .FirstOrDefault() as CheckBox;
+
+            Assert.NotNull(rentBox);
+            Assert.NotNull(exemptCheckBox);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_AddRoom_WithRentAndExemption_SavesRoom()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+
+            using var form = new RoomForm(createRoomService, roomRepo);
+            form.Show();
+            var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
+
+            var roomNumberBox = (TextBox)roomTab.Controls
+                .Find("RoomNumberTextBox", true).First();
+            var rentBox = (TextBox)roomTab.Controls
+                .Find("RoomMonthlyRentTextBox", true).First();
+            var exemptCheckBox = (CheckBox)roomTab.Controls
+                .Find("RoomCableTvExemptCheckBox", true).First();
+            var addButton = (Button)roomTab.Controls
+                .Find("AddRoomButton", true).First();
+
+            roomNumberBox.Text = "101";
+            rentBox.Text = "5000";
+            exemptCheckBox.Checked = true;
+
+            addButton.PerformClick();
+
+            var room = Assert.Single(roomRepo.GetAll());
+            Assert.Equal(5000, room.MonthlyRent.Amount);
+            Assert.True(room.IsCableTvExempt);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_EditSelectedRoomRent_WithZero_UpdatesRoom()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var room = createRoomService.Create("101", 5000, true);
+
+            using var form = new RoomForm(createRoomService, roomRepo);
+            form.Show();
+            var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
+            var grid = (DataGridView)roomTab.Controls
+                .Find("RoomGrid", true).First();
+            var rentBox = (TextBox)roomTab.Controls
+                .Find("RoomMonthlyRentTextBox", true).First();
+            var editButton = (Button)roomTab.Controls
+                .Find("EditRoomRentButton", true).First();
+
+            grid.Rows[0].Selected = true;
+            editButton.PerformClick();
+            rentBox.Text = "0";
+            editButton.PerformClick();
+
+            var updatedRoom = roomRepo.GetById(room.Id)!;
+            Assert.Equal(0, updatedRoom.MonthlyRent.Amount);
+            Assert.True(updatedRoom.IsCableTvExempt);
+        });
+    }
+
+    [Fact]
     public void RoomForm_InitializesWithTenantTabAndControls()
     {
         RunInSta(() =>
@@ -393,4 +479,3 @@ public class RoomFormTests
         });
     }
 }
-

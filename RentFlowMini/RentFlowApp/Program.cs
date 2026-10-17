@@ -15,7 +15,7 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
-        IRoomRepository roomRepository =
+        IRoomEditor roomRepository =
             new InMemoryRoomRepository();
         IBillRepository billRepository =
             new InMemoryBillRepository();

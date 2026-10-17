@@ -7,14 +7,34 @@ namespace RentFlowApp
     {
         public RoomId Id { get; }
         public RoomNumber RoomNumber { get; }
+        public Money MonthlyRent { get; private set; }
+        public bool IsCableTvExempt { get; }
 
         public Room(RoomId id, RoomNumber roomNumber)
+            : this(id, roomNumber, Money.Create(0), false)
+        {
+        }
+
+        public Room(
+            RoomId id,
+            RoomNumber roomNumber,
+            Money monthlyRent,
+            bool isCableTvExempt)
         {
             ArgumentNullException.ThrowIfNull(id);
             ArgumentNullException.ThrowIfNull(roomNumber);
+            ArgumentNullException.ThrowIfNull(monthlyRent);
 
             Id = id;
             RoomNumber = roomNumber;
+            MonthlyRent = monthlyRent;
+            IsCableTvExempt = isCableTvExempt;
+        }
+
+        public void ChangeMonthlyRent(Money monthlyRent)
+        {
+            ArgumentNullException.ThrowIfNull(monthlyRent);
+            MonthlyRent = monthlyRent;
         }
 
         public bool Equals(Room? other)

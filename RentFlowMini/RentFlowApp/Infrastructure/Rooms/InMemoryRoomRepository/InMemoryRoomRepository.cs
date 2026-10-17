@@ -4,7 +4,7 @@ using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Infrastructure.Rooms;
 
-public sealed class InMemoryRoomRepository : IRoomRepository
+public sealed class InMemoryRoomRepository : IRoomEditor
 {
     private readonly List<Room> _rooms = [];
 
@@ -37,8 +37,37 @@ public sealed class InMemoryRoomRepository : IRoomRepository
             .OrderBy(room => room.RoomNumber.Value)
             .Select(room => new Room(
                 RoomId.From(room.Id.Value),
-                new RoomNumber(room.RoomNumber.Value)))
+                new RoomNumber(room.RoomNumber.Value),
+                Money.Create(room.MonthlyRent.Amount),
+                room.IsCableTvExempt))
             .ToList()
             .AsReadOnly();
+    }
+
+    public Room? GetById(RoomId roomId)
+    {
+        ArgumentNullException.ThrowIfNull(roomId);
+
+        var room = _rooms.FirstOrDefault(existingRoom => existingRoom.Id == roomId);
+        return room is null
+            ? null
+            : new Room(
+                RoomId.From(room.Id.Value),
+                new RoomNumber(room.RoomNumber.Value),
+                Money.Create(room.MonthlyRent.Amount),
+                room.IsCableTvExempt);
+    }
+
+    public void Update(Room room)
+    {
+        ArgumentNullException.ThrowIfNull(room);
+
+        var index = _rooms.FindIndex(existingRoom => existingRoom.Id == room.Id);
+        if (index < 0)
+        {
+            throw new InvalidOperationException("ไม่พบห้องพักที่ต้องการแก้ไข");
+        }
+
+        _rooms[index] = room;
     }
 }

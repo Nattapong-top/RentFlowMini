@@ -35,6 +35,28 @@ public class CreateRoomServiceTests
         Assert.Contains(room, repository.Rooms);
     }
 
+    [Fact]
+    public void Create_WithRentAndCableTvExemption_SavesRoomCharges()
+    {
+        var repository = new FakeRoomRepository();
+        var service = new CreateRoomService(repository);
+
+        var room = service.Create("101", 5000, true);
+
+        Assert.Equal(5000, room.MonthlyRent.Amount);
+        Assert.True(room.IsCableTvExempt);
+    }
+
+    [Fact]
+    public void Create_WithNegativeRent_ThrowsArgumentOutOfRangeException()
+    {
+        var repository = new FakeRoomRepository();
+        var service = new CreateRoomService(repository);
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => service.Create("101", -1, false));
+    }
+
 
     [Fact]
     public void Create_WithDuplicateRoomNumber_ThrowsException()

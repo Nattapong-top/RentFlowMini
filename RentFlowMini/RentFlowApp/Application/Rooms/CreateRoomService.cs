@@ -16,7 +16,16 @@ public class CreateRoomService
 
     public Room Create(string roomNumber)
     {
+        return Create(roomNumber, 0, false);
+    }
+
+    public Room Create(
+        string roomNumber,
+        decimal monthlyRent,
+        bool isCableTvExempt)
+    {
         var number = new RoomNumber(roomNumber);
+        var rent = Money.Create(monthlyRent);
 
         if (_repository.ExistsByRoomNumber(number.Value))
         {
@@ -25,7 +34,11 @@ public class CreateRoomService
             );
         }
 
-        var room = new Room(RoomId.New(), number);
+        var room = new Room(
+            RoomId.New(),
+            number,
+            rent,
+            isCableTvExempt);
 
         _repository.Add(room);
 
