@@ -5,7 +5,12 @@ namespace RentFlowApp.Infrastructure.Billing;
 
 public sealed class InMemoryBillingSettingsRepository : IBillingSettingsRepository
 {
-    private BillingSettings _settings = BillingSettings.Create(0m, 0m, 0m, 0m, 0m);
+    private BillingSettings _settings = BillingSettings.Create(
+        waterRate: 19.00m,
+        electricityRate: 8.00m,
+        motorcycleParkingRate: 100.00m,
+        carParkingRate: 500.00m,
+        cableTvRate: 60.00m);
 
     public BillingSettings Get()
     {

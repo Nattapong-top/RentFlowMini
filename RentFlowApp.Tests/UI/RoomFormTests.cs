@@ -36,7 +36,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_InitializesWithThreeTabsAndDefaultRates()
+    public void RoomForm_InitializesWithFourTabsAndDefaultRates()
     {
         RunInSta(() =>
         {
@@ -52,10 +52,11 @@ public class RoomFormTests
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
             Assert.NotNull(tabControl);
-            Assert.Equal(3, tabControl.TabPages.Count);
+            Assert.Equal(4, tabControl.TabPages.Count);
             Assert.Equal("ห้องพัก (Rooms)", tabControl.TabPages[0].Text);
             Assert.Equal("สร้างบิลประจำเดือน (Monthly Bill)", tabControl.TabPages[1].Text);
             Assert.Equal("ผู้เช่า (Tenants)", tabControl.TabPages[2].Text);
+            Assert.Equal("ตั้งค่าราคากลาง", tabControl.TabPages[3].Text);
 
             var billingTab = tabControl.TabPages[1];
             var waterRateTextBox = billingTab.Controls.Find("WaterRateTextBox", true).FirstOrDefault() as TextBox;
@@ -65,6 +66,15 @@ public class RoomFormTests
             var elecRateTextBox = billingTab.Controls.Find("ElecRateTextBox", true).FirstOrDefault() as TextBox;
             Assert.NotNull(elecRateTextBox);
             Assert.Equal("8", elecRateTextBox.Text);
+
+            var settingsTab = tabControl.TabPages[3];
+            var settingsWaterBox = settingsTab.Controls.Find("WaterRateTextBox", true).FirstOrDefault() as TextBox;
+            Assert.NotNull(settingsWaterBox);
+            Assert.Equal("19", settingsWaterBox.Text);
+
+            var settingsCableBox = settingsTab.Controls.Find("CableTvRateTextBox", true).FirstOrDefault() as TextBox;
+            Assert.NotNull(settingsCableBox);
+            Assert.Equal("60", settingsCableBox.Text);
         });
     }
 
@@ -260,7 +270,7 @@ public class RoomFormTests
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
             Assert.NotNull(tabControl);
-            Assert.Equal(3, tabControl.TabPages.Count);
+            Assert.Equal(4, tabControl.TabPages.Count);
 
             var tenantTab = tabControl.TabPages[2];
             Assert.Equal("ผู้เช่า (Tenants)", tenantTab.Text);

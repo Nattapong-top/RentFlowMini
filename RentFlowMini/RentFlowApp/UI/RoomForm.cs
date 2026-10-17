@@ -18,8 +18,11 @@ public class RoomForm : Form
     private readonly IMonthlyMeterReadingRepository _monthlyMeterReadingRepository;
     private readonly CreateTenantService _createTenantService;
     private readonly ITenantRepository _tenantRepository;
+    private readonly IBillingSettingsRepository _billingSettingsRepository;
+    private readonly UpdateBillingSettingsService _updateBillingSettingsService;
 
     private readonly RoomTabControl _roomTabControl;
+    private readonly BillingSettingsTabControl _billingSettingsTabControl;
 
     // Billing tab controls
     private readonly ComboBox _billRoomComboBox = new();
@@ -63,7 +66,9 @@ public class RoomForm : Form
         CreateMonthlyBillService? createMonthlyBillService = null,
         CreateTenantService? createTenantService = null,
         ITenantRepository? tenantRepository = null,
-        IMonthlyMeterReadingRepository? monthlyMeterReadingRepository = null)
+        IMonthlyMeterReadingRepository? monthlyMeterReadingRepository = null,
+        IBillingSettingsRepository? billingSettingsRepository = null,
+        UpdateBillingSettingsService? updateBillingSettingsService = null)
     {
         ArgumentNullException.ThrowIfNull(createRoomService);
         ArgumentNullException.ThrowIfNull(roomRepository);
@@ -77,11 +82,18 @@ public class RoomForm : Form
         _tenantRepository = tenantRepository ?? new InMemoryTenantRepository();
         _createTenantService = createTenantService ?? new CreateTenantService(_tenantRepository);
 
+        _billingSettingsRepository = billingSettingsRepository ?? new InMemoryBillingSettingsRepository();
+        _updateBillingSettingsService = updateBillingSettingsService ?? new UpdateBillingSettingsService(_billingSettingsRepository);
+
         _roomTabControl = new RoomTabControl(
             _createRoomService,
             roomRepository,
             _tenantRepository);
         _roomTabControl.RoomsChanged += RoomTabControl_RoomsChanged;
+
+        _billingSettingsTabControl = new BillingSettingsTabControl(
+            _billingSettingsRepository,
+            _updateBillingSettingsService);
 
         InitializeForm();
 
@@ -90,6 +102,7 @@ public class RoomForm : Form
             _roomTabControl.RefreshRoomList();
             PopulateBillingRoomOptions();
             PopulateTenantRoomOptions();
+            _billingSettingsTabControl.LoadSettings();
         }
         catch (SqlException)
         {
@@ -115,14 +128,17 @@ public class RoomForm : Form
         var roomTabPage = new TabPage("ห้องพัก (Rooms)");
         var billingTabPage = new TabPage("สร้างบิลประจำเดือน (Monthly Bill)");
         var tenantTabPage = new TabPage("ผู้เช่า (Tenants)");
+        var settingsTabPage = new TabPage("ตั้งค่าราคากลาง");
 
         roomTabPage.Controls.Add(_roomTabControl);
         BuildBillingTab(billingTabPage);
         BuildTenantTab(tenantTabPage);
+        settingsTabPage.Controls.Add(_billingSettingsTabControl);
 
         tabControl.TabPages.Add(roomTabPage);
         tabControl.TabPages.Add(billingTabPage);
         tabControl.TabPages.Add(tenantTabPage);
+        tabControl.TabPages.Add(settingsTabPage);
         tabControl.SelectedIndexChanged += (s, e) =>
         {
             if (tabControl.SelectedTab == billingTabPage)
@@ -132,6 +148,10 @@ public class RoomForm : Form
             else if (tabControl.SelectedTab == tenantTabPage)
             {
                 RefreshTenantTab();
+            }
+            else if (tabControl.SelectedTab == settingsTabPage)
+            {
+                _billingSettingsTabControl.LoadSettings();
             }
         };
 
