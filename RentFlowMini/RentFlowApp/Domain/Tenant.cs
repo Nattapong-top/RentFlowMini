@@ -22,7 +22,7 @@ public sealed class Tenant : IEquatable<Tenant>
         Id = id;
         FirstName = NormalizeFirstName(firstName);
         LastName = NormalizeLastName(lastName);
-        PhoneNumber = NormalizeOptional(phoneNumber);
+        PhoneNumber = NormalizePhoneNumber(phoneNumber);
         RoomId = roomId;
     }
 
@@ -61,9 +61,20 @@ public sealed class Tenant : IEquatable<Tenant>
         return value.Trim();
     }
 
-    private static string? NormalizeOptional(string? value)
+    private static string? NormalizePhoneNumber(string? value)
     {
-        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string trimmed = value.Trim();
+        if (!trimmed.All(char.IsDigit) || trimmed.Length < 9 || trimmed.Length > 10)
+        {
+            throw new InvalidPhoneNumberException();
+        }
+
+        return trimmed;
     }
 }
 
@@ -82,3 +93,12 @@ public sealed class TenantLastNameRequiredException : ArgumentException
     {
     }
 }
+
+public sealed class InvalidPhoneNumberException : ArgumentException
+{
+    public InvalidPhoneNumberException()
+        : base("เบอร์โทรศัพท์ต้องเป็นตัวเลข 9-10 หลัก")
+    {
+    }
+}
+

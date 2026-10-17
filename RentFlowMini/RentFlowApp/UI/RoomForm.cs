@@ -2,8 +2,10 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
+using RentFlowApp.Application.Tenants;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
+using RentFlowApp.Infrastructure.Tenants;
 
 namespace RentFlowApp.Forms;
 
@@ -12,6 +14,8 @@ public class RoomForm : Form
     private readonly CreateRoomService _createRoomService;
     private readonly IRoomRepository _roomRepository;
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
+    private readonly CreateTenantService _createTenantService;
+    private readonly ITenantRepository _tenantRepository;
 
     // Room tab controls
     private readonly TextBox _roomNumberTextBox = new();
@@ -36,15 +40,31 @@ public class RoomForm : Form
     private readonly Label _resultTotalLabel = new();
     private readonly Label _billMessageLabel = new();
 
+    // Tenant tab controls
+    private readonly TextBox _tenantFirstNameTextBox = new();
+    private readonly TextBox _tenantLastNameTextBox = new();
+    private readonly TextBox _tenantPhoneTextBox = new();
+    private readonly ComboBox _tenantRoomComboBox = new();
+    private readonly Button _addTenantButton = new();
+    private readonly Label _tenantMessageLabel = new();
+    private readonly DataGridView _tenantGrid = new();
+
     private sealed record RoomItem(RoomId Id, string RoomNumber)
     {
         public override string ToString() => RoomNumber;
     }
 
+    private sealed record TenantRoomOption(RoomId? Id, string DisplayName)
+    {
+        public override string ToString() => DisplayName;
+    }
+
     public RoomForm(
         CreateRoomService createRoomService,
         IRoomRepository roomRepository,
-        CreateMonthlyBillService? createMonthlyBillService = null)
+        CreateMonthlyBillService? createMonthlyBillService = null,
+        CreateTenantService? createTenantService = null,
+        ITenantRepository? tenantRepository = null)
     {
         ArgumentNullException.ThrowIfNull(createRoomService);
         ArgumentNullException.ThrowIfNull(roomRepository);
@@ -52,6 +72,9 @@ public class RoomForm : Form
         _createRoomService = createRoomService;
         _roomRepository = roomRepository;
         _createMonthlyBillService = createMonthlyBillService;
+
+        _tenantRepository = tenantRepository ?? new InMemoryTenantRepository();
+        _createTenantService = createTenantService ?? new CreateTenantService(_tenantRepository);
 
         InitializeForm();
 
@@ -81,17 +104,24 @@ public class RoomForm : Form
 
         var roomTabPage = new TabPage("ห้องพัก (Rooms)");
         var billingTabPage = new TabPage("สร้างบิลประจำเดือน (Monthly Bill)");
+        var tenantTabPage = new TabPage("ผู้เช่า (Tenants)");
 
         BuildRoomTab(roomTabPage);
         BuildBillingTab(billingTabPage);
+        BuildTenantTab(tenantTabPage);
 
         tabControl.TabPages.Add(roomTabPage);
         tabControl.TabPages.Add(billingTabPage);
+        tabControl.TabPages.Add(tenantTabPage);
         tabControl.SelectedIndexChanged += (s, e) =>
         {
             if (tabControl.SelectedTab == billingTabPage)
             {
                 PopulateBillingRoomOptions();
+            }
+            else if (tabControl.SelectedTab == tenantTabPage)
+            {
+                RefreshTenantTab();
             }
         };
 
@@ -476,6 +506,7 @@ public class RoomForm : Form
             .ToList();
 
         PopulateBillingRoomOptions();
+        PopulateTenantRoomOptions();
     }
 
     private void PopulateBillingRoomOptions()
@@ -501,6 +532,217 @@ public class RoomForm : Form
         }
     }
 
+    private void BuildTenantTab(TabPage page)
+    {
+        var titleLabel = new Label
+        {
+            Text = "จัดการข้อมูลผู้เช่า",
+            Left = 20,
+            Top = 20,
+            Width = 300,
+            Height = 35,
+            Font = new Font("Segoe UI", 16, FontStyle.Bold)
+        };
+
+        var firstNameLabel = new Label
+        {
+            Text = "ชื่อผู้เช่า:",
+            Left = 20,
+            Top = 75,
+            Width = 110,
+            Height = 25
+        };
+        _tenantFirstNameTextBox.Name = "TenantFirstNameTextBox";
+        _tenantFirstNameTextBox.SetBounds(135, 72, 180, 27);
+
+        var lastNameLabel = new Label
+        {
+            Text = "นามสกุล:",
+            Left = 340,
+            Top = 75,
+            Width = 80,
+            Height = 25
+        };
+        _tenantLastNameTextBox.Name = "TenantLastNameTextBox";
+        _tenantLastNameTextBox.SetBounds(430, 72, 180, 27);
+
+        var phoneLabel = new Label
+        {
+            Text = "เบอร์โทรศัพท์:",
+            Left = 20,
+            Top = 115,
+            Width = 110,
+            Height = 25
+        };
+        _tenantPhoneTextBox.Name = "TenantPhoneTextBox";
+        _tenantPhoneTextBox.SetBounds(135, 112, 180, 27);
+        _tenantPhoneTextBox.MaxLength = 10;
+        _tenantPhoneTextBox.KeyPress += TenantPhoneTextBox_KeyPress;
+
+        var roomLabel = new Label
+        {
+            Text = "ห้องพัก:",
+            Left = 340,
+            Top = 115,
+            Width = 80,
+            Height = 25
+        };
+        _tenantRoomComboBox.Name = "TenantRoomComboBox";
+        _tenantRoomComboBox.SetBounds(430, 112, 180, 28);
+        _tenantRoomComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+
+        _addTenantButton.Name = "AddTenantButton";
+        _addTenantButton.Text = "เพิ่มผู้เช่า";
+        _addTenantButton.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+        _addTenantButton.SetBounds(630, 110, 120, 30);
+        _addTenantButton.Click += AddTenantButton_Click;
+
+        _tenantMessageLabel.Name = "TenantMessageLabel";
+        _tenantMessageLabel.SetBounds(20, 155, 780, 25);
+        _tenantMessageLabel.ForeColor = Color.DarkGreen;
+
+        _tenantGrid.Name = "TenantGrid";
+        _tenantGrid.SetBounds(20, 190, 780, 380);
+        _tenantGrid.Anchor =
+            AnchorStyles.Top |
+            AnchorStyles.Bottom |
+            AnchorStyles.Left |
+            AnchorStyles.Right;
+        _tenantGrid.ReadOnly = true;
+        _tenantGrid.AllowUserToAddRows = false;
+        _tenantGrid.AllowUserToDeleteRows = false;
+        _tenantGrid.AutoGenerateColumns = false;
+        _tenantGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        _tenantGrid.MultiSelect = false;
+        _tenantGrid.RowHeadersVisible = false;
+        _tenantGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+
+        _tenantGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "FullName",
+            HeaderText = "ชื่อ - นามสกุล",
+            DataPropertyName = "FullName"
+        });
+
+        _tenantGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "PhoneNumber",
+            HeaderText = "เบอร์โทรศัพท์",
+            DataPropertyName = "PhoneNumber"
+        });
+
+        _tenantGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "RoomNumber",
+            HeaderText = "ห้องพัก",
+            DataPropertyName = "RoomNumber"
+        });
+
+        _tenantGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "TenantId",
+            HeaderText = "รหัสผู้เช่า (Tenant ID)",
+            DataPropertyName = "TenantId"
+        });
+
+        page.Controls.AddRange(
+        [
+            titleLabel,
+            firstNameLabel, _tenantFirstNameTextBox,
+            lastNameLabel, _tenantLastNameTextBox,
+            phoneLabel, _tenantPhoneTextBox,
+            roomLabel, _tenantRoomComboBox,
+            _addTenantButton,
+            _tenantMessageLabel,
+            _tenantGrid
+        ]);
+    }
+
+    private void RefreshTenantTab()
+    {
+        PopulateTenantRoomOptions();
+        RefreshTenantList();
+    }
+
+    private void PopulateTenantRoomOptions()
+    {
+        var selectedItem = _tenantRoomComboBox.SelectedItem as TenantRoomOption;
+        _tenantRoomComboBox.Items.Clear();
+
+        var defaultOption = new TenantRoomOption(null, "-- ไม่ระบุห้องพัก --");
+        _tenantRoomComboBox.Items.Add(defaultOption);
+
+        var rooms = _roomRepository.GetAll();
+        foreach (var room in rooms)
+        {
+            if (!_tenantRepository.ExistsByRoomId(room.Id))
+            {
+                var option = new TenantRoomOption(room.Id, $"ห้อง {room.RoomNumber.Value}");
+                _tenantRoomComboBox.Items.Add(option);
+
+                if (selectedItem != null && selectedItem.Id == room.Id)
+                {
+                    _tenantRoomComboBox.SelectedItem = option;
+                }
+            }
+        }
+
+        if (_tenantRoomComboBox.SelectedItem == null && _tenantRoomComboBox.Items.Count > 0)
+        {
+            _tenantRoomComboBox.SelectedIndex = 0;
+        }
+    }
+
+    private void RefreshTenantList()
+    {
+        var tenants = _tenantRepository.GetAll();
+        var rooms = _roomRepository.GetAll().ToDictionary(r => r.Id, r => r.RoomNumber.Value);
+
+        _tenantGrid.DataSource = tenants
+            .Select(t => new
+            {
+                FullName = $"{t.FirstName} {t.LastName}",
+                PhoneNumber = t.PhoneNumber ?? "-",
+                RoomNumber = t.RoomId != null && rooms.TryGetValue(t.RoomId, out var rn) ? rn : "ไม่มีห้องพัก",
+                TenantId = t.Id.Value
+            })
+            .ToList();
+    }
+
+    private void AddTenantButton_Click(object? sender, EventArgs e)
+    {
+        string firstName = _tenantFirstNameTextBox.Text;
+        string lastName = _tenantLastNameTextBox.Text;
+        string? phone = string.IsNullOrWhiteSpace(_tenantPhoneTextBox.Text) ? null : _tenantPhoneTextBox.Text.Trim();
+        RoomId? selectedRoomId = (_tenantRoomComboBox.SelectedItem as TenantRoomOption)?.Id;
+
+        try
+        {
+            var tenant = _createTenantService.Create(firstName, lastName, phone, selectedRoomId);
+            RefreshTenantTab();
+
+            _tenantFirstNameTextBox.Clear();
+            _tenantLastNameTextBox.Clear();
+            _tenantPhoneTextBox.Clear();
+            _tenantFirstNameTextBox.Focus();
+
+            _tenantMessageLabel.ForeColor = Color.DarkGreen;
+            _tenantMessageLabel.Text = $"เพิ่มผู้เช่า {tenant.FirstName} {tenant.LastName} สำเร็จแล้ว";
+        }
+        catch (ArgumentException ex)
+        {
+            ShowTenantError(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowTenantError(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            ShowTenantError($"เกิดข้อผิดพลาด: {ex.Message}");
+        }
+    }
+
     private void ShowRoomError(string message)
     {
         _roomMessageLabel.ForeColor = Color.DarkRed;
@@ -512,4 +754,20 @@ public class RoomForm : Form
         _billMessageLabel.ForeColor = Color.DarkRed;
         _billMessageLabel.Text = message;
     }
+
+    private void ShowTenantError(string message)
+    {
+        _tenantMessageLabel.ForeColor = Color.DarkRed;
+        _tenantMessageLabel.Text = message;
+    }
+
+    private static void TenantPhoneTextBox_KeyPress(object? sender, KeyPressEventArgs e)
+    {
+        if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+        {
+            e.Handled = true;
+        }
+    }
 }
+
+

@@ -55,6 +55,32 @@ public class TenantTests
     }
 
     [Fact]
+    public void Create_WithNineDigitPhoneNumber_IsAllowed()
+    {
+        var tenant = new Tenant(
+            TenantId.New(),
+            "สมชาย",
+            "ใจดี",
+            "021234567");
+
+        Assert.Equal("021234567", tenant.PhoneNumber);
+    }
+
+    [Theory]
+    [InlineData("12345678")]     // 8 digits (too short)
+    [InlineData("081234567890")] // 12 digits (too long)
+    [InlineData("081-2345678")]  // Has hyphen
+    [InlineData("abcdefghij")]   // Letters
+    public void Create_WithInvalidPhoneNumber_ThrowsInvalidPhoneNumberException(string invalidPhone)
+    {
+        Assert.Throws<InvalidPhoneNumberException>(() => new Tenant(
+            TenantId.New(),
+            "สมชาย",
+            "ใจดี",
+            invalidPhone));
+    }
+
+    [Fact]
     public void Tenants_WithSameId_AreEqual()
     {
         var tenantId = TenantId.New();
