@@ -36,22 +36,24 @@ jobs:
       - name: Verify SQL Server
         shell: pwsh
         run: |
-          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" `
+          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" -C `
             -Q "SELECT @@VERSION AS Version;"
 
       - name: Create test database
         shell: pwsh
         run: |
-          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" `
+          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" -C `
             -Q "IF DB_ID('RentFlowDb') IS NULL CREATE DATABASE RentFlowDb;"
 
       - name: Create tables
         shell: pwsh
         run: |
-          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" `
+          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" -C `
             -d RentFlowDb -i "$env:GITHUB_WORKSPACE\RentFlowMini\RentFlowApp\Database\001_CreateRooms.sql"
-          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" `
+          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" -C `
             -d RentFlowDb -i "$env:GITHUB_WORKSPACE\RentFlowMini\RentFlowApp\Database\002_CreateBills.sql"
+          sqlcmd -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" -C `
+            -d RentFlowDb -i "$env:GITHUB_WORKSPACE\RentFlowMini\RentFlowApp\Database\003_CreateTenants.sql"
 
       - name: Restore
         run: dotnet restore

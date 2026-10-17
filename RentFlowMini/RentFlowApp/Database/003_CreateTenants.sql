@@ -1,0 +1,18 @@
+CREATE TABLE dbo.Tenants
+(
+    Id UNIQUEIDENTIFIER NOT NULL,
+    FirstName NVARCHAR(100) NOT NULL,
+    LastName NVARCHAR(100) NOT NULL,
+    PhoneNumber NVARCHAR(20) NULL,
+    RoomId UNIQUEIDENTIFIER NULL,
+
+    CONSTRAINT PK_Tenants
+        PRIMARY KEY (Id),
+
+    CONSTRAINT FK_Tenants_Rooms
+        FOREIGN KEY (RoomId) REFERENCES dbo.Rooms (Id)
+);
+
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Tenants_RoomId
+    ON dbo.Tenants (RoomId)
+    WHERE RoomId IS NOT NULL;

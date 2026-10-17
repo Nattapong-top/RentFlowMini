@@ -130,6 +130,7 @@ Repository ป้องกันการเพิ่ม Tenant ที่มี 
 - `TenantFirstNameRequiredException` เป็น custom exception และมีข้อความภาษาไทย
 - กรณีนามสกุลว่างยังใช้ `ArgumentException` ทั่วไป และข้อความใน code ยังไม่เป็นภาษาไทย จึงควรแก้ในรอบถัดไปให้สอดคล้องกับมาตรฐาน error ล่าสุด
 - ยืนยันกติกาการแก้ไข/ย้ายห้องก่อนเพิ่ม behavior ดังกล่าว
-- เพิ่ม SQL Server persistence, migration, UI และ Billing integration ในระยะถัดไป
 - แผนการพัฒนา UI อย่างละเอียด: [tenant-ui-implementation-plan.md](tenant-ui-implementation-plan.md)
+- แผนการพัฒนา SQL Server Persistence อย่างละเอียด: [tenant-sql-persistence-plan.md](tenant-sql-persistence-plan.md)
+
 

@@ -27,7 +27,7 @@ internal static class Program
         IBillRepository billRepository =
             new SqlServerBillRepository(connectionString);
         ITenantRepository tenantRepository =
-            new InMemoryTenantRepository();
+            new SqlServerTenantRepository(connectionString);
 
         var createRoomService =
             new CreateRoomService(roomRepository);
@@ -45,4 +45,3 @@ internal static class Program
                 tenantRepository));
     }
 }
-

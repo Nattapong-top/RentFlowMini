@@ -66,7 +66,7 @@ Sql --> DB[(SQL Server)]
 
 ดูรายละเอียดแผน implement ได้ที่ [Tenant foundation implementation plan](tenant-implementation-plan.md)
 
-**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository และ tests ของ Tenant ผ่านแล้ว; ยังไม่เริ่ม UI, SQL Server และ Billing integration
+**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository, WinForms UI และ tests ของ Tenant ผ่านแล้ว (80 เทสต์); กำลังดำเนินการในส่วน SQL Server Persistence ตาม [tenant-sql-persistence-plan.md](tenant-sql-persistence-plan.md)
 
 **เงื่อนไขเริ่มต้น:** ระยะ 0 ยังผ่าน และยังไม่เพิ่มกติกา Cable/Parking เข้ามาปะปน
 
