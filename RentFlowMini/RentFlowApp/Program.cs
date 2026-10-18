@@ -69,7 +69,7 @@ internal static class Program
             return;
         }
 
-        var currentPeriod = BillingPeriod.Create(DateTime.Now.ToString("yyyy-MM"));
+        var currentPeriod = BillingPeriod.Create($"{DateTime.Now.Year}-09");
 
         var seedData = new SeedRoomData[]
         {
