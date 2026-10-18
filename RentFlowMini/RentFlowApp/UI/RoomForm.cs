@@ -23,6 +23,8 @@ public class RoomForm : Form
 
     private readonly RoomTabControl _roomTabControl;
     private readonly BillingSettingsTabControl _billingSettingsTabControl;
+    private readonly MeterReadingTabControl _meterReadingTabControl;
+    private readonly SaveMonthlyMeterReadingService _saveMonthlyMeterReadingService;
 
     // Billing tab controls
     private readonly ComboBox _billRoomComboBox = new();
@@ -84,6 +86,7 @@ public class RoomForm : Form
 
         _billingSettingsRepository = billingSettingsRepository ?? new InMemoryBillingSettingsRepository();
         _updateBillingSettingsService = updateBillingSettingsService ?? new UpdateBillingSettingsService(_billingSettingsRepository);
+        _saveMonthlyMeterReadingService = new SaveMonthlyMeterReadingService(_monthlyMeterReadingRepository);
 
         _roomTabControl = new RoomTabControl(
             _createRoomService,
@@ -95,11 +98,17 @@ public class RoomForm : Form
             _billingSettingsRepository,
             _updateBillingSettingsService);
 
+        _meterReadingTabControl = new MeterReadingTabControl(
+            _roomRepository,
+            _monthlyMeterReadingRepository,
+            _saveMonthlyMeterReadingService);
+
         InitializeForm();
 
         try
         {
             _roomTabControl.RefreshRoomList();
+            _meterReadingTabControl.RefreshRoomList();
             PopulateBillingRoomOptions();
             PopulateTenantRoomOptions();
             _billingSettingsTabControl.LoadSettings();
@@ -126,22 +135,29 @@ public class RoomForm : Form
         };
 
         var roomTabPage = new TabPage("ห้องพัก (Rooms)");
+        var meterReadingTabPage = new TabPage("บันทึกมิเตอร์น้ำประปา-ไฟฟ้า");
         var billingTabPage = new TabPage("สร้างบิลประจำเดือน (Monthly Bill)");
         var tenantTabPage = new TabPage("ผู้เช่า (Tenants)");
         var settingsTabPage = new TabPage("ตั้งค่าราคากลาง");
 
         roomTabPage.Controls.Add(_roomTabControl);
+        meterReadingTabPage.Controls.Add(_meterReadingTabControl);
         BuildBillingTab(billingTabPage);
         BuildTenantTab(tenantTabPage);
         settingsTabPage.Controls.Add(_billingSettingsTabControl);
 
         tabControl.TabPages.Add(roomTabPage);
+        tabControl.TabPages.Add(meterReadingTabPage);
         tabControl.TabPages.Add(billingTabPage);
         tabControl.TabPages.Add(tenantTabPage);
         tabControl.TabPages.Add(settingsTabPage);
         tabControl.SelectedIndexChanged += (s, e) =>
         {
-            if (tabControl.SelectedTab == billingTabPage)
+            if (tabControl.SelectedTab == meterReadingTabPage)
+            {
+                _meterReadingTabControl.RefreshRoomList();
+            }
+            else if (tabControl.SelectedTab == billingTabPage)
             {
                 PopulateBillingRoomOptions();
             }

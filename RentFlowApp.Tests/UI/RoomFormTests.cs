@@ -52,13 +52,14 @@ public class RoomFormTests
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
             Assert.NotNull(tabControl);
-            Assert.Equal(4, tabControl.TabPages.Count);
+            Assert.Equal(5, tabControl.TabPages.Count);
             Assert.Equal("ห้องพัก (Rooms)", tabControl.TabPages[0].Text);
-            Assert.Equal("สร้างบิลประจำเดือน (Monthly Bill)", tabControl.TabPages[1].Text);
-            Assert.Equal("ผู้เช่า (Tenants)", tabControl.TabPages[2].Text);
-            Assert.Equal("ตั้งค่าราคากลาง", tabControl.TabPages[3].Text);
+            Assert.Equal("บันทึกมิเตอร์น้ำประปา-ไฟฟ้า", tabControl.TabPages[1].Text);
+            Assert.Equal("สร้างบิลประจำเดือน (Monthly Bill)", tabControl.TabPages[2].Text);
+            Assert.Equal("ผู้เช่า (Tenants)", tabControl.TabPages[3].Text);
+            Assert.Equal("ตั้งค่าราคากลาง", tabControl.TabPages[4].Text);
 
-            var billingTab = tabControl.TabPages[1];
+            var billingTab = tabControl.TabPages[2];
             var waterRateTextBox = billingTab.Controls.Find("WaterRateTextBox", true).FirstOrDefault() as TextBox;
             Assert.NotNull(waterRateTextBox);
             Assert.Equal("19", waterRateTextBox.Text);
@@ -67,7 +68,7 @@ public class RoomFormTests
             Assert.NotNull(elecRateTextBox);
             Assert.Equal("8", elecRateTextBox.Text);
 
-            var settingsTab = tabControl.TabPages[3];
+            var settingsTab = tabControl.TabPages[4];
             var settingsWaterBox = settingsTab.Controls.Find("WaterRateTextBox", true).FirstOrDefault() as TextBox;
             Assert.NotNull(settingsWaterBox);
             Assert.Equal("19", settingsWaterBox.Text);
@@ -270,9 +271,9 @@ public class RoomFormTests
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
             Assert.NotNull(tabControl);
-            Assert.Equal(4, tabControl.TabPages.Count);
+            Assert.Equal(5, tabControl.TabPages.Count);
 
-            var tenantTab = tabControl.TabPages[2];
+            var tenantTab = tabControl.TabPages[3];
             Assert.Equal("ผู้เช่า (Tenants)", tenantTab.Text);
 
             var firstNameBox = tenantTab.Controls.Find("TenantFirstNameTextBox", true).FirstOrDefault() as TextBox;
@@ -315,7 +316,7 @@ public class RoomFormTests
 
             // Act
             using var form = new RoomForm(createRoomService, roomRepo, createBillService);
-            var billingTab = form.Controls.OfType<TabControl>().First().TabPages[1];
+            var billingTab = form.Controls.OfType<TabControl>().First().TabPages[2];
             var comboBox = billingTab.Controls.Find("BillRoomComboBox", true).First() as ComboBox;
             Assert.NotNull(comboBox);
 
@@ -342,7 +343,7 @@ public class RoomFormTests
             using var form = new RoomForm(createRoomService, roomRepo, createBillService);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var billingTab = tabControl.TabPages[1];
+            var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
             var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
             comboBox.SelectedIndex = 0;
@@ -390,7 +391,7 @@ public class RoomFormTests
             using var form = new RoomForm(createRoomService, roomRepo, createBillService);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var billingTab = tabControl.TabPages[1];
+            var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
             var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
             comboBox.SelectedIndex = 0;
@@ -442,7 +443,7 @@ public class RoomFormTests
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var tenantTab = tabControl.TabPages[2];
+            var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
 
             var comboBox = (ComboBox)tenantTab.Controls.Find("TenantRoomComboBox", true).First();
@@ -472,7 +473,7 @@ public class RoomFormTests
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var tenantTab = tabControl.TabPages[2];
+            var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
 
             var firstNameBox = (TextBox)tenantTab.Controls.Find("TenantFirstNameTextBox", true).First();
@@ -518,7 +519,7 @@ public class RoomFormTests
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var tenantTab = tabControl.TabPages[2];
+            var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
 
             var firstNameBox = (TextBox)tenantTab.Controls.Find("TenantFirstNameTextBox", true).First();
@@ -554,7 +555,7 @@ public class RoomFormTests
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var tenantTab = tabControl.TabPages[2];
+            var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
 
             var firstNameBox = (TextBox)tenantTab.Controls.Find("TenantFirstNameTextBox", true).First();

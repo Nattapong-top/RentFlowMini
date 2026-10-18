@@ -4,10 +4,6 @@
 ## Get latest from `dotnet new gitignore`
 
 # AI files
-AGENTS.md
-CLAUDE.md
-GEMINI.md
-.ai/
 
 
 
