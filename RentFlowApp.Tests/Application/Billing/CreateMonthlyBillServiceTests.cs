@@ -34,6 +34,39 @@ public class CreateMonthlyBillServiceTests
     }
 
     [Fact]
+    public void Create_WithParkingAndCableTv_ReturnsBillWithAllCharges()
+    {
+        var repository = new InMemoryBillRepository();
+        var service = new CreateMonthlyBillService(repository);
+        var request = new CreateMonthlyBillRequest(
+            RoomId: RoomId.New(),
+            BillingPeriod: BillingPeriod.Create("2026-09"),
+            MonthlyRent: 3000m,
+            PreviousWaterMeter: MeterReading.Create(100m),
+            CurrentWaterMeter: MeterReading.Create(110m),
+            PreviousElectricityMeter: MeterReading.Create(500m),
+            CurrentElectricityMeter: MeterReading.Create(550m),
+            WaterRate: 19m,
+            ElectricityRate: 8m,
+            ChargeMotorcycleParking: true,
+            MotorcycleParkingRate: 300m,
+            ChargeCarParking: true,
+            CarParkingRate: 500m,
+            IsCableTvExempt: false,
+            CableTvRate: 60m);
+
+        var bill = service.Create(request);
+
+        Assert.Equal(3000m, bill.Rent.Amount);
+        Assert.Equal(190m, bill.Water.Amount);
+        Assert.Equal(400m, bill.Electricity.Amount);
+        Assert.Equal(300m, bill.MotorcycleParking.Amount);
+        Assert.Equal(500m, bill.CarParking.Amount);
+        Assert.Equal(60m, bill.CableTv.Amount);
+        Assert.Equal(4450m, bill.Total.Amount);
+    }
+
+    [Fact]
     public void Create_WhenRoomAndPeriodAlreadyHaveBill_ThrowsInvalidOperationException()
     {
         var repository = new InMemoryBillRepository();

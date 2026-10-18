@@ -11,4 +11,10 @@ public sealed record CreateMonthlyBillRequest(
     MeterReading? PreviousElectricityMeter,
     MeterReading? CurrentElectricityMeter,
     decimal WaterRate,
-    decimal ElectricityRate);
+    decimal ElectricityRate,
+    bool ChargeMotorcycleParking = false,
+    decimal MotorcycleParkingRate = 0m,
+    bool ChargeCarParking = false,
+    decimal CarParkingRate = 0m,
+    bool IsCableTvExempt = false,
+    decimal CableTvRate = 0m);

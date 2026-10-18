@@ -14,6 +14,8 @@ public sealed class CreateMonthlyBillService
 
     public Bill Create(CreateMonthlyBillRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var calculation = BillingCalculator.Calculate(
             monthlyRent: request.MonthlyRent,
             previousWaterMeter: request.PreviousWaterMeter,
@@ -21,7 +23,13 @@ public sealed class CreateMonthlyBillService
             previousElectricityMeter: request.PreviousElectricityMeter,
             currentElectricityMeter: request.CurrentElectricityMeter,
             waterRate: request.WaterRate,
-            electricityRate: request.ElectricityRate);
+            electricityRate: request.ElectricityRate,
+            chargeMotorcycleParking: request.ChargeMotorcycleParking,
+            motorcycleParkingRate: request.MotorcycleParkingRate,
+            chargeCarParking: request.ChargeCarParking,
+            carParkingRate: request.CarParkingRate,
+            isCableTvExempt: request.IsCableTvExempt,
+            cableTvRate: request.CableTvRate);
 
         var bill = Bill.Create(
             request.RoomId,
