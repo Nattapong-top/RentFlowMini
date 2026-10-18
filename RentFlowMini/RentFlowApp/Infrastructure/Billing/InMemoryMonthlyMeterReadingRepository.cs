@@ -21,6 +21,19 @@ public sealed class InMemoryMonthlyMeterReadingRepository : IMonthlyMeterReading
         _readings.Add(reading);
     }
 
+    public void Update(MonthlyMeterReading reading)
+    {
+        ArgumentNullException.ThrowIfNull(reading);
+
+        var existing = Get(reading.RoomId, reading.BillingPeriod);
+        if (existing is not null)
+        {
+            _readings.Remove(existing);
+        }
+
+        _readings.Add(reading);
+    }
+
     public MonthlyMeterReading? Get(
         RoomId roomId,
         BillingPeriod billingPeriod)
@@ -36,5 +49,10 @@ public sealed class InMemoryMonthlyMeterReadingRepository : IMonthlyMeterReading
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)
     {
         return Get(roomId, billingPeriod) is not null;
+    }
+
+    public IEnumerable<MonthlyMeterReading> GetAll()
+    {
+        return _readings.AsReadOnly();
     }
 }
