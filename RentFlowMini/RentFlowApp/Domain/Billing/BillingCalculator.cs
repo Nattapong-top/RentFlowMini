@@ -6,6 +6,9 @@ public sealed record BillingCalculationResult(
     Money Rent,
     Money Water,
     Money Electricity,
+    Money MotorcycleParking,
+    Money CarParking,
+    Money CableTv,
     Money Total);
 
 public static class BillingCalculator
@@ -17,7 +20,13 @@ public static class BillingCalculator
         MeterReading? previousElectricityMeter,
         MeterReading? currentElectricityMeter,
         decimal waterRate,
-        decimal electricityRate)
+        decimal electricityRate,
+        bool chargeMotorcycleParking = false,
+        decimal motorcycleParkingRate = 0m,
+        bool chargeCarParking = false,
+        decimal carParkingRate = 0m,
+        bool isCableTvExempt = false,
+        decimal cableTvRate = 0m)
     {
         var waterReadings = ValidateMeterReading(
             "มิเตอร์น้ำ",
@@ -35,12 +44,19 @@ public static class BillingCalculator
 
         decimal waterAmount = waterUsage * waterRate;
         decimal electricityAmount = electricityUsage * electricityRate;
-        decimal total = monthlyRent + waterAmount + electricityAmount;
+        decimal motorcycleParkingAmount = chargeMotorcycleParking ? motorcycleParkingRate : 0m;
+        decimal carParkingAmount = chargeCarParking ? carParkingRate : 0m;
+        decimal cableTvAmount = isCableTvExempt ? 0m : cableTvRate;
+
+        decimal total = monthlyRent + waterAmount + electricityAmount + motorcycleParkingAmount + carParkingAmount + cableTvAmount;
 
         return new BillingCalculationResult(
             Money.Create(monthlyRent),
             Money.Create(waterAmount),
             Money.Create(electricityAmount),
+            Money.Create(motorcycleParkingAmount),
+            Money.Create(carParkingAmount),
+            Money.Create(cableTvAmount),
             Money.Create(total));
     }
 

@@ -30,6 +30,9 @@ public class SqlServerBillRepositoryTests
             Money.Create(2800m),
             Money.Create(150m),
             Money.Create(40m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(0m),
             Money.Create(2990m));
         var bill = Bill.Create(roomId, billingPeriod, calculation);
 
@@ -62,6 +65,9 @@ public class SqlServerBillRepositoryTests
             Money.Create(2800m),
             Money.Create(150m),
             Money.Create(40m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(0m),
             Money.Create(2990m));
         var firstBill = Bill.Create(roomId, billingPeriod, calculation);
         var duplicateBill = Bill.Create(roomId, billingPeriod, calculation);

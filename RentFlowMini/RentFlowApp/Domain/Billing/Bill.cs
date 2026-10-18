@@ -15,6 +15,9 @@ public sealed class Bill
         Rent = calculation.Rent;
         Water = calculation.Water;
         Electricity = calculation.Electricity;
+        MotorcycleParking = calculation.MotorcycleParking;
+        CarParking = calculation.CarParking;
+        CableTv = calculation.CableTv;
         Total = calculation.Total;
     }
 
@@ -29,6 +32,12 @@ public sealed class Bill
     public Money Water { get; }
 
     public Money Electricity { get; }
+
+    public Money MotorcycleParking { get; }
+
+    public Money CarParking { get; }
+
+    public Money CableTv { get; }
 
     public Money Total { get; }
 
