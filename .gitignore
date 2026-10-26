@@ -4,8 +4,11 @@
 ## Get latest from `dotnet new gitignore`
 
 # AI files
-
-
+.ai/*
+.junie/*
+AGENTS.md
+CLAUDE.md
+GEMINI.md
 
 # dotenv files
 .env
