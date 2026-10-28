@@ -4,7 +4,7 @@ using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Forms;
 
-public sealed class RoomTabControl : UserControl
+public sealed class RoomTabControl : BaseTabControl
 {
     private readonly CreateRoomService _createRoomService;
     private readonly IRoomEditor _roomRepository;
@@ -46,8 +46,6 @@ public sealed class RoomTabControl : UserControl
         _updateRoomRentService = new UpdateRoomRentService(roomRepository);
 
         Name = "RoomTabControl";
-        Dock = DockStyle.Fill;
-        Font = new Font("Segoe UI", 11F);
 
         BuildLayout();
     }
@@ -85,21 +83,14 @@ public sealed class RoomTabControl : UserControl
 
     private void BuildLayout()
     {
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 2,
-            Padding = new Padding(12)
-        };
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 190));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-
+        var layout = CreateStandardLayout(3, [50f, 190f, -1f]);
+        var titleLabel = CreateTitleLabel("จัดการข้อมูลห้องพัก");
         var inputGroup = BuildInputGroup();
         var listGroup = BuildListGroup();
 
-        layout.Controls.Add(inputGroup, 0, 0);
-        layout.Controls.Add(listGroup, 0, 1);
+        layout.Controls.Add(titleLabel, 0, 0);
+        layout.Controls.Add(inputGroup, 0, 1);
+        layout.Controls.Add(listGroup, 0, 2);
         Controls.Add(layout);
     }
 

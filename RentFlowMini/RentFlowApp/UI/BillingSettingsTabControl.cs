@@ -1,10 +1,10 @@
-﻿using RentFlowApp.Application.Billing;
+﻿﻿using RentFlowApp.Application.Billing;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Forms;
 
-public class BillingSettingsTabControl : UserControl
+public class BillingSettingsTabControl : BaseTabControl
 {
     private readonly IBillingSettingsRepository _settingsRepository;
     private readonly UpdateBillingSettingsService _updateSettingsService;
@@ -28,9 +28,6 @@ public class BillingSettingsTabControl : UserControl
         _updateSettingsService = updateSettingsService;
 
         Name = "BillingSettingsTabControl";
-        Dock = DockStyle.Fill;
-        BackColor = Color.White;
-        Font = new Font("Segoe UI", 11F);
 
         InitializeComponents();
         LoadSettings();
@@ -38,58 +35,74 @@ public class BillingSettingsTabControl : UserControl
 
     private void InitializeComponents()
     {
-        var titleLabel = new Label
-        {
-            Text = "ตั้งค่าราคากลางประจำระบบ",
-            Left = 20,
-            Top = 20,
-            Width = 400,
-            Height = 35,
-            Font = new Font("Segoe UI", 16, FontStyle.Bold)
-        };
+        var mainLayout = CreateStandardLayout(3, [50f, 330f, -1f]);
+        var titleLabel = CreateTitleLabel("ตั้งค่าราคากลางประจำระบบ");
+        var group = BuildInputGroup();
 
+        var messagePanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(4)
+        };
+        _messageLabel.Name = "SettingsMessageLabel";
+        _messageLabel.Dock = DockStyle.Fill;
+        _messageLabel.Font = new Font("Segoe UI", 11, FontStyle.Regular);
+        messagePanel.Controls.Add(_messageLabel);
+
+        mainLayout.Controls.Add(titleLabel, 0, 0);
+        mainLayout.Controls.Add(group, 0, 1);
+        mainLayout.Controls.Add(messagePanel, 0, 2);
+
+        Controls.Add(mainLayout);
+    }
+
+    private GroupBox BuildInputGroup()
+    {
         var group = new GroupBox
         {
             Name = "BillingSettingsGroup",
             Text = "อัตราค่าบริการกลาง",
-            Left = 20,
-            Top = 70,
-            Width = 520,
-            Height = 320
+            Dock = DockStyle.Fill,
+            Padding = new Padding(12)
         };
 
-        var waterLabel = new Label { Text = "ค่าน้ำประปา (บาท/หน่วย):", Left = 20, Top = 38, Width = 230, Height = 25 };
+        var panel = new Panel
+        {
+            Dock = DockStyle.Fill
+        };
+
+        var waterLabel = new Label { Text = "ค่าน้ำประปา (บาท/หน่วย):", Left = 12, Top = 25, Width = 230, Height = 25 };
         _waterRateTextBox.Name = "WaterRateTextBox";
-        _waterRateTextBox.SetBounds(260, 35, 180, 30);
+        _waterRateTextBox.SetBounds(250, 22, 180, 30);
         ConfigureNumericTextBox(_waterRateTextBox);
 
-        var elecLabel = new Label { Text = "ค่าไฟฟ้า (บาท/หน่วย):", Left = 20, Top = 83, Width = 230, Height = 25 };
+        var elecLabel = new Label { Text = "ค่าไฟฟ้า (บาท/หน่วย):", Left = 12, Top = 70, Width = 230, Height = 25 };
         _elecRateTextBox.Name = "ElecRateTextBox";
-        _elecRateTextBox.SetBounds(260, 80, 180, 30);
+        _elecRateTextBox.SetBounds(250, 67, 180, 30);
         ConfigureNumericTextBox(_elecRateTextBox);
 
-        var motorcycleLabel = new Label { Text = "ค่าจอดรถมอเตอร์ไซค์ (บาท/เดือน):", Left = 20, Top = 128, Width = 230, Height = 25 };
+        var motorcycleLabel = new Label { Text = "ค่าจอดรถมอเตอร์ไซค์ (บาท/เดือน):", Left = 12, Top = 115, Width = 230, Height = 25 };
         _motorcycleRateTextBox.Name = "MotorcycleRateTextBox";
-        _motorcycleRateTextBox.SetBounds(260, 125, 180, 30);
+        _motorcycleRateTextBox.SetBounds(250, 112, 180, 30);
         ConfigureNumericTextBox(_motorcycleRateTextBox);
 
-        var carLabel = new Label { Text = "ค่าจอดรถยนต์ (บาท/เดือน):", Left = 20, Top = 173, Width = 230, Height = 25 };
+        var carLabel = new Label { Text = "ค่าจอดรถยนต์ (บาท/เดือน):", Left = 12, Top = 160, Width = 230, Height = 25 };
         _carRateTextBox.Name = "CarRateTextBox";
-        _carRateTextBox.SetBounds(260, 170, 180, 30);
+        _carRateTextBox.SetBounds(250, 157, 180, 30);
         ConfigureNumericTextBox(_carRateTextBox);
 
-        var cableTvLabel = new Label { Text = "ค่า Cable TV (บาท/เดือน):", Left = 20, Top = 218, Width = 230, Height = 25 };
+        var cableTvLabel = new Label { Text = "ค่า Cable TV (บาท/เดือน):", Left = 12, Top = 205, Width = 230, Height = 25 };
         _cableTvRateTextBox.Name = "CableTvRateTextBox";
-        _cableTvRateTextBox.SetBounds(260, 215, 180, 30);
+        _cableTvRateTextBox.SetBounds(250, 202, 180, 30);
         ConfigureNumericTextBox(_cableTvRateTextBox);
 
         _saveButton.Name = "SaveSettingsButton";
         _saveButton.Text = "บันทึกราคากลาง";
         _saveButton.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-        _saveButton.SetBounds(260, 262, 180, 40);
+        _saveButton.SetBounds(250, 245, 180, 40);
         _saveButton.Click += SaveButton_Click;
 
-        group.Controls.AddRange(
+        panel.Controls.AddRange(
         [
             waterLabel, _waterRateTextBox,
             elecLabel, _elecRateTextBox,
@@ -99,16 +112,8 @@ public class BillingSettingsTabControl : UserControl
             _saveButton
         ]);
 
-        _messageLabel.Name = "SettingsMessageLabel";
-        _messageLabel.SetBounds(20, 410, 650, 35);
-        _messageLabel.Font = new Font("Segoe UI", 11, FontStyle.Regular);
-
-        Controls.AddRange(
-        [
-            titleLabel,
-            group,
-            _messageLabel
-        ]);
+        group.Controls.Add(panel);
+        return group;
     }
 
     private static void ConfigureNumericTextBox(TextBox textBox)

@@ -5,7 +5,7 @@ using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Forms;
 
-public class MeterReadingTabControl : UserControl
+public class MeterReadingTabControl : BaseTabControl
 {
     private readonly IRoomRepository _roomRepository;
     private readonly IMonthlyMeterReadingRepository _meterReadingRepository;
@@ -57,9 +57,6 @@ public class MeterReadingTabControl : UserControl
         _saveReadingService = saveReadingService;
 
         Name = "MeterReadingTabControl";
-        Dock = DockStyle.Fill;
-        BackColor = SystemColors.Control;
-        Font = new Font("Segoe UI", 11F);
 
         InitializeComponents();
         RefreshRoomList();
@@ -67,21 +64,14 @@ public class MeterReadingTabControl : UserControl
 
     private void InitializeComponents()
     {
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 2,
-            Padding = new Padding(12)
-        };
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 320));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-
+        var layout = CreateStandardLayout(3, [50f, 320f, -1f]);
+        var titleLabel = CreateTitleLabel("บันทึกมิเตอร์น้ำประปา-ไฟฟ้าประจำเดือน");
         var inputGroup = BuildInputGroup();
         var listGroup = BuildListGroup();
 
-        layout.Controls.Add(inputGroup, 0, 0);
-        layout.Controls.Add(listGroup, 0, 1);
+        layout.Controls.Add(titleLabel, 0, 0);
+        layout.Controls.Add(inputGroup, 0, 1);
+        layout.Controls.Add(listGroup, 0, 2);
         Controls.Add(layout);
     }
 
