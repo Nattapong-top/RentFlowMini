@@ -12,8 +12,7 @@ public class MeterReadingTabControl : BaseTabControl
     private readonly SaveMonthlyMeterReadingService _saveReadingService;
 
     private readonly ComboBox _roomComboBox = new();
-    private readonly ComboBox _monthComboBox = new();
-    private readonly ComboBox _yearComboBox = new();
+    private readonly BillingPeriodSelector _periodSelector = new();
     private readonly TextBox _prevWaterTextBox = new();
     private readonly TextBox _currWaterTextBox = new();
     private readonly TextBox _prevElecTextBox = new();
@@ -25,11 +24,6 @@ public class MeterReadingTabControl : BaseTabControl
     private sealed record RoomItem(RoomId Id, string RoomNumber)
     {
         public override string ToString() => RoomNumber;
-    }
-
-    private sealed record MonthItem(int MonthNumber, string MonthName)
-    {
-        public override string ToString() => MonthName;
     }
 
     private sealed record MeterReadingGridItem(
@@ -98,23 +92,10 @@ public class MeterReadingTabControl : BaseTabControl
         _roomComboBox.SelectedIndexChanged += (s, e) => TryAutoLoadPreviousReadings();
         _roomComboBox.KeyDown += Control_EnterKeyDown;
 
-        // Month Selection
-        var monthLabel = new Label { Text = "เดือน:", Left = 310, Top = 25, Width = 60, Height = 25 };
-        _monthComboBox.Name = "MeterMonthComboBox";
-        _monthComboBox.SetBounds(370, 22, 140, 30);
-        _monthComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        PopulateMonths();
-        _monthComboBox.SelectedIndexChanged += (s, e) => RefreshRoomList();
-        _monthComboBox.KeyDown += Control_EnterKeyDown;
-
-        // Year Selection (Buddhist Era)
-        var yearLabel = new Label { Text = "ปี (พ.ศ.):", Left = 530, Top = 25, Width = 70, Height = 25 };
-        _yearComboBox.Name = "MeterYearComboBox";
-        _yearComboBox.SetBounds(605, 22, 110, 30);
-        _yearComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        PopulateYears();
-        _yearComboBox.SelectedIndexChanged += (s, e) => RefreshRoomList();
-        _yearComboBox.KeyDown += Control_EnterKeyDown;
+        // Billing Period Selector (Month & Year ComboBoxes)
+        _periodSelector.Name = "BillingPeriodSelector";
+        _periodSelector.SetBounds(310, 19, 360, 32);
+        _periodSelector.PeriodChanged += (s, e) => RefreshRoomList();
 
         // Water GroupBox
         var waterGroup = new GroupBox
@@ -189,8 +170,7 @@ public class MeterReadingTabControl : BaseTabControl
         panel.Controls.AddRange(
         [
             roomLabel, _roomComboBox,
-            monthLabel, _monthComboBox,
-            yearLabel, _yearComboBox,
+            _periodSelector,
             waterGroup,
             elecGroup,
             _saveButton,
@@ -291,42 +271,7 @@ public class MeterReadingTabControl : BaseTabControl
         return group;
     }
 
-    private void PopulateMonths()
-    {
-        _monthComboBox.Items.Clear();
-        string[] months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-        for (int i = 0; i < months.Length; i++)
-        {
-            _monthComboBox.Items.Add(new MonthItem(i + 1, months[i]));
-        }
-        
-        int currentMonth = DateTime.Now.Month;
-        _monthComboBox.SelectedIndex = currentMonth - 1;
-    }
-
-    private void PopulateYears()
-    {
-        _yearComboBox.Items.Clear();
-        int currentThaiYear = DateTime.Now.Year + 543;
-        for (int y = currentThaiYear - 2; y <= currentThaiYear + 2; y++)
-        {
-            _yearComboBox.Items.Add(y);
-        }
-        _yearComboBox.SelectedItem = currentThaiYear;
-    }
-
-    private BillingPeriod? GetSelectedBillingPeriod()
-    {
-        if (_monthComboBox.SelectedItem is not MonthItem monthItem ||
-            _yearComboBox.SelectedItem is not int thaiYear)
-        {
-            return null;
-        }
-
-        int gregorianYear = thaiYear - 543;
-        string periodStr = $"{gregorianYear}-{monthItem.MonthNumber:D2}";
-        return BillingPeriod.TryParse(periodStr, out var period) ? period : null;
-    }
+    private BillingPeriod? GetSelectedBillingPeriod() => _periodSelector.GetBillingPeriod();
 
     private void ConfigureNumericTextBox(TextBox textBox)
     {
@@ -585,29 +530,7 @@ public class MeterReadingTabControl : BaseTabControl
             return;
         }
 
-        // แยกรอบบิลเพื่อเลือกเดือนและปี
-        var parts = gridItem.BillingPeriodRaw.Split('-');
-        if (parts.Length == 2 && int.TryParse(parts[0], out var gYear) && int.TryParse(parts[1], out var mNum))
-        {
-            int thaiYear = gYear + 543;
-            foreach (var y in _yearComboBox.Items)
-            {
-                if (y is int ty && ty == thaiYear)
-                {
-                    _yearComboBox.SelectedItem = ty;
-                    break;
-                }
-            }
-
-            foreach (MonthItem m in _monthComboBox.Items)
-            {
-                if (m.MonthNumber == mNum)
-                {
-                    _monthComboBox.SelectedItem = m;
-                    break;
-                }
-            }
-        }
+        _periodSelector.SetBillingPeriod(BillingPeriod.Create(gridItem.BillingPeriodRaw));
 
         // รีเฟรชรายชื่อห้องโดยบังคับรวมห้องนี้เข้ามาใน ComboBox แม้ว่าจะบันทึกไปแล้ว เพื่อให้สามารถเลือกแก้ไขได้
         RefreshRoomList(gridItem.RoomId);

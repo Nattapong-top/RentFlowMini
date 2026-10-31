@@ -1,6 +1,7 @@
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
+using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Rooms;
@@ -348,7 +349,9 @@ public class RoomFormTests
             var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
             comboBox.SelectedIndex = 0;
 
-            var periodBox = (TextBox)billingTab.Controls.Find("BillingPeriodTextBox", true).First();
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(BillingPeriod.Create("2026-10"));
+
             var rentBox = (TextBox)billingTab.Controls.Find("MonthlyRentTextBox", true).First();
             var prevWaterBox = (TextBox)billingTab.Controls.Find("PrevWaterTextBox", true).First();
             var currWaterBox = (TextBox)billingTab.Controls.Find("CurrWaterTextBox", true).First();
@@ -358,12 +361,14 @@ public class RoomFormTests
             var totalLabel = (Label)billingTab.Controls.Find("ResultTotalLabel", true).First();
             var statusLabel = (Label)billingTab.Controls.Find("BillMessageLabel", true).First();
 
-            periodBox.Text = "2026-10";
             rentBox.Text = "3000";
             prevWaterBox.Text = "100";
             currWaterBox.Text = "110"; // 10 units * 19 = 190
             prevElecBox.Text = "500";
             currElecBox.Text = "550"; // 50 units * 8 = 400
+            
+            var cableTvExemptBox = (CheckBox)billingTab.Controls.Find("IsCableTvExemptCheckBox", true).First();
+            cableTvExemptBox.Checked = true;
 
             // Act
             createButton.PerformClick();
@@ -396,7 +401,9 @@ public class RoomFormTests
             var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
             comboBox.SelectedIndex = 0;
 
-            var periodBox = (TextBox)billingTab.Controls.Find("BillingPeriodTextBox", true).First();
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(BillingPeriod.Create("2026-10"));
+
             var rentBox = (TextBox)billingTab.Controls.Find("MonthlyRentTextBox", true).First();
             var prevWaterBox = (TextBox)billingTab.Controls.Find("PrevWaterTextBox", true).First();
             var currWaterBox = (TextBox)billingTab.Controls.Find("CurrWaterTextBox", true).First();
@@ -405,7 +412,6 @@ public class RoomFormTests
             var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
             var statusLabel = (Label)billingTab.Controls.Find("BillMessageLabel", true).First();
 
-            periodBox.Text = "2026-10";
             rentBox.Text = "3000";
             prevWaterBox.Text = "100";
             currWaterBox.Text = "90"; // Invalid: current < previous
