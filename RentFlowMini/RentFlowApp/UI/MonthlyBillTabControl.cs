@@ -110,6 +110,11 @@ public class MonthlyBillTabControl : BaseTabControl
         // Billing Period Selector (Month & Year ComboBoxes)
         _periodSelector.Name = "BillingPeriodSelector";
         _periodSelector.SetBounds(320, 19, 360, 32);
+        _periodSelector.PeriodChanged += (s, e) =>
+        {
+            RefreshRoomList();
+            TryAutoLoadReadings();
+        };
 
         // Monthly Rent
         var rentLabel = new Label { Text = "ค่าเช่าห้อง (บาท):", Left = 12, Top = 62, Width = 110, Height = 25 };
@@ -355,6 +360,8 @@ public class MonthlyBillTabControl : BaseTabControl
         {
             ApplyRoomDefaults(currentRoom);
         }
+
+        TryAutoLoadReadings();
     }
 
     private void BillRoomComboBox_SelectedIndexChanged(object? sender, EventArgs e)
@@ -363,12 +370,64 @@ public class MonthlyBillTabControl : BaseTabControl
         {
             ApplyRoomDefaults(room);
         }
+        TryAutoLoadReadings();
     }
 
     private void ApplyRoomDefaults(RoomItem room)
     {
         _monthlyRentTextBox.Text = room.MonthlyRent.ToString("0.##");
         _isCableTvExemptCheckBox.Checked = room.IsCableTvExempt;
+    }
+
+    private void TryAutoLoadReadings()
+    {
+        if (_billRoomComboBox.SelectedItem is not RoomItem selectedRoom)
+        {
+            _prevWaterTextBox.Clear();
+            _currWaterTextBox.Clear();
+            _prevElecTextBox.Clear();
+            _currElecTextBox.Clear();
+            return;
+        }
+
+        var currentPeriod = _periodSelector.GetBillingPeriod();
+        if (currentPeriod is null)
+        {
+            return;
+        }
+
+        // 1. ตรวจสอบว่ารอบบิลนี้เคยบันทึกมิเตอร์ไปแล้วหรือยัง
+        var existingReading = _monthlyMeterReadingRepository.Get(selectedRoom.Id, currentPeriod);
+        if (existingReading != null)
+        {
+            _prevWaterTextBox.Text = existingReading.PreviousWaterMeter.Value.ToString("0.##");
+            _currWaterTextBox.Text = existingReading.CurrentWaterMeter.Value.ToString("0.##");
+            _prevElecTextBox.Text = existingReading.PreviousElectricityMeter.Value.ToString("0.##");
+            _currElecTextBox.Text = existingReading.CurrentElectricityMeter.Value.ToString("0.##");
+            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.Text = $"โหลดข้อมูลมิเตอร์รอบบิล {currentPeriod.Value} เรียบร้อย";
+            return;
+        }
+
+        // 2. ถ้ายังไม่เคยบันทึกรอบนี้ ให้ดึงค่าปัจจุบันจากรอบบิลก่อนหน้ามาเป็นค่าก่อนหน้า
+        var previousPeriod = currentPeriod.GetPrevious();
+        var prevReading = _monthlyMeterReadingRepository.Get(selectedRoom.Id, previousPeriod);
+        if (prevReading != null)
+        {
+            _prevWaterTextBox.Text = prevReading.CurrentWaterMeter.Value.ToString("0.##");
+            _prevElecTextBox.Text = prevReading.CurrentElectricityMeter.Value.ToString("0.##");
+        }
+        else
+        {
+            _prevWaterTextBox.Text = "0";
+            _prevElecTextBox.Text = "0";
+        }
+
+        _currWaterTextBox.Clear();
+        _currElecTextBox.Clear();
+
+        _billMessageLabel.ForeColor = Color.DarkRed;
+        _billMessageLabel.Text = $"ยังไม่มีข้อมูลบันทึกมิเตอร์ของรอบบิลนี้ กรุณาบันทึกมิเตอร์น้ำ-ไฟก่อนทำการสร้างบิล";
     }
 
     private void LoadDefaultSettings()

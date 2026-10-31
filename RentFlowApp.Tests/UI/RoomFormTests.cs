@@ -1,6 +1,7 @@
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
+using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
@@ -582,6 +583,77 @@ public class RoomFormTests
             // Assert
             Assert.Equal(System.Drawing.Color.DarkRed, messageLabel.ForeColor);
             Assert.Contains("เบอร์โทรศัพท์ต้องเป็นตัวเลข 9-10 หลัก", messageLabel.Text);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_BillingTab_WhenNoMeterReadingExists_DisplaysWarningMessage()
+    {
+        RunInSta(() =>
+        {
+            // Arrange
+            var roomRepo = new InMemoryRoomRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            createRoomService.Create("101");
+
+            using var form = new RoomForm(createRoomService, roomRepo, null, null, null, meterRepo, null);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+
+            var statusLabel = (Label)billingTab.Controls.Find("BillMessageLabel", true).First();
+
+            // Assert
+            Assert.Equal(System.Drawing.Color.DarkRed, statusLabel.ForeColor);
+            Assert.Contains("ยังไม่มีข้อมูลบันทึกมิเตอร์ของรอบบิลนี้ กรุณาบันทึกมิเตอร์น้ำ-ไฟก่อนทำการสร้างบิล", statusLabel.Text);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_BillingTab_WhenMeterReadingExists_AutoLoadsFromRepository()
+    {
+        RunInSta(() =>
+        {
+            // Arrange
+            var roomRepo = new InMemoryRoomRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var room = createRoomService.Create("101");
+
+            var period = BillingPeriod.Create("2026-10");
+            var reading = MonthlyMeterReading.Create(
+                room.Id,
+                period,
+                MeterReading.Create(100m),
+                MeterReading.Create(120m),
+                MeterReading.Create(500m),
+                MeterReading.Create(560m));
+            meterRepo.Add(reading);
+
+            using var form = new RoomForm(createRoomService, roomRepo, null, null, null, meterRepo, null);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(period);
+
+            var prevWaterBox = (TextBox)billingTab.Controls.Find("PrevWaterTextBox", true).First();
+            var currWaterBox = (TextBox)billingTab.Controls.Find("CurrWaterTextBox", true).First();
+            var prevElecBox = (TextBox)billingTab.Controls.Find("PrevElecTextBox", true).First();
+            var currElecBox = (TextBox)billingTab.Controls.Find("CurrElecTextBox", true).First();
+            var statusLabel = (Label)billingTab.Controls.Find("BillMessageLabel", true).First();
+
+            // Assert
+            Assert.Equal("100", prevWaterBox.Text);
+            Assert.Equal("120", currWaterBox.Text);
+            Assert.Equal("500", prevElecBox.Text);
+            Assert.Equal("560", currElecBox.Text);
+            Assert.Equal(System.Drawing.Color.DarkGreen, statusLabel.ForeColor);
+            Assert.Contains("โหลดข้อมูลมิเตอร์รอบบิล", statusLabel.Text);
         });
     }
 }
