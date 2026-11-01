@@ -656,4 +656,54 @@ public class RoomFormTests
             Assert.Contains("โหลดข้อมูลมิเตอร์รอบบิล", statusLabel.Text);
         });
     }
+
+    [Fact]
+    public void RoomForm_BillingTab_WhenBillCreated_AutoAdvancesToNextRoom()
+    {
+        RunInSta(() =>
+        {
+            // Arrange
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createBillService = new CreateMonthlyBillService(billRepo);
+
+            var room1 = createRoomService.Create("101");
+            var room2 = createRoomService.Create("102");
+
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+
+            var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
+            Assert.Equal(2, comboBox.Items.Count);
+
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(BillingPeriod.Create("2026-10"));
+
+            var rentBox = (TextBox)billingTab.Controls.Find("MonthlyRentTextBox", true).First();
+            var prevWaterBox = (TextBox)billingTab.Controls.Find("PrevWaterTextBox", true).First();
+            var currWaterBox = (TextBox)billingTab.Controls.Find("CurrWaterTextBox", true).First();
+            var prevElecBox = (TextBox)billingTab.Controls.Find("PrevElecTextBox", true).First();
+            var currElecBox = (TextBox)billingTab.Controls.Find("CurrElecTextBox", true).First();
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+
+            rentBox.Text = "3000";
+            prevWaterBox.Text = "100";
+            currWaterBox.Text = "110";
+            prevElecBox.Text = "500";
+            currElecBox.Text = "550";
+
+            // Act: Create bill for Room 101
+            createButton.PerformClick();
+
+            // Assert: Room 101 should be filtered out, leaving Room 102 selected
+            Assert.Single(comboBox.Items);
+            var remainingRoom = comboBox.Items[0]?.ToString();
+            Assert.Equal("102", remainingRoom);
+        });
+    }
 }

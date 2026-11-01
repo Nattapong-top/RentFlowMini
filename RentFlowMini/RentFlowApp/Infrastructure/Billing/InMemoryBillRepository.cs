@@ -30,4 +30,8 @@ public sealed class InMemoryBillRepository : IBillRepository
             bill => bill.RoomId == roomId &&
                     bill.BillingPeriod == billingPeriod);
     }
+
+    public IReadOnlyCollection<Bill> GetAll() => _bills.AsReadOnly();
+
+    public Bill? Get(BillId id) => _bills.FirstOrDefault(b => b.Id == id);
 }

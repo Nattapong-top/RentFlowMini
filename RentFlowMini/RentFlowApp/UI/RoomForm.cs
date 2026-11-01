@@ -22,6 +22,7 @@ public class RoomForm : Form
         CreateTenantService? createTenantService = null,
         ITenantRepository? tenantRepository = null,
         IMonthlyMeterReadingRepository? monthlyMeterReadingRepository = null,
+        IBillRepository? billRepository = null,
         IBillingSettingsRepository? billingSettingsRepository = null,
         UpdateBillingSettingsService? updateBillingSettingsService = null)
     {
@@ -30,6 +31,7 @@ public class RoomForm : Form
 
         var monthlyMeterReadingRepo = monthlyMeterReadingRepository ?? new InMemoryMonthlyMeterReadingRepository();
         var tenantRepo = tenantRepository ?? new InMemoryTenantRepository();
+        var billRepo = billRepository ?? new InMemoryBillRepository();
         var createTenantSvc = createTenantService ?? new CreateTenantService(tenantRepo);
         var billingSettingsRepo = billingSettingsRepository ?? new InMemoryBillingSettingsRepository();
         var updateBillingSettingsSvc = updateBillingSettingsService ?? new UpdateBillingSettingsService(billingSettingsRepo);
@@ -53,8 +55,9 @@ public class RoomForm : Form
         _monthlyBillTabControl = new MonthlyBillTabControl(
             createMonthlyBillService,
             roomRepository,
-            monthlyMeterReadingRepo,
-            saveMonthlyMeterReadingSvc);
+            monthlyMeterReadingRepository: monthlyMeterReadingRepo,
+            billRepository: billRepo,
+            tenantRepository: tenantRepo);
 
         _tenantTabControl = new TenantTabControl(
             tenantRepo,

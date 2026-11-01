@@ -8,4 +8,8 @@ public interface IBillRepository
     void Add(Bill bill);
 
     bool Exists(RoomId roomId, BillingPeriod billingPeriod);
+
+    IReadOnlyCollection<Bill> GetAll();
+
+    Bill? Get(BillId id);
 }

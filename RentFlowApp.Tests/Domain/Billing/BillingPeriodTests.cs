@@ -15,6 +15,14 @@ public class BillingPeriodTests
     }
 
     [Fact]
+    public void ToBuddhistValue_ReturnsBuddhistEraFormat()
+    {
+        var period = BillingPeriod.Create("2026-10");
+
+        Assert.Equal("2569-10", period.ToBuddhistValue());
+    }
+
+    [Fact]
     public void Create_WhenValueIsNotYearMonth_ThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>

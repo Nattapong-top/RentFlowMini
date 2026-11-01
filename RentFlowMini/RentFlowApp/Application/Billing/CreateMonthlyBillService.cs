@@ -31,10 +31,23 @@ public sealed class CreateMonthlyBillService
             isCableTvExempt: request.IsCableTvExempt,
             cableTvRate: request.CableTvRate);
 
+        // คำนวณเลขที่ใบแจ้งหนี้แบบเริ่มใหม่ที่ 001 ในทุกรอบเดือน (N001, N002, ...)
+        int maxNum = 0;
+        foreach (var b in _repository.GetAll().Where(b => b.BillingPeriod == request.BillingPeriod))
+        {
+            if (b.InvoiceNumber.StartsWith('N') && int.TryParse(b.InvoiceNumber.AsSpan(1), out int num))
+            {
+                if (num > maxNum) maxNum = num;
+            }
+        }
+        string invoiceNumber = $"N{(maxNum + 1):D3}";
+
         var bill = Bill.Create(
             request.RoomId,
             request.BillingPeriod,
-            calculation);
+            calculation,
+            invoiceNumber,
+            DateTime.Now);
 
         _repository.Add(bill);
 

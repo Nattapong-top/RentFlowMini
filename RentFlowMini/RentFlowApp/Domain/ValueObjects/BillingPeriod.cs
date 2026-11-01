@@ -79,6 +79,11 @@ public sealed record BillingPeriod
         return new BillingPeriod(prevYear, prevMonth);
     }
 
+    public string ToBuddhistValue()
+    {
+        return $"{Year + 543}-{Month:D2}";
+    }
+
     public override string ToString()
     {
         return Value;

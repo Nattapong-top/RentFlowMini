@@ -87,4 +87,32 @@ public class CreateMonthlyBillServiceTests
         Assert.Throws<InvalidOperationException>(() =>
             service.Create(request));
     }
+
+    [Fact]
+    public void Create_AssignsSequentialInvoiceNumbers_AndResetsEachMonth()
+    {
+        var repository = new InMemoryBillRepository();
+        var service = new CreateMonthlyBillService(repository);
+
+        var room1 = RoomId.New();
+        var room2 = RoomId.New();
+
+        var periodSep = BillingPeriod.Create("2026-09");
+        var periodOct = BillingPeriod.Create("2026-10");
+
+        var m0 = MeterReading.Create(100m);
+        var m1 = MeterReading.Create(110m);
+
+        var bill1Sep = service.Create(new CreateMonthlyBillRequest(
+            room1, periodSep, 3000m, m0, m1, m0, m1, 19m, 8m));
+        var bill2Sep = service.Create(new CreateMonthlyBillRequest(
+            room2, periodSep, 3000m, m0, m1, m0, m1, 19m, 8m));
+
+        var bill1Oct = service.Create(new CreateMonthlyBillRequest(
+            room1, periodOct, 3000m, m0, m1, m0, m1, 19m, 8m));
+
+        Assert.Equal("N001", bill1Sep.InvoiceNumber);
+        Assert.Equal("N002", bill2Sep.InvoiceNumber);
+        Assert.Equal("N001", bill1Oct.InvoiceNumber);
+    }
 }

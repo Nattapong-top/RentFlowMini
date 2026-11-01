@@ -99,4 +99,14 @@ public sealed class SqlServerBillRepository : IBillRepository
 
         return (int)command.ExecuteScalar()! == 1;
     }
+
+    public IReadOnlyCollection<Bill> GetAll()
+    {
+        return [];
+    }
+
+    public Bill? Get(BillId id)
+    {
+        return null;
+    }
 }

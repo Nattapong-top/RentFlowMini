@@ -43,7 +43,8 @@ internal static class Program
                 createMonthlyBillService,
                 createTenantService,
                 tenantRepository,
-                meterReadingRepository));
+                meterReadingRepository,
+                billRepository));
     }
 
     private sealed record SeedRoomData(
