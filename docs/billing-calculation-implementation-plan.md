@@ -2,8 +2,8 @@
 
 เอกสารนี้กำหนดแผนการทำงานและขั้นตอนการพัฒนาสำหรับการคำนวณและสร้างบิลประจำเดือน (Phase 3 & 4) ตามข้อกำหนดใน `docs/billing-charges-design.md` โดยยึดมั่นตามหลักการ **TDD (Test-Driven Development) และ Micro Development** ซึ่งกำหนดให้ **ทุกๆ Task ต้องมี Unit Test หรือ UI Test ประกอบและผ่าน 100% ในทันที** ก่อนจะถือว่า Task นั้นเสร็จสิ้น
 
-**สถานะ:** อนุมัติและพร้อมดำเนินการ (Approved)  
-**วันที่:** 2026-10-18  
+**สถานะ:** Task 1-2 และ 4 เสร็จแล้ว; Task 3 เสร็จบางส่วน (ดูหัวข้อ 4)  
+**วันที่:** 2026-10-18 (อัปเดตสถานะ 2026-11-03)  
 **เอกสารอ้างอิง:** `docs/billing-charges-design.md`, `docs/uc-01-create-monthly-bill.md`, `docs/billing-settings-plan.md`, `.ai/standards/tdd.md`
 
 ---
@@ -57,7 +57,9 @@
 
 ## 4. Definition of Done (ต้องมีเทสต์ประกอบในทุก Task)
 
-- [ ] **Task 1 Done:** `Bill` และ `BillingCalculator` รองรับคำนวณ 6 รายการ พร้อม Unit Test ผ่าน 100%
-- [ ] **Task 2 Done:** `CreateMonthlyBillService` รองรับการสร้างบิลพร้อม Parking & Cable TV พร้อม Unit Test ผ่าน 100%
+- [x] **Task 1 Done:** `Bill` และ `BillingCalculator` รองรับคำนวณ 6 รายการ พร้อม Unit Test ผ่าน 100%
+- [x] **Task 2 Done:** `CreateMonthlyBillService` รองรับการสร้างบิลพร้อม Parking & Cable TV พร้อม Unit Test ผ่าน 100%
 - [ ] **Task 3 Done:** UI หน้าสร้างบิลโหลดค่ามิเตอร์อัตโนมัติ มี Checkbox จอดรถ และแสดงรายละเอียดครบ พร้อม UI Test ผ่าน 100%
-- [ ] **Task 4 Done:** รัน Test Suite ทั้งโครงการผ่าน 100% ไม่มี Regression
+  - เสร็จแล้ว: โหลดมิเตอร์อัตโนมัติ, เตือนเมื่อไม่มีมิเตอร์, Checkbox จอดรถรายรอบบิล, สรุปบิล 6 รายการ, ตารางประวัติบิล และ UI tests
+  - ยังเหลือ: ค่าตั้งต้น Checkbox จอดรถจากห้อง (BR-04 / `RoomParkingSettings` ยังไม่มี), การบังคับ BR-02 (ห้องไม่มีผู้เช่า) และ BR-03 (ต้องมีมิเตอร์ที่บันทึกแล้ว) ซึ่งตอนนี้เป็นเพียงคำเตือนบน UI
+- [x] **Task 4 Done:** รัน Test Suite ทั้งโครงการผ่าน 100% ไม่มี Regression (144 รายการ เมื่อ 2026-11-03)

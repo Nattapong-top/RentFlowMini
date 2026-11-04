@@ -6,7 +6,7 @@
 
 RentFlowMini เป็นโปรเจกต์สำหรับฝึกพัฒนาซอฟต์แวร์ โดยเน้นการเขียนโปรแกรมเชิงวัตถุ (Object-Oriented Programming: OOP), Clean Architecture และการพัฒนาแบบทดสอบนำ (Test-Driven Development: TDD)
 
-ปัจจุบันโปรแกรมรองรับการเพิ่มห้องพัก แสดงรายการห้อง และป้องกันการใช้เลขห้องซ้ำ
+ปัจจุบันโปรแกรมรองรับการจัดการห้องพักและผู้เช่า ตั้งค่าราคากลาง บันทึกมิเตอร์น้ำ-ไฟรายเดือน และสร้างบิลประจำเดือน ดูรายละเอียดล่าสุดที่ [docs/current-code-status.md](docs/current-code-status.md)
 
 ## เทคโนโลยีที่ใช้
 
@@ -20,39 +20,44 @@ RentFlowMini เป็นโปรเจกต์สำหรับฝึกพ�
 ## สถาปัตยกรรมระบบ
 
 ```text
-WinForms UI
+WinForms UI (RoomForm + Tab Controls)
     |
     v
-Application
-(CreateRoomService)
+Application Services
+(CreateRoomService, UpdateRoomRentService, CreateTenantService,
+ SaveMonthlyMeterReadingService, UpdateBillingSettingsService,
+ CreateMonthlyBillService)
     |
     v
-IRoomRepository
+Domain (Room, Tenant, Bill, BillingCalculator, MonthlyMeterReading,
+        BillingSettings, Value Objects)
     |
     v
-Infrastructure
-(SqlServerRoomRepository)
+Repository Interfaces
     |
     v
-SQL Server
+Infrastructure (In-Memory / SQL Server)
 ```
 
 ### ส่วนประกอบหลัก
 
-- **Domain** — จัดการโมเดล `Room`, `RoomId` และ `RoomNumber`
-- **Application** — จัดการ Use Case ผ่าน `CreateRoomService` และกำหนดสัญญาการเข้าถึงข้อมูลผ่าน `IRoomRepository`
-- **Infrastructure** — จัดการการจัดเก็บข้อมูลผ่าน In-Memory Repository และ SQL Server Repository
-- **UI** — ส่วนติดต่อผู้ใช้ด้วย WinForms สำหรับจัดการห้องพัก
-- **Tests** — ชุดทดสอบ Unit Tests และ Integration Tests สำหรับ SQL Server
+- **Domain** — โมเดล `Room`, `Tenant`, `Bill`, `MonthlyMeterReading`, `BillingSettings`, `BillingCalculator` และ Value Objects เช่น `RoomNumber`, `Money`, `MeterReading`, `BillingPeriod`
+- **Application** — Use Case ของห้องพัก ผู้เช่า มิเตอร์ ตั้งค่าราคา และสร้างบิล พร้อมสัญญา repository
+- **Infrastructure** — In-Memory Repository สำหรับทุกส่วน และ SQL Server Repository สำหรับห้องพัก ผู้เช่า และบิล
+- **UI** — WinForms แบ่งเป็นแท็บ: ห้องพัก, บันทึกมิเตอร์, สร้างบิลประจำเดือน, ผู้เช่า และตั้งค่าราคากลาง
+- **Tests** — Unit Tests, UI Tests และ Integration Tests สำหรับ SQL Server
 
 ## ความสามารถในปัจจุบัน
 
-- เพิ่มห้องพัก
-- แสดงรายการห้องพัก
-- ตรวจสอบความถูกต้องของเลขห้อง
-- ป้องกันเลขห้องซ้ำ
-- บันทึกข้อมูลห้องพักลง SQL Server
-- ทดสอบการทำงานของ Repository ด้วย xUnit
+- เพิ่มห้องพักพร้อมค่าเช่ารายเดือนและสถานะยกเว้น Cable TV, แก้ไขค่าเช่า และป้องกันเลขห้องซ้ำ
+- เพิ่มผู้เช่าและผูกกับห้อง (หนึ่งห้องต่อผู้เช่าหนึ่งราย)
+- ตั้งค่าราคากลาง: ค่าน้ำ ค่าไฟ ค่าจอดมอเตอร์ไซค์ ค่าจอดรถยนต์ และค่า Cable TV
+- บันทึกมิเตอร์น้ำ-ไฟรายเดือน โดยดึงค่าก่อนหน้าจากรอบก่อนอัตโนมัติ และแก้ไขย้อนได้
+- สร้างบิลประจำเดือน 6 รายการ (ค่าเช่า, น้ำ, ไฟ, จอดมอเตอร์ไซค์, จอดรถยนต์, Cable TV) พร้อมเลขใบแจ้งหนี้และป้องกันบิลซ้ำ
+- เลือกรอบบิลเป็นเดือนภาษาไทยและปี พ.ศ.
+- มีข้อมูลตัวอย่าง (10 ห้อง พร้อมผู้เช่าและมิเตอร์) เมื่อเปิดโปรแกรมครั้งแรก
+
+> หมายเหตุ: แอปปัจจุบันใช้ In-Memory Repository ทั้งหมด ข้อมูลจะหายเมื่อปิดโปรแกรม SQL Server Repository มีอยู่และผ่าน integration tests แต่ยังไม่ได้เชื่อมเข้ากับแอป
 
 ## สิ่งที่ต้องเตรียมก่อนใช้งาน
 
@@ -63,29 +68,24 @@ SQL Server
 
 ## การตั้งค่าฐานข้อมูล
 
-สร้างฐานข้อมูลชื่อ `RentFlowDb` และตาราง `dbo.Rooms` ด้วยคำสั่ง SQL ต่อไปนี้
+ขั้นตอนนี้จำเป็นเฉพาะการรัน SQL Server Integration Tests เพราะแอปปัจจุบันยังใช้ In-Memory Repository
 
-```sql
-CREATE DATABASE RentFlowDb;
-GO
+สร้างฐานข้อมูลชื่อ `RentFlowDb` แล้วรัน script ใน `RentFlowMini/RentFlowApp/Database/` ตามลำดับ:
 
-USE RentFlowDb;
-GO
+1. `001_CreateRooms.sql` — ตาราง `dbo.Rooms`
+2. `002_CreateBills.sql` — ตาราง `dbo.Bills`
+3. `003_CreateTenants.sql` — ตาราง `dbo.Tenants`
 
-CREATE TABLE dbo.Rooms
-(
-    Id UNIQUEIDENTIFIER NOT NULL,
-    RoomNumber NVARCHAR(50) NOT NULL,
+ตัวอย่างด้วย `sqlcmd` (ปรับชื่อ server ให้ตรงกับเครื่องของคุณ):
 
-    CONSTRAINT PK_Rooms PRIMARY KEY (Id),
-    CONSTRAINT UQ_Rooms_RoomNumber UNIQUE (RoomNumber)
-);
-GO
+```powershell
+sqlcmd -S .\SQLEXPRESS -E -C -Q "IF DB_ID('RentFlowDb') IS NULL CREATE DATABASE RentFlowDb;"
+sqlcmd -S .\SQLEXPRESS -E -C -d RentFlowDb -i .\RentFlowMini\RentFlowApp\Database\001_CreateRooms.sql
+sqlcmd -S .\SQLEXPRESS -E -C -d RentFlowDb -i .\RentFlowMini\RentFlowApp\Database\002_CreateBills.sql
+sqlcmd -S .\SQLEXPRESS -E -C -d RentFlowDb -i .\RentFlowMini\RentFlowApp\Database\003_CreateTenants.sql
 ```
 
-ก่อนเปิดใช้งานโปรแกรม ให้ตั้งค่า Connection String ให้ตรงกับ SQL Server ในเครื่องของคุณ
-
-โปรแกรมสามารถรับค่า Connection String ผ่าน environment variable ชื่อ `RENTFLOW_CONNECTION_STRING` ได้ หากไม่กำหนดจะใช้ค่าเริ่มต้นสำหรับ SQL Server Express ในเครื่องเดียวกัน
+Integration Tests อ่าน Connection String จาก environment variable ชื่อ `RENTFLOW_TEST_CONNECTION` หากไม่กำหนดจะใช้ `localhost\SQLEXPRESS` ฐานข้อมูล `RentFlowDb` แบบ Windows Authentication ห้ามใส่รหัสผ่านลงในโค้ดหรือเอกสาร
 
 ## วิธีเปิดใช้งานโปรแกรม
 
@@ -109,14 +109,14 @@ dotnet test
 
 ## สถานะของโปรเจกต์
 
-ปัจจุบันโปรเจกต์มุ่งเน้นการจัดการห้องพักและการจัดเก็บข้อมูลด้วย SQL Server
+ฟีเจอร์หลักของรอบบิลรายเดือนทำงานได้ครบใน In-Memory (ผ่าน automated tests 144 รายการ) ดูลำดับงานถัดไปที่ [docs/roadmap.md](docs/roadmap.md)
 
 ฟีเจอร์ที่วางแผนจะพัฒนาเพิ่มเติม ได้แก่
 
-- การจัดการผู้เช่า
-- การแก้ไขและลบข้อมูลห้องพัก
-- การจัดการมิเตอร์น้ำและไฟ
-- การคำนวณและจัดทำบิลรายเดือน
+- เชื่อม SQL Server เข้ากับแอป (รวม schema ของบิล 6 รายการ, มิเตอร์ และตั้งค่าราคา)
+- การแก้ไขและลบข้อมูลห้องพักและผู้เช่า
+- ค่าตั้งต้นการจอดรถรายห้อง
+- การแก้ไข ยกเลิก และพิมพ์ใบแจ้งหนี้
 
 ## สัญญาอนุญาต (License)
 

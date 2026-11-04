@@ -1,9 +1,10 @@
 # Current Code Status
 
-เอกสารนี้สรุปสถานะโค้ดปัจจุบันของ RentFlowMini จาก repository, การ build, test ที่ป๋ายืนยัน และ GitHub Actions
+เอกสารนี้สรุปสถานะโค้ดปัจจุบันของ RentFlowMini จาก repository, การ build, ผลการรัน test และ GitHub Actions
 
-**วันที่สรุป:** 2026-10-13
-**สถานะโดยรวม:** ฟีเจอร์จัดการห้องพักและสร้างบิลประจำเดือน (UC-01 MVP) พร้อมใช้งานครบวงจร ทั้ง Domain, Application, SQL Server Persistence, WinForms UI และ CI พร้อม automated tests 54 รายการ
+**วันที่สรุป:** 2026-11-03
+**อ้างอิง commit:** `bec330c`
+**สถานะโดยรวม:** มีระบบห้องพัก ผู้เช่า ตั้งค่าราคากลาง บันทึกมิเตอร์รายเดือน และสร้างบิลประจำเดือนครบ 6 รายการ ทำงานได้ใน WinForms ด้วย In-Memory repository; automated tests ผ่าน 144 รายการ
 
 ## 1. โครงสร้างโปรเจกต์
 
@@ -14,194 +15,197 @@ RentFlowMini/
 │   │   ├── Billing/
 │   │   │   ├── Bill.cs
 │   │   │   ├── BillingCalculator.cs
-│   │   │   └── InvalidMeterReadingException.cs
-│   │   └── ValueObjects/
-│   │       ├── BillId.cs
-│   │       ├── BillingPeriod.cs
-│   │       ├── MeterReading.cs
-│   │       ├── Money.cs
-│   │       ├── RoomId.cs
-│   │       └── RoomNumber.cs
+│   │   │   ├── BillingSettings.cs
+│   │   │   ├── InvalidMeterReadingException.cs
+│   │   │   └── MonthlyMeterReading.cs
+│   │   ├── ValueObjects/
+│   │   │   ├── BillId.cs
+│   │   │   ├── BillingPeriod.cs
+│   │   │   ├── MeterReading.cs
+│   │   │   ├── Money.cs
+│   │   │   ├── RoomId.cs
+│   │   │   ├── RoomNumber.cs
+│   │   │   └── TenantId.cs
+│   │   └── Tenant.cs
 │   ├── Application/
 │   │   ├── Billing/
 │   │   │   ├── CreateMonthlyBillRequest.cs
 │   │   │   ├── CreateMonthlyBillService.cs
-│   │   │   └── IBillRepository.cs
-│   │   └── Rooms/
-│   │       ├── CreateRoomService.cs
-│   │       └── IRoomRepository.cs
+│   │   │   ├── IBillRepository.cs
+│   │   │   ├── IBillingSettingsRepository.cs
+│   │   │   ├── IMonthlyMeterReadingRepository.cs
+│   │   │   ├── SaveMonthlyMeterReadingService.cs
+│   │   │   └── UpdateBillingSettingsService.cs
+│   │   ├── Rooms/
+│   │   │   ├── CreateRoomService.cs
+│   │   │   ├── IRoomEditor.cs
+│   │   │   ├── IRoomRepository.cs
+│   │   │   └── UpdateRoomRentService.cs
+│   │   └── Tenants/
+│   │       ├── CreateTenantService.cs
+│   │       └── ITenantRepository.cs
 │   ├── Infrastructure/
 │   │   ├── Billing/
 │   │   │   ├── InMemoryBillRepository.cs
+│   │   │   ├── InMemoryBillingSettingsRepository.cs
+│   │   │   ├── InMemoryMonthlyMeterReadingRepository.cs
 │   │   │   └── SqlServerBillRepository.cs
-│   │   └── Rooms/
-│   │       ├── InMemoryRoomRepository/
-│   │       │   └── InMemoryRoomRepository.cs
-│   │       └── SqlServerRoomRepository.cs
+│   │   ├── Rooms/
+│   │   │   ├── InMemoryRoomRepository/InMemoryRoomRepository.cs
+│   │   │   └── SqlServerRoomRepository.cs
+│   │   └── Tenants/
+│   │       ├── InMemoryTenantRepository.cs
+│   │       └── SqlServerTenantRepository.cs
 │   ├── Database/
 │   │   ├── 001_CreateRooms.sql
-│   │   └── 002_CreateBills.sql
+│   │   ├── 002_CreateBills.sql
+│   │   └── 003_CreateTenants.sql
 │   ├── UI/
-│   │   ├── RoomForm.cs
-│   │   └── RoomForm.resx
+│   │   ├── RoomForm.cs                    (Form หลัก รวมแท็บทั้งหมด)
+│   │   ├── BaseTabControl.cs              (ฐานร่วมของแท็บ)
+│   │   ├── BillingPeriodSelector.cs       (เลือกเดือน + ปี พ.ศ.)
+│   │   ├── RoomTabControl.cs
+│   │   ├── MeterReadingTabControl.cs
+│   │   ├── MonthlyBillTabControl.cs
+│   │   ├── TenantTabControl.cs
+│   │   └── BillingSettingsTabControl.cs
 │   ├── Room.cs
 │   ├── Program.cs
 │   └── RentFlowApp.csproj
 ├── RentFlowApp.Tests/
-│   ├── Domain/
-│   │   ├── Billing/
-│   │   │   ├── BillTests.cs
-│   │   │   ├── BillingCalculatorTests.cs
-│   │   │   └── BillingPeriodTests.cs
-│   │   └── ValueObjects/
-│   │       ├── MeterReadingTests.cs
-│   │       └── MoneyTests.cs
-│   ├── Application/
-│   │   ├── Billing/
-│   │   │   └── CreateMonthlyBillServiceTests.cs
-│   │   └── Rooms/
-│   │       └── CreateRoomServiceTests.cs
-│   ├── Infrastructure/
-│   │   └── Billing/
-│   │       ├── InMemoryBillRepositoryTests.cs
-│   │       └── SqlServerBillRepositoryTests.cs
-│   ├── Infrastucture/
-│   │   └── Rooms/
-│   │       ├── InMemoryRoomRepositoryTests.cs
-│   │       ├── SqlServerConnectionTests.cs
-│   │       └── SqlServerRoomRepositoryTests.cs
-│   ├── UI/
-│   │   └── RoomFormTests.cs
-│   ├── RoomIdTests.cs
-│   ├── RoomNumberTests.cs
-│   ├── RoomTests.cs
+│   ├── Domain/            (Bill, BillingCalculator, BillingPeriod, BillingSettings,
+│   │                       MonthlyMeterReading, Tenant, MeterReading, Money, TenantId)
+│   ├── Application/       (CreateMonthlyBill, SaveMonthlyMeterReading, UpdateBillingSettings,
+│   │                       CreateRoom, UpdateRoomRent, CreateTenant)
+│   ├── Infrastructure/    (Bill, BillingSettings, MonthlyMeterReading, Tenant repositories)
+│   ├── Infrastucture/     (Room repositories และ SQL Server connection)
+│   ├── UI/RoomFormTests.cs
+│   ├── RoomIdTests.cs, RoomNumberTests.cs, RoomTests.cs
 │   └── RentFlowApp.Tests.csproj
 ├── .github/workflows/dotnet.yml
 ├── docs/
-│   ├── current-code-status.md
-│   ├── implementation-plan.md
-│   └── uc-01-create-monthly-bill.md
 └── README.md
 ```
 
 ## 2. ฟังก์ชันที่มีในปัจจุบัน
 
-- Domain billing MVP มี `BillingCalculator`, `Bill`, `BillingPeriod` และ `Money`
-- มี `CreateMonthlyBillRequest` และ `CreateMonthlyBillService` สำหรับสร้าง Bill จาก Request
-- ใช้ `MeterReading` Value Object กับมิเตอร์น้ำและมิเตอร์ไฟ
-- มี `BillId`, `IBillRepository`, `InMemoryBillRepository` และ `SqlServerBillRepository`
-- มี SQL script `002_CreateBills.sql` สำหรับตาราง `dbo.Bills`
-- หน้าจอ WinForms `RoomForm` มีแท็บ "ห้องพัก" และแท็บ "สร้างบิลประจำเดือน" (UC-01) เชื่อมต่อ Use Case
-- Test ล่าสุดผ่านทั้งหมด 54 รายการด้วย `dotnet test`
- 
-- เพิ่มห้องพักผ่าน `CreateRoomService`
-- ตรวจสอบและ normalize เลขห้องด้วย `RoomNumber`
-- สร้างและตรวจสอบ `RoomId` ที่ไม่เป็นค่า GUID ว่าง
-- ป้องกันเลขห้องซ้ำทั้งระดับ service, In-Memory Repository และ SQL Server
-- แสดงรายการห้องพักใน WinForms
-- จัดเก็บข้อมูลใน SQL Server ผ่าน ADO.NET
-- รองรับการใช้ Connection String จาก environment variable `RENTFLOW_CONNECTION_STRING`
-- แสดงข้อความที่ผู้ใช้เข้าใจได้เมื่อโหลดข้อมูลจาก SQL Server ไม่สำเร็จ
- 
+### ห้องพัก
+
+- เพิ่มห้องพักผ่าน `CreateRoomService` พร้อมค่าเช่ารายเดือนและสถานะยกเว้น Cable TV (`IsCableTvExempt`)
+- แก้ไขค่าเช่ารายเดือนผ่าน `UpdateRoomRentService` (ใช้ `IRoomEditor`)
+- ตรวจสอบและ normalize เลขห้องด้วย `RoomNumber` และป้องกันเลขห้องซ้ำ
+
+### ผู้เช่า
+
+- `Tenant` มีชื่อ นามสกุล เบอร์โทร (ตัวเลข 9-10 หลัก ไม่บังคับ) และห้องที่ผูกไว้ (ไม่บังคับ)
+- เพิ่มผู้เช่าผ่าน `CreateTenantService` และแสดงในแท็บ "ผู้เช่า (Tenants)"
+- มี `InMemoryTenantRepository` และ `SqlServerTenantRepository` (หนึ่งห้องมีผู้เช่าได้ไม่เกินหนึ่งราย)
+
+### ตั้งค่าราคากลาง
+
+- `BillingSettings` เก็บอัตราค่าน้ำ ค่าไฟ ค่าจอดมอเตอร์ไซค์ ค่าจอดรถยนต์ และค่า Cable TV
+- แก้ไขผ่าน `UpdateBillingSettingsService` และแท็บ "ตั้งค่าราคากลาง"
+- ค่าเริ่มต้นใน `InMemoryBillingSettingsRepository`: น้ำ 19, ไฟ 8, มอเตอร์ไซค์ 100, รถยนต์ 500, Cable TV 60 บาท
+
+### บันทึกมิเตอร์รายเดือน
+
+- `MonthlyMeterReading` เก็บมิเตอร์น้ำและไฟ (ก่อนหน้า/ปัจจุบัน) ต่อห้องต่อรอบบิล และตรวจว่าค่าปัจจุบันไม่น้อยกว่าค่าก่อนหน้า
+- `SaveMonthlyMeterReadingService` บันทึกแบบ upsert (มีอยู่แล้วจะ update)
+- แท็บ "บันทึกมิเตอร์น้ำประปา-ไฟฟ้า": ซ่อนห้องที่จดแล้วในรอบนั้น, ตารางกรองตามรอบบิล, แสดงหน่วยที่ใช้, ดับเบิลคลิกเพื่อแก้ไข, กด Enter เพื่อบันทึก, ค่าก่อนหน้าเป็น read-only และดึงจากรอบก่อนหน้าอัตโนมัติ
+
+### สร้างบิลประจำเดือน
+
+- `BillingCalculator` คำนวณ 6 รายการ: ค่าเช่า, ค่าน้ำ, ค่าไฟ, ค่าจอดมอเตอร์ไซค์, ค่าจอดรถยนต์, ค่า Cable TV และยอดรวม
+  - ค่าจอดรถคิดเมื่อเลือก checkbox ในรอบบิลนั้น
+  - ค่า Cable TV เป็น 0 เมื่อยกเว้น
+- `Bill` เก็บ snapshot ยอดทั้ง 6 รายการ พร้อม `InvoiceNumber` และ `CreatedAt`
+- `CreateMonthlyBillService` สร้างเลขใบแจ้งหนี้รูปแบบ `N001`, `N002`, ... โดยเริ่มนับใหม่ทุกรอบบิล
+- ป้องกันบิลซ้ำของห้องและรอบเดียวกันที่ repository
+- แท็บ "สร้างบิลประจำเดือน":
+  - เลือกรอบบิลด้วย `BillingPeriodSelector` (เดือนภาษาไทย + ปี พ.ศ.)
+  - ซ่อนห้องที่สร้างบิลแล้วในรอบนั้น และเลื่อนไปห้องถัดไปอัตโนมัติหลังสร้างบิล
+  - โหลดค่าเช่าและสถานะยกเว้น Cable TV จากห้อง และโหลดอัตราเริ่มต้นจาก settings repository (ดูข้อจำกัดในหัวข้อ 9)
+  - โหลดมิเตอร์ของรอบนั้นอัตโนมัติ; ถ้ายังไม่ได้จด จะเติมค่าก่อนหน้าจากรอบก่อนและแสดงคำเตือนให้บันทึกมิเตอร์ก่อน
+  - แสดงสรุปบิล (ห้อง, ผู้เช่า, เลขใบแจ้งหนี้, รอบเดือน พ.ศ., วันที่ออกบิล, ยอดแต่ละรายการ, ยอดรวม)
+  - ตารางประวัติบิลของรอบที่เลือก แสดงรอบบิลเป็น พ.ศ.; ดับเบิลคลิกเพื่อดูรายละเอียดบิล
+
+### อื่น ๆ
+
+- `Program.cs` seed ข้อมูลตัวอย่างเมื่อเปิดครั้งแรก: 10 ห้อง (101-105, 201-205), ผู้เช่า 7 ราย และมิเตอร์รอบเดือน 09 ของปีปัจจุบัน
+- `BillingPeriod` รองรับ `TryParse`, `GetPrevious()` และ `ToBuddhistValue()`
+- ข้อความแจ้งผู้ใช้ใน UI เป็นภาษาไทย
+
 ## 3. Flow การทำงานหลัก
- 
+
 ```text
-[จัดการห้องพัก]
-WinForms RoomForm (แท็บห้องพัก)
-    ↓
-CreateRoomService
-    ↓
-IRoomRepository → SqlServerRoomRepository / InMemoryRoomRepository → SQL Server / memory
-
-[สร้างบิลประจำเดือน]
-WinForms RoomForm (แท็บสร้างบิล)
-    ↓
-CreateMonthlyBillService
-    ↓
-BillingCalculator → Domain Models (Bill, Money, BillingPeriod)
-    ↓
-IBillRepository → SqlServerBillRepository / InMemoryBillRepository → SQL Server / memory
+[ตั้งค่า]      BillingSettingsTabControl → UpdateBillingSettingsService → IBillingSettingsRepository
+[ห้องพัก]      RoomTabControl → CreateRoomService / UpdateRoomRentService → IRoomEditor
+[ผู้เช่า]      TenantTabControl → CreateTenantService → ITenantRepository
+[มิเตอร์]      MeterReadingTabControl → SaveMonthlyMeterReadingService → IMonthlyMeterReadingRepository
+[สร้างบิล]     MonthlyBillTabControl → CreateMonthlyBillService → BillingCalculator → IBillRepository
 ```
- 
-เมื่อเพิ่มห้อง ระบบจะตรวจสอบเลขซ้ำ บันทึก และ refresh รายการ
-เมื่อสร้างบิล ระบบจะอ่านห้อง รอบบิล ค่าเช่า และมิเตอร์ คำนวณยอด และบันทึกผ่าน repository พร้อมแสดงผลลัพธ์และข้อความสถานะภาษาไทย
 
-## 4. Database
- 
-ตารางหลักประกอบด้วย:
+ลำดับการใช้งานที่ออกแบบไว้: ตั้งค่าราคากลาง → เพิ่มห้องและผู้เช่า → บันทึกมิเตอร์ของรอบ → สร้างบิลทีละห้อง
 
-1. `dbo.Rooms`:
-   - `Id UNIQUEIDENTIFIER` เป็น primary key
-   - `RoomNumber NVARCHAR(50)` เป็นข้อมูลบังคับและมี unique constraint
-2. `dbo.Bills`:
-   - `Id UNIQUEIDENTIFIER` เป็น primary key
-   - `RoomId UNIQUEIDENTIFIER` เป็น foreign key อ้างอิง `dbo.Rooms(Id)`
-   - `BillingPeriod NVARCHAR(7)` รูปแบบ `YYYY-MM`
-   - `RentAmount DECIMAL(18, 2)`
-   - `WaterAmount DECIMAL(18, 2)`
-   - `ElectricityAmount DECIMAL(18, 2)`
-   - `TotalAmount DECIMAL(18, 2)`
-   - Unique constraint บน `(RoomId, BillingPeriod)` ป้องกันบิลซ้ำ
- 
-SQL Server Repository ใช้ parameter ที่ระบุชนิดและขนาดตรงกับ schema แล้ว
- 
+## 4. การจัดเก็บข้อมูล
+
+### แอปที่รันจริง
+
+`Program.cs` ใช้ **In-Memory repository ทั้งหมด** (ห้อง, ผู้เช่า, มิเตอร์, บิล, ตั้งค่าราคา) ข้อมูลจึงหายเมื่อปิดโปรแกรม
+
+### SQL Server (มี repository และ script แล้ว แต่ยังไม่ได้เชื่อมเข้าแอป)
+
+1. `dbo.Rooms` — `Id`, `RoomNumber` (unique)
+2. `dbo.Bills` — `Id`, `RoomId` (FK), `BillingPeriod` (`YYYY-MM`), `RentAmount`, `WaterAmount`, `ElectricityAmount`, `TotalAmount`; unique `(RoomId, BillingPeriod)`
+3. `dbo.Tenants` — `Id`, `FirstName`, `LastName`, `PhoneNumber`, `RoomId` (FK, unique เมื่อไม่เป็น NULL)
+
+ยังไม่มีตารางสำหรับ billing settings, monthly meter readings, ค่าเช่า/สถานะ Cable TV ของห้อง และยอดจอดรถ/Cable TV/เลขใบแจ้งหนี้ของบิล
+
 ## 5. การทดสอบและ Build
- 
-- มี automated tests ทั้งหมด 54 รายการ
-- รัน test ผ่านครบ 54 รายการด้วยคำสั่ง `dotnet test`
-- Release build ของ App ผ่าน
-- Release build ของ Test project ผ่าน
-- มี unit tests สำหรับ Domain, Application, In-Memory Repository และ UI
-- มี integration tests สำหรับ SQL Server connection และ repository (Rooms และ Bills)
- 
+
+- `dotnet test` ผ่าน 144 รายการ (ล้มเหลว 0, ข้าม 0) เมื่อ 2026-11-03
+- มี unit tests สำหรับ Domain, Application และ In-Memory repository
+- มี UI tests ของ `RoomForm` 18 รายการ ครอบคลุมแท็บห้องพัก, ผู้เช่า และสร้างบิล (รวมการโหลดมิเตอร์อัตโนมัติ, คำเตือนเมื่อไม่มีมิเตอร์ และการเลื่อนไปห้องถัดไป)
+- ยังไม่มี UI tests เฉพาะสำหรับแท็บบันทึกมิเตอร์และแท็บตั้งค่าราคากลาง
+- มี integration tests สำหรับ SQL Server (Rooms, Bills, Tenants) ซึ่งต้องมี SQL Server; อ่าน connection string จาก `RENTFLOW_TEST_CONNECTION` หรือใช้ `localhost\SQLEXPRESS` แบบ Windows Authentication เมื่อไม่กำหนด
+
 ## 6. GitHub Actions
- 
-Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำงานตามลำดับดังนี้:
- 
+
+Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำงานตามลำดับ:
+
 1. Checkout repository
 2. ติดตั้ง .NET 10
-3. ติดตั้ง SQL Server บน runner
+3. ติดตั้ง SQL Server 2022 บน runner
 4. สร้างฐานข้อมูล `RentFlowDb`
-5. สร้างตารางจาก `001_CreateRooms.sql` และ `002_CreateBills.sql`
-6. Restore
-7. Build แบบ Release
-8. Run tests
- 
-รหัสผ่าน SQL Server ของ CI ถูกอ่านจาก GitHub Actions Secret ชื่อ `RENTFLOWMINI_SECRET` และไม่เก็บค่าไว้ใน workflow
- 
-ข้อสังเกต: GitHub-hosted runner เป็นเครื่องชั่วคราว จึงต้องติดตั้ง SQL Server ใหม่ทุกครั้ง ทำให้ขั้นตอน CI ใช้เวลาหลายนาที
- 
-## 7. สถานะการแก้ไขล่าสุด
- 
-- แก้ path ของ SQL script ใน CI
-- จัดการกรณี SQL Server เชื่อมต่อไม่ได้ตอนเปิดหน้าจอ
-- รองรับการ override Connection String ผ่าน environment variable
-- แยก test dependencies ออกจาก App project
-- เปลี่ยน SQL parameters ให้ระบุชนิดตรงกับ schema
-- เปลี่ยน CI ให้ใช้ GitHub Secret แทน credential ที่ฝังใน workflow
-- เพิ่ม `BillingCalculator`, `Bill`, `BillingPeriod` และ `Money` สำหรับ Domain ของ UC-01 MVP
-- แยก Test ของ Billing, BillingPeriod และ Money ตามความรับผิดชอบ
-- เพิ่ม `CreateMonthlyBillService` และ `CreateMonthlyBillRequest`
-- เพิ่ม `MeterReading` Value Object และ refactor BillingCalculator ให้รับ MeterReading
-- เพิ่ม `BillId`, `IBillRepository` และ `InMemoryBillRepository`
-- เพิ่ม `002_CreateBills.sql` สร้างตาราง `dbo.Bills` พร้อม Unique Constraint
-- เพิ่ม `SqlServerBillRepository` และ Integration Tests (ผ่านครบ 50 tests)
-- ปรับปรุง `RoomForm` เพิ่มแท็บสร้างบิลประจำเดือน (UC-01) พร้อมอัตราค่าน้ำ 19 บาท และค่าไฟ 8 บาท
-- เพิ่ม UI Unit Tests สำหรับ RoomForm flow (ผ่านครบ 54 tests)
-- อัปเดต `Program.cs` เพื่อเชื่อมต่อ Use Case กับ Form จริง
-- ตรวจสอบความถูกต้องของ CI workflow และยืนยัน Release Build / Tests ผ่านครบ 54 รายการ (Phase 6)
- 
+5. สร้างตารางจาก `001_CreateRooms.sql`, `002_CreateBills.sql` และ `003_CreateTenants.sql`
+6. Restore, Build แบบ Release และ Run tests
+
+รหัสผ่าน SQL Server ของ CI อ่านจาก GitHub Actions Secret `RENTFLOWMINI_SECRET` และไม่เก็บค่าไว้ใน workflow
+
+## 7. การเปลี่ยนแปลงล่าสุด (ตั้งแต่ 2026-10-18)
+
+- ขยาย `Bill` และ `BillingCalculator` เป็น 6 รายการ และเพิ่มค่าจอดรถ/Cable TV ใน `CreateMonthlyBillRequest` และ `CreateMonthlyBillService`
+- แยก UI ออกจาก `RoomForm` เป็น tab control แยกไฟล์ (`BaseTabControl`, `RoomTabControl`, `MeterReadingTabControl`, `MonthlyBillTabControl`, `TenantTabControl`, `BillingSettingsTabControl`)
+- เพิ่ม `BillingPeriodSelector` ใช้ร่วมกันในแท็บมิเตอร์และแท็บสร้างบิล
+- แท็บสร้างบิลโหลดมิเตอร์อัตโนมัติและเตือนเมื่อยังไม่ได้จดมิเตอร์
+- เพิ่มเลขใบแจ้งหนี้ (`InvoiceNumber`), วันที่ออกบิล (`CreatedAt`), `IBillRepository.Get(BillId)` และตารางประวัติบิล
+- แสดงรอบบิลเป็น พ.ศ. และขยายตัวอักษรในกล่องสรุปบิล
+
 ## 8. สิ่งที่ยังไม่อยู่ในขอบเขตปัจจุบัน
- 
-- UC-01 รุ่น MVP จะเริ่มจากค่าเช่า ค่าน้ำ และค่าไฟเท่านั้น ดูรายละเอียดที่ [UC-01: สร้างบิลประจำเดือน](uc-01-create-monthly-bill.md)
-- การจัดการผู้เช่า
-- การแก้ไขและลบห้องพัก
-- การจัดการมิเตอร์น้ำและไฟ
-- การ Recalculate บิลเดิม
+
+- เชื่อม SQL Server repository เข้ากับแอปจริง และ persistence ของ settings / meter readings
+- การแก้ไขหรือลบห้องพัก (นอกจากค่าเช่า) และการแก้ไขหรือลบผู้เช่า
+- ค่าตั้งต้นการจอดรถรายห้อง (`RoomParkingSettings`)
+- การแก้ไข, ยกเลิก หรือ Recalculate บิลเดิม
+- การพิมพ์หรือส่งออกใบแจ้งหนี้
+- ผู้เช่าเข้าออกกลางเดือน และประวัติค่าเช่า
 
 ## 9. ความเสี่ยงและข้อจำกัด
 
-- Integration tests ต้องใช้ SQL Server และฐานข้อมูลที่เตรียมไว้
-- CI ใช้เวลานานจากการติดตั้ง SQL Server ใหม่บน runner ทุกครั้ง
-- Credential เดิมเคยอยู่ใน Git history และถูกเปลี่ยนแล้ว; workflow ปัจจุบันใช้ GitHub Secret แทน
+- **บิลใน SQL Server ไม่ครบ:** `SqlServerBillRepository` บันทึกเฉพาะค่าเช่า/น้ำ/ไฟ/ยอดรวม ไม่บันทึกค่าจอดรถ, Cable TV, `InvoiceNumber`, `CreatedAt` และ `GetAll()` / `Get()` ยังคืนค่าว่าง ต้องแก้ schema และ repository ก่อนเปลี่ยนแอปไปใช้ SQL Server
+- **กฎที่ยังไม่บังคับในระดับ service:** `CreateMonthlyBillService` ยังไม่ตรวจว่ามีผู้เช่าหรือมีมิเตอร์ที่บันทึกแล้ว (BR-02, BR-03 ใน [billing-calculation-implementation-plan.md](billing-calculation-implementation-plan.md)); UI แสดงคำเตือนแต่ผู้ใช้ยังพิมพ์ค่ามิเตอร์เองแล้วสร้างบิลได้ และห้องว่างยังปรากฏให้เลือก
+- **ราคากลางไม่ส่งถึงแท็บสร้างบิล:** `RoomForm` ไม่ส่ง `billingSettingsRepository` ให้ `MonthlyBillTabControl` แท็บสร้างบิลจึงสร้าง `InMemoryBillingSettingsRepository` ของตัวเองและโหลดราคาครั้งเดียวตอนสร้าง; ราคาที่แก้ในแท็บ "ตั้งค่าราคากลาง" จึงไม่ถูกใช้เป็นค่าเริ่มต้นตอนสร้างบิล (ผู้ใช้ยังแก้อัตราในหน้าสร้างบิลเองได้)
+- ข้อมูลทั้งหมดอยู่ในหน่วยความจำ ปิดโปรแกรมแล้วหาย
+- Integration tests ต้องใช้ SQL Server และฐานข้อมูลที่เตรียมไว้; CI ใช้เวลานานเพราะติดตั้ง SQL Server ใหม่ทุกครั้ง
+- Credential เดิมเคยอยู่ใน Git history และถูกเปลี่ยนแล้ว; workflow ปัจจุบันใช้ GitHub Secret
 - ยังไม่มี license อย่างเป็นทางการ

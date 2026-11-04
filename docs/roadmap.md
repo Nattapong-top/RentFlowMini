@@ -2,8 +2,8 @@
 
 เอกสารนี้เป็น roadmap ระดับโครงการสำหรับกำหนดลำดับพัฒนาหลังจาก baseline ปัจจุบันของ RentFlowMini ผ่านการตรวจสอบแล้ว โดยแยกงานที่เสร็จแล้ว งานที่ต้องยืนยันก่อนเริ่ม และฟีเจอร์ที่ยังไม่อยู่ในขอบเขตออกจากกัน
 
-**วันที่อัปเดต:** 2026-10-16  
-**สถานะ:** Baseline ของ UC-01 MVP ผ่านแล้ว; Tenant foundation กำลัง implement
+**วันที่อัปเดต:** 2026-11-03  
+**สถานะ:** ระยะ 0-1 เสร็จแล้ว; ระยะ 2-3 เสร็จในส่วน In-Memory และ UI แต่ยังขาด SQL Server persistence และการบังคับกฎบางข้อใน service; ระยะ 4 (Cable/Parking) ได้รับการยืนยันและ implement แล้ว
 
 ## 1. เป้าหมายและหลักการ
 
@@ -16,20 +16,21 @@
 
 จาก [current-code-status](current-code-status.md) ระบบปัจจุบันมีความสามารถดังนี้:
 
-- จัดการห้องพักผ่าน `CreateRoomService`, `IRoomRepository`, In-Memory Repository และ SQL Server Repository
-- สร้างบิลรายเดือนผ่าน `CreateMonthlyBillService` และ `BillingCalculator`
-- คำนวณค่าเช่า ค่าน้ำ ค่าไฟ และยอดรวมจาก `MeterReading`
-- ตรวจสอบ billing period, meter ที่ไม่ครบ, meter ปัจจุบันที่ต่ำกว่าค่าก่อนหน้า และบิลซ้ำ
-- บันทึกบิลใน `InMemoryBillRepository` และ `SqlServerBillRepository`
-- มี WinForms flow สำหรับจัดการห้องพักและสร้างบิล
-- มี automated tests ผ่าน 54 รายการ และมี Release build กับ CI workflow
+- จัดการห้องพัก (ค่าเช่า, สถานะยกเว้น Cable TV, แก้ไขค่าเช่า) ผ่าน In-Memory และ SQL Server Repository
+- จัดการผู้เช่าและผูกกับห้อง ผ่าน In-Memory และ SQL Server Repository
+- ตั้งค่าราคากลาง (`BillingSettings`) แบบ In-Memory
+- บันทึกมิเตอร์รายเดือน (`MonthlyMeterReading`) แบบ upsert ใน In-Memory
+- สร้างบิล 6 รายการ (ค่าเช่า, น้ำ, ไฟ, จอดมอเตอร์ไซค์, จอดรถยนต์, Cable TV) พร้อมเลขใบแจ้งหนี้
+- WinForms แยกแท็บ: ห้องพัก, บันทึกมิเตอร์, สร้างบิล, ผู้เช่า, ตั้งค่าราคากลาง
+- แอปที่รันจริงใช้ In-Memory Repository ทั้งหมด
+- automated tests ผ่าน 144 รายการ และมี CI workflow
 
 ### สิ่งที่ยังไม่อยู่ใน baseline
 
-- ข้อมูลผู้เช่าและความสัมพันธ์ระหว่างผู้เช่ากับห้อง
-- ประวัติและ repository สำหรับ meter reading
+- SQL Server persistence ของมิเตอร์, ตั้งค่าราคา, ข้อมูลห้องส่วนเพิ่ม และบิล 6 รายการ
+- การบังคับในระดับ service ว่าต้องมีผู้เช่าและมิเตอร์ก่อนสร้างบิล
+- ค่าตั้งต้นการจอดรถรายห้อง
 - การแก้ไขหรือ Recalculate บิลเดิม
-- Cable และ Parking
 - การเปลี่ยนผู้เช่ากลางเดือน, ประวัติค่าเช่า และ pricing แยกตามอาคารหรือห้อง
 
 ## 3. สถาปัตยกรรมและลำดับการทำงาน
@@ -58,15 +59,15 @@ Sql --> DB[(SQL Server)]
 
 - Domain, Application, Infrastructure, UI และ tests ของ UC-01 เชื่อมกันครบ
 - SQL scripts `001_CreateRooms.sql` และ `002_CreateBills.sql` ถูกใช้โดย CI
-- `dotnet test` ผ่าน 54 รายการ และ Release build ผ่าน
+- `dotnet test` ผ่าน 54 รายการ และ Release build ผ่าน (ณ เวลาที่ปิดระยะ 0)
 
 **เกณฑ์เสร็จ:** อ้างอิงสถานะล่าสุดจาก `current-code-status.md` และไม่ถือ Cable/Parking หรือ Tenant เป็น implementation ที่มีอยู่แล้ว
 
-### ระยะ 1: Tenant foundation — กำลังทำ
+### ระยะ 1: Tenant foundation — เสร็จแล้ว
 
 ดูรายละเอียดแผน implement ได้ที่ [Tenant foundation implementation plan](tenant-implementation-plan.md)
 
-**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository, WinForms UI และ tests ของ Tenant ผ่านแล้ว (80 เทสต์); กำลังดำเนินการในส่วน SQL Server Persistence ตาม [tenant-sql-persistence-plan.md](tenant-sql-persistence-plan.md)
+**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository, `SqlServerTenantRepository` พร้อม `003_CreateTenants.sql`, WinForms UI และ tests ของ Tenant ผ่านแล้ว ([tenant-sql-persistence-plan.md](tenant-sql-persistence-plan.md)); ยังไม่มีการแก้ไขหรือลบผู้เช่า
 
 **เงื่อนไขเริ่มต้น:** ระยะ 0 ยังผ่าน และยังไม่เพิ่มกติกา Cable/Parking เข้ามาปะปน
 
@@ -82,7 +83,9 @@ Sql --> DB[(SQL Server)]
 
 **Definition of Done:** สร้าง/อ่านผู้เช่าตามกติกาที่อนุมัติได้, validation และกรณีข้อมูลซ้ำมี tests, tests ที่เกี่ยวข้องผ่าน และเอกสาร requirement ถูกอัปเดต
 
-### ระยะ 2: Meter persistence — หลัง Tenant foundation
+### ระยะ 2: Meter persistence — In-Memory เสร็จแล้ว, SQL Server ยังไม่เริ่ม
+
+**ความคืบหน้าล่าสุด:** มี `MonthlyMeterReading`, `IMonthlyMeterReadingRepository`, `InMemoryMonthlyMeterReadingRepository`, `SaveMonthlyMeterReadingService` (upsert) และแท็บบันทึกมิเตอร์ ([billing-meter-reading-plan.md](billing-meter-reading-plan.md), [billing-meter-reading-ui-plan.md](billing-meter-reading-ui-plan.md)); ยังไม่มี schema และ SQL Server repository
 
 **เงื่อนไขเริ่มต้น:** มี contract ของ Tenant ที่ผ่านแล้ว และยังรักษา `MeterReading` validation เดิม
 
@@ -96,7 +99,9 @@ Sql --> DB[(SQL Server)]
 
 **Definition of Done:** ค้นหา meter reading ของห้องและรอบที่ต้องการได้, ตรวจกรณีผิดปกติได้, In-Memory tests ผ่าน และมีแผน schema/migration ที่ไม่เปิดเผย secret
 
-### ระยะ 3: Billing integration — หลัง Tenant และ Meter
+### ระยะ 3: Billing integration — ทำแล้วบางส่วน
+
+**ความคืบหน้าล่าสุด:** UI สร้างบิลอ่านห้อง ผู้เช่า และมิเตอร์จาก repository แล้ว และบิลมีเลขใบแจ้งหนี้; แต่แท็บสร้างบิลยังใช้ settings repository คนละตัวกับแท็บตั้งค่าราคากลาง (ดูความเสี่ยงใน [current-code-status.md](current-code-status.md)) แต่ `CreateMonthlyBillService` ยังรับค่าทั้งหมดผ่าน request และยังไม่ตรวจว่ามีผู้เช่า/มิเตอร์ของรอบนั้น ส่วน `SqlServerBillRepository` ยังไม่รองรับยอด 6 รายการ, เลขใบแจ้งหนี้ และการอ่านบิล
 
 **เงื่อนไขเริ่มต้น:** Tenant และ Meter repository ผ่านตาม Definition of Done ของตนเอง
 
@@ -110,9 +115,11 @@ Sql --> DB[(SQL Server)]
 
 **Definition of Done:** สร้างบิลจากข้อมูล repository ได้ครบ, กรณีข้อมูลหาย/meter ผิด/บิลซ้ำยังหยุดได้ถูกต้อง, tests ทุกชั้นที่ได้รับผลกระทบผ่าน และไม่มี regression ของ UC-01
 
-### ระยะ 4: ตัดสินใจ Cable/Parking — ยังไม่อนุมัติ
+### ระยะ 4: ตัดสินใจ Cable/Parking — ยืนยันและ implement แล้ว
 
-ระยะนี้เป็นจุดตัดสินใจ ไม่ใช่ requirement ที่เริ่ม implement ได้ทันที
+**ความคืบหน้าล่าสุด:** กติกาถูกยืนยันใน [billing-charges-design.md](billing-charges-design.md) และ implement ใน `BillingSettings`, `BillingCalculator`, `Bill`, `CreateMonthlyBillService` และแท็บสร้างบิลแล้ว (เลือกจอดรถรายรอบบิล, ยกเว้น Cable TV ตามห้อง); ยังเหลือค่าตั้งต้นการจอดรถรายห้อง และ schema/migration ของ SQL Server
+
+เงื่อนไขเดิมของระยะนี้ (เก็บไว้อ้างอิง):
 
 ก่อนเริ่มต้องยืนยันอย่างน้อย:
 

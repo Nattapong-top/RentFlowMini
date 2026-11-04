@@ -1,6 +1,6 @@
 # UC-01: สร้างบิลประจำเดือน (MVP)
 
-**สถานะ:** เตรียมข้อกำหนด / ยังไม่เริ่มพัฒนา
+**สถานะ:** MVP พัฒนาเสร็จแล้ว และขยายเป็น 6 รายการตาม [billing-calculation-implementation-plan.md](billing-calculation-implementation-plan.md) (ดูสถานะล่าสุดที่ [current-code-status.md](current-code-status.md))
 **ผู้ใช้งานหลัก:** ผู้ดูแลอาคาร
 **ขอบเขต:** ค่าเช่า ค่าน้ำ และค่าไฟ
 
