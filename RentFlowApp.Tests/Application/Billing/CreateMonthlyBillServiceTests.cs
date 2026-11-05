@@ -34,6 +34,32 @@ public class CreateMonthlyBillServiceTests
     }
 
     [Fact]
+    public void Create_KeepsMeterReadingsUsedForCalculationOnBill()
+    {
+        var repository = new InMemoryBillRepository();
+        var service = new CreateMonthlyBillService(repository);
+
+        var bill = service.Create(new CreateMonthlyBillRequest(
+            RoomId: RoomId.New(),
+            BillingPeriod: BillingPeriod.Create("2026-09"),
+            MonthlyRent: 2800m,
+            PreviousWaterMeter: MeterReading.Create(120m),
+            CurrentWaterMeter: MeterReading.Create(125m),
+            PreviousElectricityMeter: MeterReading.Create(1000m),
+            CurrentElectricityMeter: MeterReading.Create(1010m),
+            WaterRate: 30m,
+            ElectricityRate: 4m));
+
+        Assert.NotNull(bill.Meters);
+        Assert.Equal(120m, bill.Meters.PreviousWater.Value);
+        Assert.Equal(125m, bill.Meters.CurrentWater.Value);
+        Assert.Equal(1000m, bill.Meters.PreviousElectricity.Value);
+        Assert.Equal(1010m, bill.Meters.CurrentElectricity.Value);
+        Assert.Equal(30m, bill.Meters.WaterRate);
+        Assert.Equal(4m, bill.Meters.ElectricityRate);
+    }
+
+    [Fact]
     public void Create_WithParkingAndCableTv_ReturnsBillWithAllCharges()
     {
         var repository = new InMemoryBillRepository();

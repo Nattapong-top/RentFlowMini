@@ -79,6 +79,11 @@ public sealed record BillingPeriod
         return new BillingPeriod(prevYear, prevMonth);
     }
 
+    public DateOnly GetPaymentDueDate()
+    {
+        return new DateOnly(Year, Month, 5).AddMonths(1);
+    }
+
     public string ToBuddhistValue()
     {
         return $"{Year + 543}-{Month:D2}";

@@ -47,6 +47,7 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly Label _resultInvoiceNumberLabel = new();
     private readonly Label _resultPeriodLabel = new();
     private readonly Label _resultCreatedAtLabel = new();
+    private readonly Label _resultDueDateLabel = new();
     private readonly Label _resultTenantLabel = new();
     private readonly Label _resultRentLabel = new();
     private readonly Label _resultWaterDetailsLabel = new();
@@ -74,6 +75,7 @@ public class MonthlyBillTabControl : BaseTabControl
         string TenantName,
         string BillingPeriodDisplay,
         string CreatedAtDisplay,
+        string DueDateDisplay,
         string RentAmount,
         string WaterReading,
         string WaterUsed,
@@ -341,6 +343,9 @@ public class MonthlyBillTabControl : BaseTabControl
     private static string FormatDateThai(DateTime date) =>
         $"{date.Day:D2}/{date.Month:D2}/{date.Year + 543}";
 
+    private static string FormatDateThai(DateOnly date) =>
+        FormatDateThai(date.ToDateTime(TimeOnly.MinValue));
+
     private GroupBox BuildResultGroup()
     {
         var resultGroup = new GroupBox
@@ -400,10 +405,16 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultCreatedAtLabel.TextAlign = ContentAlignment.MiddleRight;
         _resultCreatedAtLabel.Text = "วันที่ออกบิล: -";
 
+        _resultDueDateLabel.Name = "ResultDueDateLabel";
+        _resultDueDateLabel.SetBounds(8, 51, 142, 18);
+        _resultDueDateLabel.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+        _resultDueDateLabel.ForeColor = Color.DimGray;
+        _resultDueDateLabel.Text = "ครบกำหนด: -";
+
         headerPanel.Controls.AddRange([
             _resultRoomLabel, _resultInvoiceNumberLabel,
             _resultTenantLabel, _resultPeriodLabel,
-            _resultCreatedAtLabel
+            _resultDueDateLabel, _resultCreatedAtLabel
         ]);
 
         var topDivider = new Panel
@@ -610,6 +621,15 @@ public class MonthlyBillTabControl : BaseTabControl
         });
         _billGrid.Columns.Add(new DataGridViewTextBoxColumn
         {
+            Name = "DueDateDisplay",
+            HeaderText = "ครบกำหนด",
+            DataPropertyName = "DueDateDisplay",
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+            Width = 100,
+            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+        });
+        _billGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
             Name = "RentAmount",
             HeaderText = "ค่าเช่า",
             DataPropertyName = "RentAmount",
@@ -756,9 +776,6 @@ public class MonthlyBillTabControl : BaseTabControl
 
         var rooms = _roomRepository.GetAll().ToDictionary(r => r.Id, r => r.RoomNumber.Value);
         var tenants = _tenantRepository.GetAll().Where(t => t.RoomId != null).GroupBy(t => t.RoomId!).ToDictionary(g => g.Key, g => g.First());
-        var readings = _monthlyMeterReadingRepository.GetAll()
-            .GroupBy(r => new { r.RoomId, r.BillingPeriod })
-            .ToDictionary(g => g.Key, g => g.Last());
 
         _billGrid.DataSource = bills
             .OrderBy(b => rooms.TryGetValue(b.RoomId, out var num) ? num : "")
@@ -772,12 +789,12 @@ public class MonthlyBillTabControl : BaseTabControl
                 string elecReading = "-";
                 string elecUsed = "-";
 
-                if (readings.TryGetValue(new { bill.RoomId, bill.BillingPeriod }, out var reading))
+                if (bill.Meters is { } meters)
                 {
-                    waterReading = $"{reading.PreviousWaterMeter.Value:0.##} -> {reading.CurrentWaterMeter.Value:0.##}";
-                    waterUsed = (reading.CurrentWaterMeter.Value - reading.PreviousWaterMeter.Value).ToString("0.##");
-                    elecReading = $"{reading.PreviousElectricityMeter.Value:0.##} -> {reading.CurrentElectricityMeter.Value:0.##}";
-                    elecUsed = (reading.CurrentElectricityMeter.Value - reading.PreviousElectricityMeter.Value).ToString("0.##");
+                    waterReading = $"{meters.PreviousWater.Value:0.##} -> {meters.CurrentWater.Value:0.##}";
+                    waterUsed = meters.WaterUsage.ToString("0.##");
+                    elecReading = $"{meters.PreviousElectricity.Value:0.##} -> {meters.CurrentElectricity.Value:0.##}";
+                    elecUsed = meters.ElectricityUsage.ToString("0.##");
                 }
 
                 return new BillGridItem(
@@ -788,6 +805,7 @@ public class MonthlyBillTabControl : BaseTabControl
                     TenantName: tenantName,
                     BillingPeriodDisplay: bill.BillingPeriod.ToBuddhistValue(),
                     CreatedAtDisplay: FormatDateThai(bill.CreatedAt),
+                    DueDateDisplay: FormatDateThai(bill.DueDate),
                     RentAmount: bill.Rent.Amount.ToString("N2"),
                     WaterReading: waterReading,
                     WaterUsed: waterUsed,
@@ -1022,6 +1040,7 @@ public class MonthlyBillTabControl : BaseTabControl
             _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {bill.InvoiceNumber}";
             _resultPeriodLabel.Text = $"(รอบเดือนที่ {bill.BillingPeriod.Month}/{bill.BillingPeriod.Year + 543})";
             _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {FormatDateThai(bill.CreatedAt)}";
+            _resultDueDateLabel.Text = $"ครบกำหนด: {FormatDateThai(bill.DueDate)}";
             _resultTenantLabel.Text = $"ผู้เช่า: {(string.IsNullOrWhiteSpace(tenantName) || tenantName == "-" ? "ไม่มีข้อมูลผู้เช่า" : tenantName)}";
             _resultRentLabel.Text = $"{bill.Rent.Amount:N2} บาท";
             _resultWaterDetailsLabel.Text = prevWater != null && currWater != null ? $"└ มิเตอร์ {prevWater.Value:0.##} → {currWater.Value:0.##} ({waterUsed:0.##} หน่วย)" : "-";
@@ -1131,6 +1150,15 @@ public class MonthlyBillTabControl : BaseTabControl
                 _chargeMotorcycleCheckBox.Checked = bill.MotorcycleParking.Amount > 0;
                 _chargeCarCheckBox.Checked = bill.CarParking.Amount > 0;
                 _isCableTvExemptCheckBox.Checked = bill.CableTv.Amount == 0;
+
+                if (bill.Meters is { } billMeters)
+                {
+                    _prevWaterTextBox.Text = billMeters.PreviousWater.Value.ToString("0.##");
+                    _currWaterTextBox.Text = billMeters.CurrentWater.Value.ToString("0.##");
+                    _prevElecTextBox.Text = billMeters.PreviousElectricity.Value.ToString("0.##");
+                    _currElecTextBox.Text = billMeters.CurrentElectricity.Value.ToString("0.##");
+                }
+
                 break;
             }
         }
@@ -1139,15 +1167,12 @@ public class MonthlyBillTabControl : BaseTabControl
         var tenants = _tenantRepository.GetAll().Where(t => t.RoomId != null).GroupBy(t => t.RoomId!).ToDictionary(g => g.Key, g => g.First());
         string tenantName = tenants.TryGetValue(bill.RoomId, out var tenant) ? $"{tenant.FirstName} {tenant.LastName}" : "-";
         
-        var reading = _monthlyMeterReadingRepository.Get(bill.RoomId, bill.BillingPeriod);
         string waterDetails = "-";
         string elecDetails = "-";
-        if (reading != null)
+        if (bill.Meters is { } meters)
         {
-            decimal waterUsed = reading.CurrentWaterMeter.Value - reading.PreviousWaterMeter.Value;
-            decimal elecUsed = reading.CurrentElectricityMeter.Value - reading.PreviousElectricityMeter.Value;
-            waterDetails = $"└ มิเตอร์ {reading.PreviousWaterMeter.Value:0.##} → {reading.CurrentWaterMeter.Value:0.##} ({waterUsed:0.##} หน่วย)";
-            elecDetails = $"└ มิเตอร์ {reading.PreviousElectricityMeter.Value:0.##} → {reading.CurrentElectricityMeter.Value:0.##} ({elecUsed:0.##} หน่วย)";
+            waterDetails = $"└ มิเตอร์ {meters.PreviousWater.Value:0.##} → {meters.CurrentWater.Value:0.##} ({meters.WaterUsage:0.##} หน่วย)";
+            elecDetails = $"└ มิเตอร์ {meters.PreviousElectricity.Value:0.##} → {meters.CurrentElectricity.Value:0.##} ({meters.ElectricityUsage:0.##} หน่วย)";
         }
 
         var roomObj = _roomRepository.GetAll().FirstOrDefault(r => r.Id == bill.RoomId);
@@ -1157,6 +1182,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {bill.InvoiceNumber}";
         _resultPeriodLabel.Text = $"(รอบเดือนที่ {bill.BillingPeriod.Month}/{bill.BillingPeriod.Year + 543})";
         _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {FormatDateThai(bill.CreatedAt)}";
+        _resultDueDateLabel.Text = $"ครบกำหนด: {FormatDateThai(bill.DueDate)}";
         _resultTenantLabel.Text = $"ผู้เช่า: {(string.IsNullOrWhiteSpace(tenantName) || tenantName == "-" ? "ไม่มีข้อมูลผู้เช่า" : tenantName)}";
         _resultRentLabel.Text = $"{bill.Rent.Amount:N2} บาท";
         _resultWaterDetailsLabel.Text = waterDetails;

@@ -47,7 +47,15 @@ public sealed class CreateMonthlyBillService
             request.BillingPeriod,
             calculation,
             invoiceNumber,
-            DateTime.Now);
+            DateTime.Now,
+            // BillingCalculator ปฏิเสธมิเตอร์ที่เป็น null ไปแล้วด้านบน
+            new BillMeterSnapshot(
+                request.PreviousWaterMeter!,
+                request.CurrentWaterMeter!,
+                request.PreviousElectricityMeter!,
+                request.CurrentElectricityMeter!,
+                request.WaterRate,
+                request.ElectricityRate));
 
         _repository.Add(bill);
 

@@ -32,4 +32,31 @@ public class BillTests
         Assert.Equal(60m, bill.CableTv.Amount);
         Assert.Equal(3850m, bill.Total.Amount);
     }
+
+    [Fact]
+    public void Create_WithMeterSnapshot_KeepsMetersAndSetsDueDateFromBillingPeriod()
+    {
+        var calculation = new BillingCalculationResult(
+            Rent: Money.Create(2800m),
+            Water: Money.Create(150m),
+            Electricity: Money.Create(40m),
+            MotorcycleParking: Money.Create(0m),
+            CarParking: Money.Create(0m),
+            CableTv: Money.Create(0m),
+            Total: Money.Create(2990m));
+        var meters = new BillMeterSnapshot(
+            MeterReading.Create(100m),
+            MeterReading.Create(110m),
+            MeterReading.Create(500m),
+            MeterReading.Create(505m),
+            WaterRate: 15m,
+            ElectricityRate: 8m);
+
+        var bill = Bill.Create(RoomId.New(), BillingPeriod.Create("2026-09"), calculation, meters: meters);
+
+        Assert.Equal(meters, bill.Meters);
+        Assert.Equal(10m, bill.Meters!.WaterUsage);
+        Assert.Equal(5m, bill.Meters.ElectricityUsage);
+        Assert.Equal(new DateOnly(2026, 10, 5), bill.DueDate);
+    }
 }

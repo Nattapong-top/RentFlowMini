@@ -783,6 +783,63 @@ public class RoomFormTests
     }
 
     [Fact]
+    public void RoomForm_BillingTab_WhenMeterChangesAfterBillCreated_ShowsMetersFromBill()
+    {
+        RunInSta(() =>
+        {
+            // Arrange
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createBillService = new CreateMonthlyBillService(billRepo);
+            var saveMeterService = new SaveMonthlyMeterReadingService(meterRepo);
+            int year = DateTime.Now.Year;
+            var period = BillingPeriod.Create($"{year}-10");
+
+            var room = createRoomService.Create("101", 3000m, true);
+            AddMeterReading(meterRepo, room.Id, period);
+
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(period);
+
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+            var grid = (DataGridView)billingTab.Controls.Find("BillGrid", true).First();
+            var currWaterBox = (TextBox)billingTab.Controls.Find("CurrWaterTextBox", true).First();
+            var waterDetailsLabel = (Label)billingTab.Controls.Find("ResultWaterDetailsLabel", true).First();
+            var dueDateLabel = (Label)billingTab.Controls.Find("ResultDueDateLabel", true).First();
+
+            createButton.PerformClick();
+
+            // Act: แก้มิเตอร์หลังออกบิล แล้วเปิดบิลเดิม
+            saveMeterService.Save(
+                room.Id,
+                period,
+                MeterReading.Create(100m),
+                MeterReading.Create(150m),
+                MeterReading.Create(500m),
+                MeterReading.Create(550m));
+            periodSelector.SetBillingPeriod(BillingPeriod.Create($"{year}-09"));
+            periodSelector.SetBillingPeriod(period);
+            DoubleClickFirstRow(grid);
+
+            // Assert
+            Assert.Equal("100 -> 110", grid.Rows[0].Cells["WaterReading"].Value);
+            Assert.Equal("10", grid.Rows[0].Cells["WaterUsed"].Value);
+            Assert.Equal("110", currWaterBox.Text);
+            Assert.Contains("100 → 110", waterDetailsLabel.Text);
+            Assert.Equal($"ครบกำหนด: 05/11/{year + 543}", dueDateLabel.Text);
+            Assert.Equal($"05/11/{year + 543}", grid.Rows[0].Cells["DueDateDisplay"].Value);
+        });
+    }
+
+    [Fact]
     public void RoomForm_BillingTab_WhenAnotherRoomIsSelectedDuringEdit_CreatesNewBillForThatRoom()
     {
         RunInSta(() =>
