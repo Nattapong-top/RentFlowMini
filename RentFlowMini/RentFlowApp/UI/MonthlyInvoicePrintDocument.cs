@@ -174,6 +174,7 @@ public sealed class MonthlyInvoicePrintDocument : PrintDocument
         int dueDateLabelWidth = (int)Math.Ceiling(graphics.MeasureString(dueDateLabel, normalFont).Width);
         DrawText(graphics, dueDateLabel, normalFont, new Rectangle(left, dueDateTop, dueDateLabelWidth, 20));
         DrawText(graphics, invoice.DueDate, boldFont, new Rectangle(left + dueDateLabelWidth, dueDateTop, tableWidth - dueDateLabelWidth, 20));
+        DrawText(graphics, invoice.PaymentStatus, boldFont, new Rectangle(left, dueDateTop, tableWidth, 20), StringAlignment.Far);
     }
 
     private static void DrawInfoRow(Graphics graphics, string label, string value, Font labelFont, Font valueFont, int left, int top)

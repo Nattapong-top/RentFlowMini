@@ -93,6 +93,19 @@ public class MonthlyInvoiceBuilderTests
     }
 
     [Fact]
+    public void Build_ShowsPaymentStatusOnlyWhenBillIsPaid()
+    {
+        var room = new CreateRoomService(_rooms).Create("303", 3000m, false);
+        var bill = CreateBill(room.Id);
+
+        Assert.Equal(string.Empty, CreateBuilder().Build([bill])[0].PaymentStatus);
+
+        bill.RecordPayment(new DateOnly(2026, 11, 3), PaymentMethod.Cash);
+
+        Assert.Equal("ชำระแล้ว เมื่อวันที่ 03/11/2569 (เงินสด)", CreateBuilder().Build([bill])[0].PaymentStatus);
+    }
+
+    [Fact]
     public void Build_WhenRoomHasNoTenant_ShowsPlaceholderName()
     {
         var room = new CreateRoomService(_rooms).Create("303", 3000m, false);

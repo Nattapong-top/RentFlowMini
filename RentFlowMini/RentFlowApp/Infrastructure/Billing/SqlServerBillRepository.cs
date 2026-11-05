@@ -74,7 +74,7 @@ public sealed class SqlServerBillRepository : IBillRepository
     {
         ArgumentNullException.ThrowIfNull(bill);
 
-        // dbo.Bills ยังไม่มีคอลัมน์ค่าจอดรถและ Cable TV จึงบันทึกได้เฉพาะยอดรวม
+        // dbo.Bills ยังไม่มีคอลัมน์ค่าจอดรถ Cable TV และการรับชำระ จึงบันทึกได้เฉพาะยอดรวม
         const string sql = """
             UPDATE dbo.Bills
             SET TotalAmount = @TotalAmount

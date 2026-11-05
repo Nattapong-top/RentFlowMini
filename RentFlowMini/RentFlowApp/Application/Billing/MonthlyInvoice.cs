@@ -19,4 +19,5 @@ public sealed record MonthlyInvoice(
     string DueDate,
     string TenantName,
     IReadOnlyList<MonthlyInvoiceLine> Lines,
-    string GrandTotal);
+    string GrandTotal,
+    string PaymentStatus);

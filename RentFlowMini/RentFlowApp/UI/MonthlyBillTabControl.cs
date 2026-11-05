@@ -15,9 +15,11 @@ public class MonthlyBillTabControl : BaseTabControl
 
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
     private readonly UpdateBillChargesService _updateBillChargesService;
+    private readonly BillPaymentService _billPaymentService;
     private readonly IInvoiceSettingsRepository _invoiceSettingsRepository;
     private readonly MonthlyInvoiceBuilder _invoiceBuilder;
     private readonly Action<MonthlyInvoicePrintDocument> _showInvoicePreview;
+    private readonly Func<string, bool> _confirmCancelPayment;
     private readonly IRoomRepository _roomRepository;
     private readonly IBillingSettingsRepository _billingSettingsRepository;
     private readonly IMonthlyMeterReadingRepository _monthlyMeterReadingRepository;
@@ -44,6 +46,8 @@ public class MonthlyBillTabControl : BaseTabControl
 
     private readonly Button _createBillButton = new();
     private readonly DataGridView _billGrid = new();
+    private readonly DateTimePicker _paymentDatePicker = new();
+    private readonly ComboBox _paymentMethodComboBox = new();
 
     // Result Labels (Right Side Detailed Summary Box)
     private readonly Label _resultRoomLabel = new();
@@ -70,6 +74,11 @@ public class MonthlyBillTabControl : BaseTabControl
         public override string ToString() => RoomNumber;
     }
 
+    private sealed record PaymentMethodItem(PaymentMethod Method, string Name)
+    {
+        public override string ToString() => Name;
+    }
+
     private sealed record BillGridItem(
         BillId BillId,
         int Sequence,
@@ -79,6 +88,7 @@ public class MonthlyBillTabControl : BaseTabControl
         string BillingPeriodDisplay,
         string CreatedAtDisplay,
         string DueDateDisplay,
+        string PaymentStatus,
         string RentAmount,
         string WaterReading,
         string WaterUsed,
@@ -99,7 +109,8 @@ public class MonthlyBillTabControl : BaseTabControl
         ITenantRepository? tenantRepository = null,
         IBillingSettingsRepository? billingSettingsRepository = null,
         IInvoiceSettingsRepository? invoiceSettingsRepository = null,
-        Action<MonthlyInvoicePrintDocument>? showInvoicePreview = null)
+        Action<MonthlyInvoicePrintDocument>? showInvoicePreview = null,
+        Func<string, bool>? confirmCancelPayment = null)
     {
         ArgumentNullException.ThrowIfNull(roomRepository);
 
@@ -109,6 +120,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _monthlyMeterReadingRepository = monthlyMeterReadingRepository ?? new InMemoryMonthlyMeterReadingRepository();
         _billRepository = billRepository ?? new InMemoryBillRepository();
         _updateBillChargesService = new UpdateBillChargesService(_billRepository);
+        _billPaymentService = new BillPaymentService(_billRepository);
         _tenantRepository = tenantRepository ?? new InMemoryTenantRepository();
         _invoiceSettingsRepository = invoiceSettingsRepository ?? new InMemoryInvoiceSettingsRepository();
         _invoiceBuilder = new MonthlyInvoiceBuilder(
@@ -116,6 +128,7 @@ public class MonthlyBillTabControl : BaseTabControl
             _tenantRepository,
             _invoiceSettingsRepository);
         _showInvoicePreview = showInvoicePreview ?? ShowInvoicePreviewDialog;
+        _confirmCancelPayment = confirmCancelPayment ?? ShowCancelPaymentConfirmation;
 
         Name = "MonthlyBillTabControl";
 
@@ -640,6 +653,14 @@ public class MonthlyBillTabControl : BaseTabControl
         });
         _billGrid.Columns.Add(new DataGridViewTextBoxColumn
         {
+            Name = "PaymentStatus",
+            HeaderText = "สถานะการชำระ",
+            DataPropertyName = "PaymentStatus",
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+            Width = 210
+        });
+        _billGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
             Name = "RentAmount",
             HeaderText = "ค่าเช่า",
             DataPropertyName = "RentAmount",
@@ -751,12 +772,145 @@ public class MonthlyBillTabControl : BaseTabControl
         };
         printSelectedButton.Click += (s, e) => PrintInvoices(_billGrid.SelectedRows.Cast<DataGridViewRow>());
 
-        printPanel.Controls.AddRange([printAllButton, printSelectedButton]);
+        _paymentDatePicker.Name = "PaymentDatePicker";
+        _paymentDatePicker.Format = DateTimePickerFormat.Short;
+        _paymentDatePicker.SetBounds(420, 6, 125, 28);
+
+        _paymentMethodComboBox.Name = "PaymentMethodComboBox";
+        _paymentMethodComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _paymentMethodComboBox.SetBounds(555, 6, 125, 28);
+        _paymentMethodComboBox.Items.Add(new PaymentMethodItem(PaymentMethod.Cash, "เงินสด"));
+        _paymentMethodComboBox.Items.Add(new PaymentMethodItem(PaymentMethod.BankTransfer, "โอนเข้าบัญชี"));
+        _paymentMethodComboBox.SelectedIndex = 0;
+
+        var recordPaymentButton = new Button
+        {
+            Name = "RecordPaymentButton",
+            Text = "บันทึกรับชำระ",
+            Left = 690,
+            Top = 3,
+            Width = 130,
+            Height = 34
+        };
+        recordPaymentButton.Click += RecordPaymentButton_Click;
+
+        var cancelPaymentButton = new Button
+        {
+            Name = "CancelPaymentButton",
+            Text = "ยกเลิกการรับชำระ",
+            Left = 830,
+            Top = 3,
+            Width = 150,
+            Height = 34
+        };
+        cancelPaymentButton.Click += CancelPaymentButton_Click;
+
+        printPanel.Controls.AddRange(
+        [
+            printAllButton, printSelectedButton,
+            _paymentDatePicker, _paymentMethodComboBox,
+            recordPaymentButton, cancelPaymentButton
+        ]);
 
         // แถบปุ่มต้องเพิ่มหลังตาราง เพื่อให้ WinForms จัด Dock.Top ก่อน Dock.Fill
         group.Controls.Add(_billGrid);
         group.Controls.Add(printPanel);
         return group;
+    }
+
+    private void RecordPaymentButton_Click(object? sender, EventArgs e)
+    {
+        var method = ((PaymentMethodItem)_paymentMethodComboBox.SelectedItem!).Method;
+        var paidOn = DateOnly.FromDateTime(_paymentDatePicker.Value);
+
+        ChangePaymentOfSelectedBill(
+            billId => _billPaymentService.RecordPayment(billId, paidOn, method),
+            room => $"บันทึกรับชำระห้อง {room} สำเร็จเรียบร้อย");
+    }
+
+    private void CancelPaymentButton_Click(object? sender, EventArgs e)
+    {
+        ChangePaymentOfSelectedBill(
+            _billPaymentService.CancelPayment,
+            room => $"ยกเลิกการรับชำระห้อง {room} สำเร็จเรียบร้อย",
+            ConfirmCancelPayment);
+    }
+
+    private bool ConfirmCancelPayment(BillGridItem item)
+    {
+        // บิลที่ยังไม่จ่ายไม่มีอะไรให้ยกเลิก จึงปล่อยให้ service แจ้งข้อความแทนการถามยืนยัน
+        if (_billRepository.Get(item.BillId)?.IsPaid != true)
+        {
+            return true;
+        }
+
+        return _confirmCancelPayment(
+            $"ต้องการยกเลิกการรับชำระของห้อง {item.RoomNumber} ใช่หรือไม่?\n\n" +
+            $"สถานะปัจจุบัน: {item.PaymentStatus}\n" +
+            "เมื่อยกเลิกแล้ว บิลจะกลับเป็น \"ยังไม่จ่าย\"");
+    }
+
+    private bool ShowCancelPaymentConfirmation(string message) =>
+        MessageBox.Show(
+            FindForm(),
+            message,
+            "ยืนยันการยกเลิกการรับชำระ",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+
+    private void ChangePaymentOfSelectedBill(
+        Func<BillId, Bill> changePayment,
+        Func<string, string> successMessage,
+        Func<BillGridItem, bool>? confirm = null)
+    {
+        // รับเงินทีละห้อง เพื่อกันการบันทึกผิดหลายบิลในครั้งเดียว
+        if (_billGrid.SelectedRows.Count != 1 ||
+            _billGrid.SelectedRows[0].DataBoundItem is not BillGridItem selectedItem)
+        {
+            ShowBillError("กรุณาเลือกบิลในตาราง 1 รายการ");
+            return;
+        }
+
+        if (confirm is not null && !confirm(selectedItem))
+        {
+            return;
+        }
+
+        try
+        {
+            var bill = changePayment(selectedItem.BillId);
+
+            if (_editingBill?.Id == bill.Id)
+            {
+                SetEditingBill(null);
+                RefreshRoomList();
+            }
+
+            RefreshBillGrid();
+            SelectBillRow(bill.Id);
+
+            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.Text = successMessage(selectedItem.RoomNumber);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowBillError(ex.Message);
+        }
+    }
+
+    private void SelectBillRow(BillId billId)
+    {
+        _billGrid.ClearSelection();
+
+        foreach (DataGridViewRow row in _billGrid.Rows)
+        {
+            if (row.DataBoundItem is BillGridItem item && item.BillId == billId)
+            {
+                row.Selected = true;
+                return;
+            }
+        }
     }
 
     private void PrintInvoices(IEnumerable<DataGridViewRow> rows)
@@ -897,6 +1051,9 @@ public class MonthlyBillTabControl : BaseTabControl
                     BillingPeriodDisplay: bill.BillingPeriod.ToBuddhistValue(),
                     CreatedAtDisplay: FormatDateThai(bill.CreatedAt),
                     DueDateDisplay: FormatDateThai(bill.DueDate),
+                    PaymentStatus: bill.Payment is { } payment
+                        ? $"จ่ายแล้ว {FormatDateThai(payment.PaidOn)} ({payment.MethodName})"
+                        : "ยังไม่จ่าย",
                     RentAmount: bill.Rent.Amount.ToString("N2"),
                     WaterReading: waterReading,
                     WaterUsed: waterUsed,
@@ -1284,6 +1441,14 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultCarParkingLabel.Text = bill.CarParking.Amount > 0 ? $"{bill.CarParking.Amount:N2} บาท" : "-";
         _resultCableTvLabel.Text = bill.CableTv.Amount > 0 ? $"{bill.CableTv.Amount:N2} บาท" : (bill.CableTv.Amount == 0 ? "ยกเว้น (0.00 บาท)" : "0.00 บาท");
         _resultTotalLabel.Text = $"{bill.Total.Amount:N2} บาท";
+
+        if (bill.IsPaid)
+        {
+            SetEditingBill(null);
+            _billMessageLabel.ForeColor = Color.DarkBlue;
+            _billMessageLabel.Text = $"บิลห้อง {roomNum} ชำระแล้ว: หากต้องการแก้ไข กรุณายกเลิกการรับชำระก่อน";
+            return;
+        }
 
         SetEditingBill(bill);
 

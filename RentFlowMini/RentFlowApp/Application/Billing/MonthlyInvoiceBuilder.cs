@@ -51,7 +51,10 @@ public sealed class MonthlyInvoiceBuilder
                 FormatThaiDate(bill.DueDate),
                 tenants.TryGetValue(bill.RoomId, out var tenant) ? $"คุณ {tenant.FirstName} {tenant.LastName}" : NoValue,
                 BuildLines(bill),
-                FormatAmount(bill.Total)))
+                FormatAmount(bill.Total),
+                bill.Payment is { } payment
+                    ? $"ชำระแล้ว เมื่อวันที่ {FormatThaiDate(payment.PaidOn)} ({payment.MethodName})"
+                    : string.Empty))
             .ToList();
     }
 

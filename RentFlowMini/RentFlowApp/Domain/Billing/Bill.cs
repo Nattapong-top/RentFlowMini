@@ -56,11 +56,41 @@ public sealed class Bill
 
     public Money Total { get; private set; }
 
+    public BillPayment? Payment { get; private set; }
+
+    public bool IsPaid => Payment is not null;
+
+    public void RecordPayment(DateOnly paidOn, PaymentMethod method)
+    {
+        if (IsPaid)
+        {
+            throw new InvalidOperationException("บิลนี้บันทึกรับชำระแล้ว");
+        }
+
+        Payment = new BillPayment(paidOn, method);
+    }
+
+    public void CancelPayment()
+    {
+        if (!IsPaid)
+        {
+            throw new InvalidOperationException("บิลนี้ยังไม่ได้บันทึกรับชำระ");
+        }
+
+        Payment = null;
+    }
+
     public void UpdateAdditionalCharges(Money motorcycleParking, Money carParking, Money cableTv)
     {
         ArgumentNullException.ThrowIfNull(motorcycleParking);
         ArgumentNullException.ThrowIfNull(carParking);
         ArgumentNullException.ThrowIfNull(cableTv);
+
+        if (IsPaid)
+        {
+            throw new InvalidOperationException(
+                "บิลนี้ชำระแล้วจึงแก้ไขไม่ได้ กรุณายกเลิกการรับชำระก่อนแก้ไข");
+        }
 
         MotorcycleParking = motorcycleParking;
         CarParking = carParking;

@@ -46,7 +46,8 @@ public class MonthlyInvoicePrintingTests
         "05/11/2569",
         "คุณ ทดสอบ ระบบ",
         [new MonthlyInvoiceLine("ค่าเช่าห้อง", string.Empty, string.Empty, string.Empty, "3,000.-")],
-        "3,000.-");
+        "3,000.-",
+        "ชำระแล้ว เมื่อวันที่ 03/11/2569 (เงินสด)");
 
     [Theory]
     [InlineData(1, 1)]
