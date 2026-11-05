@@ -181,8 +181,20 @@ public class TabLayoutTests
     {
         RunInSta(() =>
         {
-            using var form = ShowForm(new InMemoryRoomRepository(), 2, 1920, 1040, out var page);
-            var split = (SplitContainer)page.Controls.Find("BillSplitContainer", true)[0];
+            var rooms = new InMemoryRoomRepository();
+            var bills = new InMemoryBillRepository();
+            using var form = new Form();
+            // Windows บีบหน้าต่างไม่ให้เกินจอ แต่ไม่บีบ control ข้างใน เทสต์จึงให้ผลเท่ากันทุกเครื่อง
+            var host = new Panel { Size = new Size(1900, 900) };
+            var tab = new MonthlyBillTabControl(
+                new CreateMonthlyBillService(bills),
+                rooms,
+                billRepository: bills,
+                tenantRepository: new InMemoryTenantRepository());
+            host.Controls.Add(tab);
+            form.Controls.Add(host);
+            form.Show();
+            var split = (SplitContainer)tab.Controls.Find("BillSplitContainer", true)[0];
 
             Assert.Equal(440, split.SplitterDistance);
         });
