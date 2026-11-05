@@ -20,6 +20,7 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly MonthlyInvoiceBuilder _invoiceBuilder;
     private readonly Action<MonthlyInvoicePrintDocument> _showInvoicePreview;
     private readonly Func<string, bool> _confirmCancelPayment;
+    private readonly Func<DateOnly> _today;
     private readonly IRoomRepository _roomRepository;
     private readonly IBillingSettingsRepository _billingSettingsRepository;
     private readonly IMonthlyMeterReadingRepository _monthlyMeterReadingRepository;
@@ -48,6 +49,8 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly DataGridView _billGrid = new();
     private readonly DateTimePicker _paymentDatePicker = new();
     private readonly ComboBox _paymentMethodComboBox = new();
+    private readonly CheckBox _showOutstandingCheckBox = new();
+    private readonly Label _outstandingSummaryLabel = new();
 
     // Result Labels (Right Side Detailed Summary Box)
     private readonly Label _resultRoomLabel = new();
@@ -89,6 +92,7 @@ public class MonthlyBillTabControl : BaseTabControl
         string CreatedAtDisplay,
         string DueDateDisplay,
         string PaymentStatus,
+        bool IsOverdue,
         string RentAmount,
         string WaterReading,
         string WaterUsed,
@@ -110,7 +114,8 @@ public class MonthlyBillTabControl : BaseTabControl
         IBillingSettingsRepository? billingSettingsRepository = null,
         IInvoiceSettingsRepository? invoiceSettingsRepository = null,
         Action<MonthlyInvoicePrintDocument>? showInvoicePreview = null,
-        Func<string, bool>? confirmCancelPayment = null)
+        Func<string, bool>? confirmCancelPayment = null,
+        Func<DateOnly>? today = null)
     {
         ArgumentNullException.ThrowIfNull(roomRepository);
 
@@ -129,6 +134,7 @@ public class MonthlyBillTabControl : BaseTabControl
             _invoiceSettingsRepository);
         _showInvoicePreview = showInvoicePreview ?? ShowInvoicePreviewDialog;
         _confirmCancelPayment = confirmCancelPayment ?? ShowCancelPaymentConfirmation;
+        _today = today ?? (() => DateOnly.FromDateTime(DateTime.Now));
 
         Name = "MonthlyBillTabControl";
 
@@ -579,13 +585,15 @@ public class MonthlyBillTabControl : BaseTabControl
         _billGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _billGrid.MultiSelect = true;
         _billGrid.RowHeadersVisible = false;
-        _billGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        // ใช้ความกว้างตายตัวและเลื่อนแนวนอน เพื่อไม่ให้ยอดเงินถูกตัดบนจอเล็ก
+        _billGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
         _billGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         _billGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
         _billGrid.RowTemplate.Height = 30;
         _billGrid.ColumnHeadersHeight = 35;
         _billGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
         _billGrid.CellDoubleClick += BillGrid_CellDoubleClick;
+        _billGrid.CellFormatting += BillGrid_CellFormatting;
 
         _billGrid.Columns.Add(new DataGridViewTextBoxColumn
         {
@@ -812,10 +820,66 @@ public class MonthlyBillTabControl : BaseTabControl
             recordPaymentButton, cancelPaymentButton
         ]);
 
+        var outstandingPanel = new Panel { Dock = DockStyle.Top, Height = 34 };
+
+        _showOutstandingCheckBox.Name = "ShowOutstandingCheckBox";
+        _showOutstandingCheckBox.Text = "แสดงเฉพาะบิลค้างชำระทุกเดือน";
+        _showOutstandingCheckBox.SetBounds(2, 4, 260, 26);
+        _showOutstandingCheckBox.CheckedChanged += (s, e) =>
+        {
+            printAllButton.Text = _showOutstandingCheckBox.Checked
+                ? "พิมพ์บิลค้างชำระทั้งหมด"
+                : "พิมพ์ใบแจ้งหนี้ทั้งรอบ";
+            RefreshBillGrid();
+        };
+
+        _outstandingSummaryLabel.Name = "OutstandingSummaryLabel";
+        _outstandingSummaryLabel.SetBounds(270, 4, 500, 26);
+        _outstandingSummaryLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _outstandingSummaryLabel.Font = new Font(Font, FontStyle.Bold);
+
+        outstandingPanel.Controls.AddRange([_showOutstandingCheckBox, _outstandingSummaryLabel]);
+
         // แถบปุ่มต้องเพิ่มหลังตาราง เพื่อให้ WinForms จัด Dock.Top ก่อน Dock.Fill
         group.Controls.Add(_billGrid);
+        group.Controls.Add(outstandingPanel);
         group.Controls.Add(printPanel);
         return group;
+    }
+
+    private void BillGrid_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+    {
+        if (e.RowIndex >= 0 &&
+            _billGrid.Columns[e.ColumnIndex].Name == "PaymentStatus" &&
+            _billGrid.Rows[e.RowIndex].DataBoundItem is BillGridItem { IsOverdue: true })
+        {
+            e.CellStyle.ForeColor = Color.Firebrick;
+            e.CellStyle.SelectionForeColor = Color.MistyRose;
+        }
+    }
+
+    private static string FormatPaymentStatus(Bill bill, DateOnly today)
+    {
+        if (bill.Payment is { } payment)
+        {
+            return $"จ่ายแล้ว {FormatDateThai(payment.PaidOn)} ({payment.MethodName})";
+        }
+
+        return bill.IsOverdue(today)
+            ? $"เกินกำหนด {bill.GetOverdueDays(today)} วัน"
+            : "ยังไม่จ่าย";
+    }
+
+    private void UpdateOutstandingSummary(IReadOnlyCollection<Bill> bills, DateOnly today)
+    {
+        var unpaidBills = bills.Where(bill => !bill.IsPaid).ToList();
+        int overdueCount = unpaidBills.Count(bill => bill.IsOverdue(today));
+        decimal unpaidTotal = unpaidBills.Sum(bill => bill.Total.Amount);
+
+        _outstandingSummaryLabel.ForeColor = overdueCount > 0 ? Color.Firebrick : SystemColors.ControlText;
+        _outstandingSummaryLabel.Text = unpaidBills.Count == 0
+            ? "ไม่มีบิลค้างชำระ"
+            : $"ค้างชำระ {unpaidBills.Count} บิล รวม {unpaidTotal:N2} บาท (เกินกำหนด {overdueCount} บิล)";
     }
 
     private void RecordPaymentButton_Click(object? sender, EventArgs e)
@@ -1015,15 +1079,22 @@ public class MonthlyBillTabControl : BaseTabControl
     public void RefreshBillGrid()
     {
         var currentPeriod = _periodSelector.GetBillingPeriod();
+        var today = _today();
         var bills = _billRepository.GetAll()
-            .Where(b => currentPeriod == null || b.BillingPeriod == currentPeriod)
+            .Where(b => _showOutstandingCheckBox.Checked
+                ? !b.IsPaid
+                : currentPeriod == null || b.BillingPeriod == currentPeriod)
             .ToList();
+
+        UpdateOutstandingSummary(bills, today);
 
         var rooms = _roomRepository.GetAll().ToDictionary(r => r.Id, r => r.RoomNumber.Value);
         var tenants = _tenantRepository.GetAll().Where(t => t.RoomId != null).GroupBy(t => t.RoomId!).ToDictionary(g => g.Key, g => g.First());
 
+        // เรียงตามวันครบกำหนดก่อน เพื่อให้มุมมองข้ามเดือนเห็นบิลที่ค้างนานที่สุดเป็นแถวแรก
         _billGrid.DataSource = bills
-            .OrderBy(b => rooms.TryGetValue(b.RoomId, out var num) ? num : "")
+            .OrderBy(b => b.DueDate)
+            .ThenBy(b => rooms.TryGetValue(b.RoomId, out var num) ? num : "")
             .Select((bill, index) =>
             {
                 var roomNum = rooms.TryGetValue(bill.RoomId, out var num) ? num : "-";
@@ -1051,9 +1122,8 @@ public class MonthlyBillTabControl : BaseTabControl
                     BillingPeriodDisplay: bill.BillingPeriod.ToBuddhistValue(),
                     CreatedAtDisplay: FormatDateThai(bill.CreatedAt),
                     DueDateDisplay: FormatDateThai(bill.DueDate),
-                    PaymentStatus: bill.Payment is { } payment
-                        ? $"จ่ายแล้ว {FormatDateThai(payment.PaidOn)} ({payment.MethodName})"
-                        : "ยังไม่จ่าย",
+                    PaymentStatus: FormatPaymentStatus(bill, today),
+                    IsOverdue: bill.IsOverdue(today),
                     RentAmount: bill.Rent.Amount.ToString("N2"),
                     WaterReading: waterReading,
                     WaterUsed: waterUsed,

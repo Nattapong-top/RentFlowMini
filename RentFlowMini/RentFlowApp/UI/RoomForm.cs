@@ -128,6 +128,7 @@ public class RoomForm : Form
             else if (tabControl.SelectedTab == billingTabPage)
             {
                 _monthlyBillTabControl.RefreshRoomList();
+                _monthlyBillTabControl.RefreshBillGrid();
             }
             else if (tabControl.SelectedTab == tenantTabPage)
             {

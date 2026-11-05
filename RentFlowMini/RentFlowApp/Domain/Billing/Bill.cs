@@ -60,6 +60,12 @@ public sealed class Bill
 
     public bool IsPaid => Payment is not null;
 
+    // วันครบกำหนดยังจ่ายทัน จึงเริ่มเกินกำหนดตั้งแต่วันถัดไป
+    public bool IsOverdue(DateOnly today) => !IsPaid && today > DueDate;
+
+    public int GetOverdueDays(DateOnly today) =>
+        IsOverdue(today) ? today.DayNumber - DueDate.DayNumber : 0;
+
     public void RecordPayment(DateOnly paidOn, PaymentMethod method)
     {
         if (IsPaid)

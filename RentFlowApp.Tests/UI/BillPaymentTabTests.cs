@@ -38,31 +38,37 @@ public class BillPaymentTabTests
     {
         private readonly Form _form = new();
         private readonly MonthlyBillTabControl _tab;
+        private readonly CreateRoomService _createRoomService;
+        private readonly CreateMonthlyBillService _createBillService;
 
         public PaymentTab(params string[] roomNumbers)
         {
             var roomRepo = new InMemoryRoomRepository();
-            var createRoomService = new CreateRoomService(roomRepo);
-            var createBillService = new CreateMonthlyBillService(Bills);
+            _createRoomService = new CreateRoomService(roomRepo);
+            _createBillService = new CreateMonthlyBillService(Bills);
             var period = BillingPeriod.Create($"{DateTime.Now.Year}-10");
-            var meter = MeterReading.Create(100m);
 
             foreach (var roomNumber in roomNumbers)
             {
-                var room = createRoomService.Create(roomNumber, 3000m, true);
-                createBillService.Create(new CreateMonthlyBillRequest(
-                    room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+                CreateBill(roomNumber, period);
             }
 
+            var invoiceSettings = new InMemoryInvoiceSettingsRepository();
+            invoiceSettings.Save(InvoiceSettings.Create("หอทดสอบ", "ที่อยู่ทดสอบ", null));
+
             _tab = new MonthlyBillTabControl(
-                createBillService,
+                _createBillService,
                 roomRepo,
                 billRepository: Bills,
+                invoiceSettingsRepository: invoiceSettings,
+                showInvoicePreview: document => Printed = document.Invoices,
                 confirmCancelPayment: message =>
                 {
                     ConfirmMessages.Add(message);
                     return ConfirmAnswer;
-                })
+                },
+                // กำหนดวันนี้ตายตัว ก่อนครบกำหนดของรอบเดือน 10 เพื่อไม่ให้ผลเทสต์เปลี่ยนตามวันที่รัน
+                today: () => new DateOnly(DateTime.Now.Year, 10, 15))
             {
                 Dock = DockStyle.Fill
             };
@@ -76,6 +82,25 @@ public class BillPaymentTabTests
         public bool ConfirmAnswer { get; set; } = true;
 
         public List<string> ConfirmMessages { get; } = [];
+
+        public IReadOnlyList<MonthlyInvoice>? Printed { get; private set; }
+
+        public void AddBill(string roomNumber, string monthOfThisYear)
+        {
+            CreateBill(roomNumber, BillingPeriod.Create($"{DateTime.Now.Year}-{monthOfThisYear}"));
+            _tab.RefreshBillGrid();
+        }
+
+        private void CreateBill(string roomNumber, BillingPeriod period)
+        {
+            var meter = MeterReading.Create(100m);
+            var room = _createRoomService.Create(roomNumber, 3000m, true);
+            _createBillService.Create(new CreateMonthlyBillRequest(
+                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+        }
+
+        public IEnumerable<string?> GridColumn(string columnName) =>
+            Grid.Rows.Cast<DataGridViewRow>().Select(row => row.Cells[columnName].Value?.ToString());
 
         public DataGridView Grid => Find<DataGridView>("BillGrid");
 
@@ -219,6 +244,109 @@ public class BillPaymentTabTests
             tab.DoubleClickRow(0);
 
             Assert.Equal("บันทึกการแก้ไขบิล", createButton.Text);
+        });
+    }
+
+    [Fact]
+    public void BillOfCurrentPeriod_WhenPastDueDate_ShowsOverdueDaysInStatusAndSummary()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new PaymentTab("101");
+            tab.AddBill("102", "09");
+
+            tab.Find<BillingPeriodSelector>("BillingPeriodSelector")
+                .SetBillingPeriod(BillingPeriod.Create($"{DateTime.Now.Year}-09"));
+
+            Assert.Equal(["เกินกำหนด 10 วัน"], tab.GridColumn("PaymentStatus"));
+            Assert.Equal(
+                "ค้างชำระ 1 บิล รวม 3,000.00 บาท (เกินกำหนด 1 บิล)",
+                tab.Find<Label>("OutstandingSummaryLabel").Text);
+        });
+    }
+
+    [Fact]
+    public void OutstandingFilter_ShowsUnpaidBillsOfAllMonthsOldestFirstAndCanBeTurnedOff()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new PaymentTab("101", "102");
+            tab.AddBill("103", "08");
+            tab.AddBill("104", "09");
+            tab.SelectOnly(1);
+            tab.Click("RecordPaymentButton");
+            var filter = tab.Find<CheckBox>("ShowOutstandingCheckBox");
+
+            filter.Checked = true;
+
+            Assert.Equal(["103", "104", "101"], tab.GridColumn("RoomNumber"));
+            Assert.Equal(["เกินกำหนด 40 วัน", "เกินกำหนด 10 วัน", "ยังไม่จ่าย"], tab.GridColumn("PaymentStatus"));
+            Assert.Equal(
+                "ค้างชำระ 3 บิล รวม 9,000.00 บาท (เกินกำหนด 2 บิล)",
+                tab.Find<Label>("OutstandingSummaryLabel").Text);
+
+            filter.Checked = false;
+
+            Assert.Equal(["101", "102"], tab.GridColumn("RoomNumber"));
+        });
+    }
+
+    [Fact]
+    public void OutstandingFilter_RecordingPaymentRemovesRowWithoutSelectingAnotherBill()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new PaymentTab("101");
+            tab.AddBill("103", "08");
+            tab.Find<CheckBox>("ShowOutstandingCheckBox").Checked = true;
+            tab.SelectOnly(0);
+
+            tab.Click("RecordPaymentButton");
+
+            Assert.Equal(["101"], tab.GridColumn("RoomNumber"));
+            Assert.Empty(tab.Grid.SelectedRows.Cast<DataGridViewRow>());
+            Assert.Equal(1, tab.Bills.GetAll().Count(bill => bill.IsPaid));
+            Assert.Equal(
+                "ค้างชำระ 1 บิล รวม 3,000.00 บาท (เกินกำหนด 0 บิล)",
+                tab.Find<Label>("OutstandingSummaryLabel").Text);
+        });
+    }
+
+    [Fact]
+    public void OutstandingFilter_PrintAllUsesRowsInGridAndRenamesButton()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new PaymentTab("101", "102");
+            tab.AddBill("103", "08");
+            tab.SelectOnly(1);
+            tab.Click("RecordPaymentButton");
+            var printAll = tab.Find<Button>("PrintAllInvoicesButton");
+            Assert.Equal("พิมพ์ใบแจ้งหนี้ทั้งรอบ", printAll.Text);
+
+            tab.Find<CheckBox>("ShowOutstandingCheckBox").Checked = true;
+            tab.Click("PrintAllInvoicesButton");
+
+            Assert.Equal("พิมพ์บิลค้างชำระทั้งหมด", printAll.Text);
+            Assert.Equal(["103", "101"], tab.Printed!.Select(invoice => invoice.RoomNumber));
+        });
+    }
+
+    [Fact]
+    public void OutstandingFilter_DoubleClickOlderBillEditsItAndKeepsFilterOn()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new PaymentTab("101");
+            tab.AddBill("103", "08");
+            var selector = tab.Find<BillingPeriodSelector>("BillingPeriodSelector");
+            tab.Find<CheckBox>("ShowOutstandingCheckBox").Checked = true;
+
+            tab.DoubleClickRow(0);
+
+            Assert.Equal("บันทึกการแก้ไขบิล", tab.Find<Button>("CreateBillButton").Text);
+            Assert.Equal(BillingPeriod.Create($"{DateTime.Now.Year}-08"), selector.GetBillingPeriod());
+            Assert.Equal(["103", "101"], tab.GridColumn("RoomNumber"));
         });
     }
 
