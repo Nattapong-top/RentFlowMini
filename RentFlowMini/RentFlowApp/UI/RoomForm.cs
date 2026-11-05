@@ -24,7 +24,8 @@ public class RoomForm : Form
         IMonthlyMeterReadingRepository? monthlyMeterReadingRepository = null,
         IBillRepository? billRepository = null,
         IBillingSettingsRepository? billingSettingsRepository = null,
-        UpdateBillingSettingsService? updateBillingSettingsService = null)
+        UpdateBillingSettingsService? updateBillingSettingsService = null,
+        IInvoiceSettingsRepository? invoiceSettingsRepository = null)
     {
         ArgumentNullException.ThrowIfNull(createRoomService);
         ArgumentNullException.ThrowIfNull(roomRepository);
@@ -36,6 +37,7 @@ public class RoomForm : Form
         var billingSettingsRepo = billingSettingsRepository ?? new InMemoryBillingSettingsRepository();
         var updateBillingSettingsSvc = updateBillingSettingsService ?? new UpdateBillingSettingsService(billingSettingsRepo);
         var saveMonthlyMeterReadingSvc = new SaveMonthlyMeterReadingService(monthlyMeterReadingRepo);
+        var invoiceSettingsRepo = invoiceSettingsRepository ?? new InMemoryInvoiceSettingsRepository();
 
         _roomTabControl = new RoomTabControl(
             createRoomService,
@@ -45,7 +47,8 @@ public class RoomForm : Form
 
         _billingSettingsTabControl = new BillingSettingsTabControl(
             billingSettingsRepo,
-            updateBillingSettingsSvc);
+            updateBillingSettingsSvc,
+            invoiceSettingsRepo);
 
         _meterReadingTabControl = new MeterReadingTabControl(
             roomRepository,
@@ -57,7 +60,8 @@ public class RoomForm : Form
             roomRepository,
             monthlyMeterReadingRepository: monthlyMeterReadingRepo,
             billRepository: billRepo,
-            tenantRepository: tenantRepo);
+            tenantRepository: tenantRepo,
+            invoiceSettingsRepository: invoiceSettingsRepo);
 
         _tenantTabControl = new TenantTabControl(
             tenantRepo,

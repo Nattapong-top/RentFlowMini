@@ -15,6 +15,9 @@ public class MonthlyBillTabControl : BaseTabControl
 
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
     private readonly UpdateBillChargesService _updateBillChargesService;
+    private readonly IInvoiceSettingsRepository _invoiceSettingsRepository;
+    private readonly MonthlyInvoiceBuilder _invoiceBuilder;
+    private readonly Action<MonthlyInvoicePrintDocument> _showInvoicePreview;
     private readonly IRoomRepository _roomRepository;
     private readonly IBillingSettingsRepository _billingSettingsRepository;
     private readonly IMonthlyMeterReadingRepository _monthlyMeterReadingRepository;
@@ -94,7 +97,9 @@ public class MonthlyBillTabControl : BaseTabControl
         IMonthlyMeterReadingRepository? monthlyMeterReadingRepository = null,
         IBillRepository? billRepository = null,
         ITenantRepository? tenantRepository = null,
-        IBillingSettingsRepository? billingSettingsRepository = null)
+        IBillingSettingsRepository? billingSettingsRepository = null,
+        IInvoiceSettingsRepository? invoiceSettingsRepository = null,
+        Action<MonthlyInvoicePrintDocument>? showInvoicePreview = null)
     {
         ArgumentNullException.ThrowIfNull(roomRepository);
 
@@ -105,6 +110,12 @@ public class MonthlyBillTabControl : BaseTabControl
         _billRepository = billRepository ?? new InMemoryBillRepository();
         _updateBillChargesService = new UpdateBillChargesService(_billRepository);
         _tenantRepository = tenantRepository ?? new InMemoryTenantRepository();
+        _invoiceSettingsRepository = invoiceSettingsRepository ?? new InMemoryInvoiceSettingsRepository();
+        _invoiceBuilder = new MonthlyInvoiceBuilder(
+            _roomRepository,
+            _tenantRepository,
+            _invoiceSettingsRepository);
+        _showInvoicePreview = showInvoicePreview ?? ShowInvoicePreviewDialog;
 
         Name = "MonthlyBillTabControl";
 
@@ -554,7 +565,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _billGrid.AllowUserToDeleteRows = false;
         _billGrid.AutoGenerateColumns = false;
         _billGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        _billGrid.MultiSelect = false;
+        _billGrid.MultiSelect = true;
         _billGrid.RowHeadersVisible = false;
         _billGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         _billGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
@@ -717,8 +728,87 @@ public class MonthlyBillTabControl : BaseTabControl
             DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font(Font, FontStyle.Bold) }
         });
 
+        var printPanel = new Panel { Dock = DockStyle.Top, Height = 42 };
+
+        var printAllButton = new Button
+        {
+            Name = "PrintAllInvoicesButton",
+            Text = "พิมพ์ใบแจ้งหนี้ทั้งรอบ",
+            Left = 0,
+            Top = 3,
+            Width = 190,
+            Height = 34
+        };
+        printAllButton.Click += (s, e) => PrintInvoices(_billGrid.Rows.Cast<DataGridViewRow>());
+
+        var printSelectedButton = new Button
+        {
+            Name = "PrintSelectedInvoicesButton",
+            Text = "พิมพ์เฉพาะห้องที่เลือก",
+            Left = 200,
+            Top = 3,
+            Width = 190,
+            Height = 34
+        };
+        printSelectedButton.Click += (s, e) => PrintInvoices(_billGrid.SelectedRows.Cast<DataGridViewRow>());
+
+        printPanel.Controls.AddRange([printAllButton, printSelectedButton]);
+
+        // แถบปุ่มต้องเพิ่มหลังตาราง เพื่อให้ WinForms จัด Dock.Top ก่อน Dock.Fill
         group.Controls.Add(_billGrid);
+        group.Controls.Add(printPanel);
         return group;
+    }
+
+    private void PrintInvoices(IEnumerable<DataGridViewRow> rows)
+    {
+        // SelectedRows เรียงตามลำดับการเลือก จึงต้องเรียงใหม่ให้ตรงกับตาราง
+        var bills = rows
+            .OrderBy(row => row.Index)
+            .Select(row => row.DataBoundItem)
+            .OfType<BillGridItem>()
+            .Select(item => _billRepository.Get(item.BillId))
+            .OfType<Bill>()
+            .ToList();
+
+        if (bills.Count == 0)
+        {
+            ShowBillError("ไม่มีบิลสำหรับพิมพ์ กรุณาสร้างบิลหรือเลือกห้องจากตารางก่อน");
+            return;
+        }
+
+        if (!_invoiceSettingsRepository.Get().IsConfigured)
+        {
+            ShowBillError("กรุณากรอกชื่อและที่อยู่หอพักในแท็บตั้งค่าก่อนพิมพ์ใบแจ้งหนี้");
+            return;
+        }
+
+        try
+        {
+            using var document = new MonthlyInvoicePrintDocument(_invoiceBuilder.Build(bills));
+            _showInvoicePreview(document);
+        }
+        catch (System.Drawing.Printing.InvalidPrinterException)
+        {
+            ShowBillError("ไม่พบเครื่องพิมพ์ในระบบ กรุณาติดตั้งเครื่องพิมพ์แล้วลองอีกครั้ง");
+        }
+    }
+
+    private void ShowInvoicePreviewDialog(MonthlyInvoicePrintDocument document)
+    {
+        // เลือกเครื่องพิมพ์ก่อน เพราะปุ่มพิมพ์ใน PrintPreviewDialog จะสั่งพิมพ์ทันทีโดยไม่ถาม
+        using var printDialog = new PrintDialog { Document = document, UseEXDialog = true };
+        if (printDialog.ShowDialog(FindForm()) != DialogResult.OK)
+        {
+            return;
+        }
+
+        using var previewDialog = new PrintPreviewDialog
+        {
+            Document = document,
+            WindowState = FormWindowState.Maximized
+        };
+        previewDialog.ShowDialog(FindForm());
     }
 
     public void RefreshRoomList(RoomId? forceIncludeRoomId = null)

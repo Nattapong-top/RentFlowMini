@@ -17,15 +17,24 @@ public class BillingSettingsTabControl : BaseTabControl
     private readonly Button _saveButton = new();
     private readonly Label _messageLabel = new();
 
+    private readonly IInvoiceSettingsRepository _invoiceSettingsRepository;
+    private readonly TextBox _propertyNameTextBox = new();
+    private readonly TextBox _addressTextBox = new();
+    private readonly TextBox _bankAccountTextBox = new();
+    private readonly Button _saveInvoiceSettingsButton = new();
+
     public BillingSettingsTabControl(
         IBillingSettingsRepository settingsRepository,
-        UpdateBillingSettingsService updateSettingsService)
+        UpdateBillingSettingsService updateSettingsService,
+        IInvoiceSettingsRepository invoiceSettingsRepository)
     {
         ArgumentNullException.ThrowIfNull(settingsRepository);
         ArgumentNullException.ThrowIfNull(updateSettingsService);
+        ArgumentNullException.ThrowIfNull(invoiceSettingsRepository);
 
         _settingsRepository = settingsRepository;
         _updateSettingsService = updateSettingsService;
+        _invoiceSettingsRepository = invoiceSettingsRepository;
 
         Name = "BillingSettingsTabControl";
 
@@ -35,9 +44,10 @@ public class BillingSettingsTabControl : BaseTabControl
 
     private void InitializeComponents()
     {
-        var mainLayout = CreateStandardLayout(3, [50f, 330f, -1f]);
+        var mainLayout = CreateStandardLayout(4, [50f, 330f, 230f, -1f]);
         var titleLabel = CreateTitleLabel("ตั้งค่าราคากลางประจำระบบ");
         var group = BuildInputGroup();
+        var invoiceGroup = BuildInvoiceSettingsGroup();
 
         var messagePanel = new Panel
         {
@@ -51,9 +61,70 @@ public class BillingSettingsTabControl : BaseTabControl
 
         mainLayout.Controls.Add(titleLabel, 0, 0);
         mainLayout.Controls.Add(group, 0, 1);
-        mainLayout.Controls.Add(messagePanel, 0, 2);
+        mainLayout.Controls.Add(invoiceGroup, 0, 2);
+        mainLayout.Controls.Add(messagePanel, 0, 3);
 
         Controls.Add(mainLayout);
+    }
+
+    private GroupBox BuildInvoiceSettingsGroup()
+    {
+        var group = new GroupBox
+        {
+            Name = "InvoiceSettingsGroup",
+            Text = "ข้อมูลหอพักบนใบแจ้งหนี้",
+            Dock = DockStyle.Fill,
+            Padding = new Padding(12)
+        };
+
+        var panel = new Panel { Dock = DockStyle.Fill };
+
+        var nameLabel = new Label { Text = "ชื่อหอพัก:", Left = 12, Top = 15, Width = 230, Height = 25 };
+        _propertyNameTextBox.Name = "InvoicePropertyNameTextBox";
+        _propertyNameTextBox.SetBounds(250, 12, 500, 30);
+
+        var addressLabel = new Label { Text = "ที่อยู่:", Left = 12, Top = 55, Width = 230, Height = 25 };
+        _addressTextBox.Name = "InvoiceAddressTextBox";
+        _addressTextBox.SetBounds(250, 52, 500, 30);
+
+        var bankLabel = new Label { Text = "บัญชีสำหรับโอนเงิน (ธนาคาร เลขบัญชี ชื่อบัญชี):", Left = 12, Top = 95, Width = 235, Height = 40 };
+        _bankAccountTextBox.Name = "InvoiceBankAccountTextBox";
+        _bankAccountTextBox.SetBounds(250, 92, 500, 30);
+
+        _saveInvoiceSettingsButton.Name = "SaveInvoiceSettingsButton";
+        _saveInvoiceSettingsButton.Text = "บันทึกข้อมูลหอพัก";
+        _saveInvoiceSettingsButton.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+        _saveInvoiceSettingsButton.SetBounds(250, 135, 180, 40);
+        _saveInvoiceSettingsButton.Click += SaveInvoiceSettingsButton_Click;
+
+        panel.Controls.AddRange(
+        [
+            nameLabel, _propertyNameTextBox,
+            addressLabel, _addressTextBox,
+            bankLabel, _bankAccountTextBox,
+            _saveInvoiceSettingsButton
+        ]);
+
+        group.Controls.Add(panel);
+        return group;
+    }
+
+    private void SaveInvoiceSettingsButton_Click(object? sender, EventArgs e)
+    {
+        try
+        {
+            _invoiceSettingsRepository.Save(InvoiceSettings.Create(
+                _propertyNameTextBox.Text,
+                _addressTextBox.Text,
+                _bankAccountTextBox.Text));
+
+            _messageLabel.ForeColor = Color.DarkGreen;
+            _messageLabel.Text = "บันทึกข้อมูลหอพักสำเร็จเรียบร้อย";
+        }
+        catch (ArgumentException ex)
+        {
+            ShowError(ex.ParamName is null ? ex.Message : ex.Message.Split(" (Parameter")[0]);
+        }
     }
 
     private GroupBox BuildInputGroup()
@@ -144,6 +215,11 @@ public class BillingSettingsTabControl : BaseTabControl
             _motorcycleRateTextBox.Text = settings.MotorcycleParkingRate.Amount.ToString("0.##");
             _carRateTextBox.Text = settings.CarParkingRate.Amount.ToString("0.##");
             _cableTvRateTextBox.Text = settings.CableTvRate.Amount.ToString("0.##");
+
+            var invoiceSettings = _invoiceSettingsRepository.Get();
+            _propertyNameTextBox.Text = invoiceSettings.PropertyName;
+            _addressTextBox.Text = invoiceSettings.Address;
+            _bankAccountTextBox.Text = invoiceSettings.BankAccountDetails;
         }
         catch (Exception ex)
         {
