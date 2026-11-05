@@ -706,4 +706,124 @@ public class RoomFormTests
             Assert.Equal("102", remainingRoom);
         });
     }
+
+    private static void AddMeterReading(
+        InMemoryMonthlyMeterReadingRepository meterRepo,
+        RoomId roomId,
+        BillingPeriod period)
+    {
+        meterRepo.Add(MonthlyMeterReading.Create(
+            roomId,
+            period,
+            MeterReading.Create(100m),
+            MeterReading.Create(110m),
+            MeterReading.Create(500m),
+            MeterReading.Create(550m)));
+    }
+
+    private static void DoubleClickFirstRow(DataGridView grid)
+    {
+        var onCellDoubleClick = typeof(DataGridView).GetMethod(
+            "OnCellDoubleClick",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        onCellDoubleClick!.Invoke(grid, [new DataGridViewCellEventArgs(1, 0)]);
+    }
+
+    [Fact]
+    public void RoomForm_BillingTab_WhenExistingBillIsEdited_UpdatesSameBillWithoutDuplicateError()
+    {
+        RunInSta(() =>
+        {
+            // Arrange
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createBillService = new CreateMonthlyBillService(billRepo);
+            var period = BillingPeriod.Create($"{DateTime.Now.Year}-10");
+
+            var room = createRoomService.Create("101", 3000m, true);
+            AddMeterReading(meterRepo, room.Id, period);
+
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(period);
+
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+            var motorcycleCheckBox = (CheckBox)billingTab.Controls.Find("ChargeMotorcycleCheckBox", true).First();
+            var messageLabel = (Label)billingTab.Controls.Find("BillMessageLabel", true).First();
+            var grid = (DataGridView)billingTab.Controls.Find("BillGrid", true).First();
+
+            createButton.PerformClick();
+            var bill = Assert.Single(billRepo.GetAll());
+            Assert.Equal(0m, bill.MotorcycleParking.Amount);
+            decimal originalTotal = bill.Total.Amount;
+            string invoiceNumber = bill.InvoiceNumber;
+
+            // Act
+            DoubleClickFirstRow(grid);
+            Assert.Equal("บันทึกการแก้ไขบิล", createButton.Text);
+            motorcycleCheckBox.Checked = true;
+            createButton.PerformClick();
+
+            // Assert
+            Assert.Equal(System.Drawing.Color.DarkGreen, messageLabel.ForeColor);
+            Assert.DoesNotContain("อยู่แล้ว", messageLabel.Text);
+            var updatedBill = Assert.Single(billRepo.GetAll());
+            Assert.Equal(invoiceNumber, updatedBill.InvoiceNumber);
+            Assert.True(updatedBill.MotorcycleParking.Amount > 0m);
+            Assert.Equal(originalTotal + updatedBill.MotorcycleParking.Amount, updatedBill.Total.Amount);
+            Assert.Equal("คำนวณและสร้างบิล", createButton.Text);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_BillingTab_WhenAnotherRoomIsSelectedDuringEdit_CreatesNewBillForThatRoom()
+    {
+        RunInSta(() =>
+        {
+            // Arrange
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createBillService = new CreateMonthlyBillService(billRepo);
+            var period = BillingPeriod.Create($"{DateTime.Now.Year}-10");
+
+            var room1 = createRoomService.Create("101", 3000m, true);
+            var room2 = createRoomService.Create("102", 3000m, true);
+            AddMeterReading(meterRepo, room1.Id, period);
+            AddMeterReading(meterRepo, room2.Id, period);
+
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(period);
+
+            var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+            var grid = (DataGridView)billingTab.Controls.Find("BillGrid", true).First();
+
+            createButton.PerformClick();
+            DoubleClickFirstRow(grid);
+
+            // Act
+            comboBox.SelectedItem = comboBox.Items.Cast<object>().First(item => item.ToString() == "102");
+            createButton.PerformClick();
+
+            // Assert
+            Assert.Equal("คำนวณและสร้างบิล", createButton.Text);
+            Assert.Equal(2, billRepo.GetAll().Count);
+            Assert.True(billRepo.Exists(room2.Id, period));
+        });
+    }
 }

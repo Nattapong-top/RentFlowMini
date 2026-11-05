@@ -21,6 +21,20 @@ public sealed class InMemoryBillRepository : IBillRepository
         _bills.Add(bill);
     }
 
+    public void Update(Bill bill)
+    {
+        ArgumentNullException.ThrowIfNull(bill);
+
+        int index = _bills.FindIndex(b => b.Id == bill.Id);
+        if (index < 0)
+        {
+            throw new InvalidOperationException(
+                "ไม่พบบิลที่ต้องการแก้ไข กรุณาเลือกบิลจากตารางอีกครั้ง");
+        }
+
+        _bills[index] = bill;
+    }
+
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)
     {
         ArgumentNullException.ThrowIfNull(roomId);

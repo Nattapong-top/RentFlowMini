@@ -10,7 +10,11 @@ namespace RentFlowApp.Forms;
 
 public class MonthlyBillTabControl : BaseTabControl
 {
+    private const string CreateBillButtonText = "คำนวณและสร้างบิล";
+    private const string SaveBillEditButtonText = "บันทึกการแก้ไขบิล";
+
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
+    private readonly UpdateBillChargesService _updateBillChargesService;
     private readonly IRoomRepository _roomRepository;
     private readonly IBillingSettingsRepository _billingSettingsRepository;
     private readonly IMonthlyMeterReadingRepository _monthlyMeterReadingRepository;
@@ -55,6 +59,8 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly Label _resultTotalLabel = new();
     private readonly Label _billMessageLabel = new();
 
+    private Bill? _editingBill;
+
     private sealed record RoomItem(RoomId Id, string RoomNumber, decimal MonthlyRent, bool IsCableTvExempt)
     {
         public override string ToString() => RoomNumber;
@@ -95,6 +101,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _billingSettingsRepository = billingSettingsRepository ?? new InMemoryBillingSettingsRepository();
         _monthlyMeterReadingRepository = monthlyMeterReadingRepository ?? new InMemoryMonthlyMeterReadingRepository();
         _billRepository = billRepository ?? new InMemoryBillRepository();
+        _updateBillChargesService = new UpdateBillChargesService(_billRepository);
         _tenantRepository = tenantRepository ?? new InMemoryTenantRepository();
 
         Name = "MonthlyBillTabControl";
@@ -298,7 +305,7 @@ public class MonthlyBillTabControl : BaseTabControl
 
         // Create Bill Button & Message Label
         _createBillButton.Name = "CreateBillButton";
-        _createBillButton.Text = "คำนวณและสร้างบิล";
+        _createBillButton.Text = CreateBillButtonText;
         _createBillButton.Font = new Font("Segoe UI", 10, FontStyle.Bold);
         _createBillButton.SetBounds(12, 345, 180, 42);
         _createBillButton.Click += CreateBillButton_Click;
@@ -736,6 +743,7 @@ public class MonthlyBillTabControl : BaseTabControl
             ApplyRoomDefaults(currentRoom);
         }
 
+        ExitBillEditIfSelectionChanged();
         TryAutoLoadReadings();
     }
 
@@ -801,7 +809,33 @@ public class MonthlyBillTabControl : BaseTabControl
         {
             ApplyRoomDefaults(room);
         }
+
+        ExitBillEditIfSelectionChanged();
         TryAutoLoadReadings();
+    }
+
+    private void SetEditingBill(Bill? bill)
+    {
+        _editingBill = bill;
+        _createBillButton.Text = bill is null ? CreateBillButtonText : SaveBillEditButtonText;
+    }
+
+    private void ExitBillEditIfSelectionChanged()
+    {
+        if (_editingBill is null)
+        {
+            return;
+        }
+
+        bool isSameBillSelected =
+            _billRoomComboBox.SelectedItem is RoomItem room &&
+            room.Id == _editingBill.RoomId &&
+            _periodSelector.GetBillingPeriod() == _editingBill.BillingPeriod;
+
+        if (!isSameBillSelected)
+        {
+            SetEditingBill(null);
+        }
     }
 
     private void ApplyRoomDefaults(RoomItem room)
@@ -939,6 +973,12 @@ public class MonthlyBillTabControl : BaseTabControl
             return;
         }
 
+        if (_editingBill is not null)
+        {
+            SaveBillEdit(_editingBill, selectedRoom, motorcycleRate, carRate, cableTvRate);
+            return;
+        }
+
         MeterReading? prevWater = TryParseMeterReading(_prevWaterTextBox.Text.Trim());
         MeterReading? currWater = TryParseMeterReading(_currWaterTextBox.Text.Trim());
         MeterReading? prevElec = TryParseMeterReading(_prevElecTextBox.Text.Trim());
@@ -1019,6 +1059,49 @@ public class MonthlyBillTabControl : BaseTabControl
         }
     }
 
+    private void SaveBillEdit(
+        Bill editingBill,
+        RoomItem selectedRoom,
+        decimal motorcycleRate,
+        decimal carRate,
+        decimal cableTvRate)
+    {
+        bool isCableTvExempt = _isCableTvExemptCheckBox.Checked;
+
+        try
+        {
+            var bill = _updateBillChargesService.Update(new UpdateBillChargesRequest(
+                editingBill.Id,
+                _chargeMotorcycleCheckBox.Checked,
+                motorcycleRate,
+                _chargeCarCheckBox.Checked,
+                carRate,
+                isCableTvExempt,
+                cableTvRate));
+
+            _resultMotorcycleParkingLabel.Text = bill.MotorcycleParking.Amount > 0 ? $"{bill.MotorcycleParking.Amount:N2} บาท" : "-";
+            _resultCarParkingLabel.Text = bill.CarParking.Amount > 0 ? $"{bill.CarParking.Amount:N2} บาท" : "-";
+            _resultCableTvLabel.Text = bill.CableTv.Amount > 0 ? $"{bill.CableTv.Amount:N2} บาท" : (isCableTvExempt ? "ยกเว้น (0.00 บาท)" : "0.00 บาท");
+            _resultTotalLabel.Text = $"{bill.Total.Amount:N2} บาท";
+
+            SetEditingBill(null);
+            RefreshBillGrid();
+            RefreshRoomList(forceIncludeRoomId: null);
+
+            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.Text =
+                $"บันทึกการแก้ไขบิลห้อง {selectedRoom.RoomNumber} รอบ {bill.BillingPeriod.Value} สำเร็จเรียบร้อย";
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowBillError(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            ShowBillError(ex.Message);
+        }
+    }
+
     private void BillGrid_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
     {
         if (e.RowIndex < 0 || _billGrid.Rows[e.RowIndex].DataBoundItem is not BillGridItem gridItem)
@@ -1044,6 +1127,7 @@ public class MonthlyBillTabControl : BaseTabControl
             if (roomItem.Id == bill.RoomId)
             {
                 _billRoomComboBox.SelectedItem = roomItem;
+                _monthlyRentTextBox.Text = bill.Rent.Amount.ToString("0.##");
                 _chargeMotorcycleCheckBox.Checked = bill.MotorcycleParking.Amount > 0;
                 _chargeCarCheckBox.Checked = bill.CarParking.Amount > 0;
                 _isCableTvExemptCheckBox.Checked = bill.CableTv.Amount == 0;
@@ -1084,8 +1168,10 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultCableTvLabel.Text = bill.CableTv.Amount > 0 ? $"{bill.CableTv.Amount:N2} บาท" : (bill.CableTv.Amount == 0 ? "ยกเว้น (0.00 บาท)" : "0.00 บาท");
         _resultTotalLabel.Text = $"{bill.Total.Amount:N2} บาท";
 
+        SetEditingBill(bill);
+
         _billMessageLabel.ForeColor = Color.DarkBlue;
-        _billMessageLabel.Text = $"โหมดดูข้อมูลบิล: ห้อง {roomNum} รอบบิล {bill.BillingPeriod.Value} (ดับเบิ้ลคลิกเพื่อตรวจสอบ)";
+        _billMessageLabel.Text = $"แก้ไขบิลห้อง {roomNum} รอบ {bill.BillingPeriod.Value}: แก้ได้เฉพาะค่าจอดรถและ Cable TV";
     }
 
     private static MeterReading? TryParseMeterReading(string text)

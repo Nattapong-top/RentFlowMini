@@ -70,6 +70,34 @@ public sealed class SqlServerBillRepository : IBillRepository
         }
     }
 
+    public void Update(Bill bill)
+    {
+        ArgumentNullException.ThrowIfNull(bill);
+
+        // dbo.Bills ยังไม่มีคอลัมน์ค่าจอดรถและ Cable TV จึงบันทึกได้เฉพาะยอดรวม
+        const string sql = """
+            UPDATE dbo.Bills
+            SET TotalAmount = @TotalAmount
+            WHERE Id = @Id;
+            """;
+
+        using var connection = new SqlConnection(_connectionString);
+        using var command = new SqlCommand(sql, connection);
+
+        command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier)
+            .Value = bill.Id.Value;
+        command.Parameters.Add("@TotalAmount", SqlDbType.Decimal)
+            .Value = bill.Total.Amount;
+
+        connection.Open();
+
+        if (command.ExecuteNonQuery() == 0)
+        {
+            throw new InvalidOperationException(
+                "ไม่พบบิลที่ต้องการแก้ไข กรุณาเลือกบิลจากตารางอีกครั้ง");
+        }
+    }
+
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)
     {
         ArgumentNullException.ThrowIfNull(roomId);

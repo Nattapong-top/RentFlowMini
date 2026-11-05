@@ -51,6 +51,23 @@ public class InMemoryBillRepositoryTests
     }
 
     [Fact]
+    public void Update_WhenBillIsNotStored_ThrowsInvalidOperationException()
+    {
+        var repository = new InMemoryBillRepository();
+        var calculation = new BillingCalculationResult(
+            Money.Create(2800m),
+            Money.Create(150m),
+            Money.Create(40m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(2990m));
+        var bill = Bill.Create(RoomId.New(), BillingPeriod.Create("2026-09"), calculation);
+
+        Assert.Throws<InvalidOperationException>(() => repository.Update(bill));
+    }
+
+    [Fact]
     public void Exists_WhenRoomAndPeriodDoNotExist_ReturnsFalse()
     {
         var repository = new InMemoryBillRepository();

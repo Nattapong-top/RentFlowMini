@@ -102,6 +102,25 @@ public class SqlServerBillRepositoryTests
         Assert.False(repository.Exists(roomId, billingPeriod));
     }
 
+    [Fact]
+    public void Update_WhenBillDoesNotExist_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var repository = new SqlServerBillRepository(ConnectionString);
+        var calculation = new BillingCalculationResult(
+            Money.Create(2800m),
+            Money.Create(150m),
+            Money.Create(40m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(2990m));
+        var bill = Bill.Create(RoomId.New(), BillingPeriod.Create("2026-10"), calculation);
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => repository.Update(bill));
+    }
+
     private static void InsertTestRoom(RoomId roomId, string roomNumber)
     {
         const string sql = """

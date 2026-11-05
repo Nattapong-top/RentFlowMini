@@ -41,13 +41,31 @@ public sealed class Bill
 
     public Money Electricity { get; }
 
-    public Money MotorcycleParking { get; }
+    public Money MotorcycleParking { get; private set; }
 
-    public Money CarParking { get; }
+    public Money CarParking { get; private set; }
 
-    public Money CableTv { get; }
+    public Money CableTv { get; private set; }
 
-    public Money Total { get; }
+    public Money Total { get; private set; }
+
+    public void UpdateAdditionalCharges(Money motorcycleParking, Money carParking, Money cableTv)
+    {
+        ArgumentNullException.ThrowIfNull(motorcycleParking);
+        ArgumentNullException.ThrowIfNull(carParking);
+        ArgumentNullException.ThrowIfNull(cableTv);
+
+        MotorcycleParking = motorcycleParking;
+        CarParking = carParking;
+        CableTv = cableTv;
+        Total = Money.Create(
+            Rent.Amount +
+            Water.Amount +
+            Electricity.Amount +
+            motorcycleParking.Amount +
+            carParking.Amount +
+            cableTv.Amount);
+    }
 
     public static Bill Create(
         RoomId roomId,

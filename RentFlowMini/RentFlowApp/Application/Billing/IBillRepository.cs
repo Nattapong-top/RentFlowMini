@@ -7,6 +7,8 @@ public interface IBillRepository
 {
     void Add(Bill bill);
 
+    void Update(Bill bill);
+
     bool Exists(RoomId roomId, BillingPeriod billingPeriod);
 
     IReadOnlyCollection<Bill> GetAll();
