@@ -142,6 +142,41 @@ public class ErrorMessageTests
         });
     }
 
+    [Fact]
+    public void BillTab_SettingsCannotBeLoaded_DoesNotCreateBillFromBuiltInRates()
+    {
+        RunInSta(() =>
+        {
+            var rooms = new InMemoryRoomRepository();
+            var room = new CreateRoomService(rooms).Create("101", 3000m, false);
+            var meters = new InMemoryMonthlyMeterReadingRepository();
+            new SaveMonthlyMeterReadingService(meters).Save(
+                room.Id,
+                CurrentPeriod,
+                MeterReading.Create(0m),
+                MeterReading.Create(10m),
+                MeterReading.Create(0m),
+                MeterReading.Create(10m));
+            var bills = new InMemoryBillRepository();
+            using var form = new Form();
+            var tab = new MonthlyBillTabControl(
+                new CreateMonthlyBillService(bills),
+                rooms,
+                monthlyMeterReadingRepository: meters,
+                billRepository: bills,
+                billingSettingsRepository: new FailingSettingsRepository(new IOException(InternalDetail), null));
+            form.Controls.Add(tab);
+            form.Show();
+
+            Find<Button>(tab, "CreateBillButton").PerformClick();
+
+            Assert.Empty(bills.GetAll());
+            string message = Find<Label>(tab, "BillMessageLabel").Text;
+            Assert.StartsWith("ไม่สามารถโหลดราคากลาง", message);
+            Assert.DoesNotContain(InternalDetail, message);
+        });
+    }
+
     private static BillingSettingsTabControl CreateSettingsTab(Form form, IBillingSettingsRepository repository)
     {
         var tab = new BillingSettingsTabControl(

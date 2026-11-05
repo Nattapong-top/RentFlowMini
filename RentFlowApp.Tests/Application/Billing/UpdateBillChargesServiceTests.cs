@@ -99,6 +99,27 @@ public class UpdateBillChargesServiceTests
     }
 
     [Fact]
+    public void Bill_RemembersCableTvExemption_SeparatelyFromZeroAmount()
+    {
+        var bill = CreateStoredBill(isCableTvExempt: true);
+        var service = new UpdateBillChargesService(_repository);
+
+        Assert.True(bill.IsCableTvExempt);
+
+        // ราคากลางเป็น 0 ทำให้ยอดเป็น 0 เหมือนกัน แต่ห้องนี้ไม่ได้รับการยกเว้น
+        var chargedAtZeroRate = service.Update(new UpdateBillChargesRequest(
+            bill.Id, false, 100m, false, 500m, false, 0m));
+
+        Assert.Equal(0m, chargedAtZeroRate.CableTv.Amount);
+        Assert.False(chargedAtZeroRate.IsCableTvExempt);
+
+        var exemptedAgain = service.Update(new UpdateBillChargesRequest(
+            bill.Id, false, 100m, false, 500m, true, 60m));
+
+        Assert.True(exemptedAgain.IsCableTvExempt);
+    }
+
+    [Fact]
     public void Update_WhenBillDoesNotExist_ThrowsInvalidOperationException()
     {
         var service = new UpdateBillChargesService(_repository);

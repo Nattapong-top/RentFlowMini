@@ -23,7 +23,8 @@ public sealed class UpdateBillChargesService
         bill.UpdateAdditionalCharges(
             ResolveCharge(request.ChargeMotorcycleParking, bill.MotorcycleParking, request.MotorcycleParkingRate),
             ResolveCharge(request.ChargeCarParking, bill.CarParking, request.CarParkingRate),
-            ResolveCharge(!request.IsCableTvExempt, bill.CableTv, request.CableTvRate));
+            ResolveCharge(!request.IsCableTvExempt, bill.CableTv, request.CableTvRate),
+            request.IsCableTvExempt);
 
         _repository.Update(bill);
 

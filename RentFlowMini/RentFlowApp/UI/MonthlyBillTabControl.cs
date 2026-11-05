@@ -15,6 +15,8 @@ public class MonthlyBillTabControl : BaseTabControl
     private const int FullInputAreaHeight = 440;
     // ส่วนหัวกลุ่ม แถบปุ่ม 2 แถว หัวตาราง แถบเลื่อน และบิลอย่างน้อย 3 แถว
     private const int MinimumBillListHeight = 310;
+    private const string RatesLoadFailedMessage =
+        "ไม่สามารถโหลดราคากลางได้ กรุณาปิดแล้วเปิดโปรแกรมใหม่อีกครั้ง หากยังพบปัญหา กรุณาตรวจสอบการตั้งค่า";
 
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
     private readonly UpdateBillChargesService _updateBillChargesService;
@@ -75,6 +77,7 @@ public class MonthlyBillTabControl : BaseTabControl
 
     private readonly SplitContainer _billSplitContainer = new();
     private bool _isSplitterMovedByUser;
+    private bool _areRatesLoaded;
 
     private Bill? _editingBill;
 
@@ -1123,6 +1126,12 @@ public class MonthlyBillTabControl : BaseTabControl
 
         ExitBillEditIfSelectionChanged();
         TryAutoLoadReadings();
+
+        // แสดงหลังโหลดมิเตอร์ เพราะขั้นตอนนั้นเขียนข้อความทับป้ายเดียวกัน
+        if (!_areRatesLoaded)
+        {
+            ShowBillError(RatesLoadFailedMessage);
+        }
     }
 
     public void RefreshBillGrid()
@@ -1293,10 +1302,18 @@ public class MonthlyBillTabControl : BaseTabControl
             _motorcycleRateTextBox.Text = settings.MotorcycleParkingRate.Amount.ToString("0.##");
             _carRateTextBox.Text = settings.CarParkingRate.Amount.ToString("0.##");
             _cableTvRateTextBox.Text = settings.CableTvRate.Amount.ToString("0.##");
+            _areRatesLoaded = true;
         }
-        catch
+        catch (Exception ex)
         {
-            // Fallback defaults
+            // ห้ามคิดเงินจากราคาในช่องกรอก เพราะอาจเป็นราคาเก่าหรือค่าที่เขียนไว้ในโค้ด
+            _areRatesLoaded = false;
+            _waterRateTextBox.Clear();
+            _elecRateTextBox.Clear();
+            _motorcycleRateTextBox.Clear();
+            _carRateTextBox.Clear();
+            _cableTvRateTextBox.Clear();
+            LogUnexpectedError(ex);
         }
     }
 
@@ -1305,6 +1322,12 @@ public class MonthlyBillTabControl : BaseTabControl
         if (_createMonthlyBillService == null)
         {
             ShowBillError("ระบบสร้างบิลยังไม่ได้ติดตั้งในแอปพลิเคชัน");
+            return;
+        }
+
+        if (!_areRatesLoaded)
+        {
+            ShowBillError(RatesLoadFailedMessage);
             return;
         }
 

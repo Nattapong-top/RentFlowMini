@@ -11,9 +11,11 @@ public sealed class Bill
         string invoiceNumber,
         DateTime createdAt,
         BillMeterSnapshot? meters,
-        BillTenantSnapshot? tenant)
+        BillTenantSnapshot? tenant,
+        bool isCableTvExempt)
     {
         Id = BillId.New();
+        IsCableTvExempt = isCableTvExempt;
         Meters = meters;
         Tenant = tenant;
         DueDate = billingPeriod.GetPaymentDueDate();
@@ -60,6 +62,9 @@ public sealed class Bill
 
     public Money Total { get; private set; }
 
+    // เก็บแยกจากยอดเงิน เพราะยอด 0 อาจมาจากราคากลางเป็น 0 ไม่ใช่การยกเว้น
+    public bool IsCableTvExempt { get; private set; }
+
     public BillPayment? Payment { get; private set; }
 
     public bool IsPaid => Payment is not null;
@@ -90,7 +95,11 @@ public sealed class Bill
         Payment = null;
     }
 
-    public void UpdateAdditionalCharges(Money motorcycleParking, Money carParking, Money cableTv)
+    public void UpdateAdditionalCharges(
+        Money motorcycleParking,
+        Money carParking,
+        Money cableTv,
+        bool isCableTvExempt = false)
     {
         ArgumentNullException.ThrowIfNull(motorcycleParking);
         ArgumentNullException.ThrowIfNull(carParking);
@@ -105,6 +114,7 @@ public sealed class Bill
         MotorcycleParking = motorcycleParking;
         CarParking = carParking;
         CableTv = cableTv;
+        IsCableTvExempt = isCableTvExempt;
         Total = Money.Create(
             Rent.Amount +
             Water.Amount +
@@ -121,8 +131,9 @@ public sealed class Bill
         string invoiceNumber = "N001",
         DateTime? createdAt = null,
         BillMeterSnapshot? meters = null,
-        BillTenantSnapshot? tenant = null)
+        BillTenantSnapshot? tenant = null,
+        bool isCableTvExempt = false)
     {
-        return new Bill(roomId, billingPeriod, calculation, invoiceNumber, createdAt ?? DateTime.Now, meters, tenant);
+        return new Bill(roomId, billingPeriod, calculation, invoiceNumber, createdAt ?? DateTime.Now, meters, tenant, isCableTvExempt);
     }
 }

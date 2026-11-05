@@ -56,7 +56,8 @@ public sealed class CreateMonthlyBillService
                 request.CurrentElectricityMeter!,
                 request.WaterRate,
                 request.ElectricityRate),
-            request.Tenant);
+            request.Tenant,
+            request.IsCableTvExempt);
 
         _repository.Add(bill);
 
