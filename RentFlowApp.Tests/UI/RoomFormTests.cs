@@ -54,12 +54,13 @@ public class RoomFormTests
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
             Assert.NotNull(tabControl);
-            Assert.Equal(5, tabControl.TabPages.Count);
+            Assert.Equal(6, tabControl.TabPages.Count);
             Assert.Equal("ห้องพัก (Rooms)", tabControl.TabPages[0].Text);
             Assert.Equal("บันทึกมิเตอร์น้ำประปา-ไฟฟ้า", tabControl.TabPages[1].Text);
             Assert.Equal("สร้างบิลประจำเดือน (Monthly Bill)", tabControl.TabPages[2].Text);
             Assert.Equal("ผู้เช่า (Tenants)", tabControl.TabPages[3].Text);
-            Assert.Equal("ตั้งค่าพื้นฐาน", tabControl.TabPages[4].Text);
+            Assert.Equal("รายงาน", tabControl.TabPages[4].Text);
+            Assert.Equal("ตั้งค่าพื้นฐาน", tabControl.TabPages[5].Text);
 
             var billingTab = tabControl.TabPages[2];
             var waterRateTextBox = billingTab.Controls.Find("WaterRateTextBox", true).FirstOrDefault() as TextBox;
@@ -70,7 +71,7 @@ public class RoomFormTests
             Assert.NotNull(elecRateTextBox);
             Assert.Equal("8", elecRateTextBox.Text);
 
-            var settingsTab = tabControl.TabPages[4];
+            var settingsTab = tabControl.TabPages[5];
             var settingsWaterBox = settingsTab.Controls.Find("WaterRateTextBox", true).FirstOrDefault() as TextBox;
             Assert.NotNull(settingsWaterBox);
             Assert.Equal("19", settingsWaterBox.Text);
@@ -273,7 +274,7 @@ public class RoomFormTests
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
             Assert.NotNull(tabControl);
-            Assert.Equal(5, tabControl.TabPages.Count);
+            Assert.Equal(6, tabControl.TabPages.Count);
 
             var tenantTab = tabControl.TabPages[3];
             Assert.Equal("ผู้เช่า (Tenants)", tenantTab.Text);
@@ -862,7 +863,7 @@ public class RoomFormTests
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
-            var settingsTab = tabControl.TabPages[4];
+            var settingsTab = tabControl.TabPages[5];
             tabControl.SelectedTab = billingTab;
 
             var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();

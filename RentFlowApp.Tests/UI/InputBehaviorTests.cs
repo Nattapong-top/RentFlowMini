@@ -58,7 +58,7 @@ public class InputBehaviorTests
 
             var grids = FindGrids(form).ToList();
 
-            Assert.Equal(4, grids.Count);
+            Assert.Equal(5, grids.Count);
             Assert.All(grids, grid =>
                 Assert.Equal(DataGridViewColumnHeadersHeightSizeMode.AutoSize, grid.ColumnHeadersHeightSizeMode));
         });
@@ -116,7 +116,7 @@ public class InputBehaviorTests
             var meterBox = tabs.TabPages[1].Controls.OfType<Control>()
                 .SelectMany(control => FindTextBoxes(control))
                 .First(box => box.Enabled && !box.ReadOnly);
-            var settingsRate = (TextBox)tabs.TabPages[4].Controls.Find("WaterRateTextBox", true)[0];
+            var settingsRate = (TextBox)tabs.TabPages[5].Controls.Find("WaterRateTextBox", true)[0];
 
             meterBox.Text = "1,2a3.4.5";
             settingsRate.Text = "1,2a3.4.5";

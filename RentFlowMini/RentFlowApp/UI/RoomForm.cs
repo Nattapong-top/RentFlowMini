@@ -14,6 +14,7 @@ public class RoomForm : Form
     private readonly MeterReadingTabControl _meterReadingTabControl;
     private readonly MonthlyBillTabControl _monthlyBillTabControl;
     private readonly TenantTabControl _tenantTabControl;
+    private readonly ReportTabControl _reportTabControl;
 
     public RoomForm(
         CreateRoomService createRoomService,
@@ -71,6 +72,8 @@ public class RoomForm : Form
             billRepo);
         _tenantTabControl.TenantsChanged += (s, e) => _roomTabControl.RefreshRoomList();
 
+        _reportTabControl = new ReportTabControl(roomRepository, tenantRepo, billRepo);
+
         InitializeForm();
 
         try
@@ -80,6 +83,7 @@ public class RoomForm : Form
             _monthlyBillTabControl.RefreshRoomList();
             _tenantTabControl.RefreshTab();
             _billingSettingsTabControl.LoadSettings();
+            _reportTabControl.RefreshReport();
         }
         catch (SqlException)
         {
@@ -107,17 +111,20 @@ public class RoomForm : Form
         var billingTabPage = new TabPage("สร้างบิลประจำเดือน (Monthly Bill)");
         var tenantTabPage = new TabPage("ผู้เช่า (Tenants)");
         var settingsTabPage = new TabPage("ตั้งค่าพื้นฐาน");
+        var reportTabPage = new TabPage("รายงาน");
 
         roomTabPage.Controls.Add(_roomTabControl);
         meterReadingTabPage.Controls.Add(_meterReadingTabControl);
         billingTabPage.Controls.Add(_monthlyBillTabControl);
         tenantTabPage.Controls.Add(_tenantTabControl);
         settingsTabPage.Controls.Add(_billingSettingsTabControl);
+        reportTabPage.Controls.Add(_reportTabControl);
 
         tabControl.TabPages.Add(roomTabPage);
         tabControl.TabPages.Add(meterReadingTabPage);
         tabControl.TabPages.Add(billingTabPage);
         tabControl.TabPages.Add(tenantTabPage);
+        tabControl.TabPages.Add(reportTabPage);
         tabControl.TabPages.Add(settingsTabPage);
 
         tabControl.SelectedIndexChanged += (s, e) =>
@@ -138,6 +145,10 @@ public class RoomForm : Form
             else if (tabControl.SelectedTab == settingsTabPage)
             {
                 _billingSettingsTabControl.LoadSettings();
+            }
+            else if (tabControl.SelectedTab == reportTabPage)
+            {
+                _reportTabControl.RefreshReport();
             }
         };
 

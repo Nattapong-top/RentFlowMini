@@ -174,7 +174,7 @@ public class MonthlyInvoicePrintingTests
                 invoiceSettingsRepository: settingsRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var settingsTab = tabControl.TabPages[4];
+            var settingsTab = tabControl.TabPages[5];
             tabControl.SelectedTab = settingsTab;
 
             var nameBox = (TextBox)settingsTab.Controls.Find("InvoicePropertyNameTextBox", true).First();

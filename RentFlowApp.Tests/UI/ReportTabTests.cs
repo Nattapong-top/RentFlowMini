@@ -1,0 +1,244 @@
+using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Rooms;
+using RentFlowApp.Application.Tenants;
+using RentFlowApp.Domain;
+using RentFlowApp.Domain.Billing;
+using RentFlowApp.Domain.ValueObjects;
+using RentFlowApp.Forms;
+using RentFlowApp.Infrastructure.Billing;
+using RentFlowApp.Infrastructure.Rooms;
+using RentFlowApp.Infrastructure.Tenants;
+
+namespace RentFlowApp.Tests.UI;
+
+public class ReportTabTests
+{
+    // ตัวเลือกปีมีแค่รอบปีปัจจุบัน จึงต้องอิงรอบบิลกับวันนี้ ไม่ให้เทสต์หมดอายุ
+    private static readonly BillingPeriod CurrentPeriod = BillingPeriod.Create(DateTime.Now.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+    private static readonly BillingPeriod PreviousPeriod = CurrentPeriod.GetPrevious();
+
+    private static void RunInSta(Action action)
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        if (exception != null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception).Throw();
+        }
+    }
+
+    private sealed class ReportTab : IDisposable
+    {
+        private readonly Form _form = new();
+        private readonly ReportTabControl _tab;
+        private readonly InMemoryRoomRepository _rooms = new();
+        private readonly InMemoryTenantRepository _tenants = new();
+        private readonly InMemoryBillRepository _bills = new();
+
+        public ReportTab()
+        {
+            _tab = new ReportTabControl(_rooms, _tenants, _bills, () => Today);
+            _form.Controls.Add(_tab);
+            _form.Show();
+            Selector.SetBillingPeriod(CurrentPeriod);
+        }
+
+        public DateOnly Today { get; set; } = CurrentPeriod.GetPaymentDueDate();
+
+        public BillingPeriodSelector Selector => Find<BillingPeriodSelector>("ReportPeriodSelector");
+
+        public DataGridView Grid => Find<DataGridView>("ReportOutstandingGrid");
+
+        public T Find<T>(string name) where T : Control => (T)_tab.Controls.Find(name, true)[0];
+
+        public string Text(string labelName) => Find<Label>(labelName).Text;
+
+        public IEnumerable<string?> Column(string columnName) =>
+            Grid.Rows.Cast<DataGridViewRow>().Select(row => row.Cells[columnName].Value?.ToString());
+
+        public RoomId AddRoom(string number) => new CreateRoomService(_rooms).Create(number, 3000m, true).Id;
+
+        public Tenant AddTenant(string firstName, RoomId? roomId) =>
+            new CreateTenantService(_tenants).Create(firstName, "ทดสอบ", null, roomId);
+
+        public void AddBill(
+            RoomId roomId,
+            BillingPeriod period,
+            decimal rent,
+            Tenant? tenant = null,
+            PaymentMethod? paidBy = null)
+        {
+            var meter = MeterReading.Create(100m);
+            var bill = new CreateMonthlyBillService(_bills).Create(new CreateMonthlyBillRequest(
+                roomId, period, rent, meter, meter, meter, meter, 19m, 8m,
+                Tenant: tenant is null ? null : BillTenantSnapshot.From(tenant)));
+
+            if (paidBy is { } method)
+            {
+                bill.RecordPayment(Today, method);
+                _bills.Update(bill);
+            }
+        }
+
+        public void Refresh() => _tab.RefreshReport();
+
+        public void Dispose() => _form.Dispose();
+    }
+
+    [Fact]
+    public void Refresh_ShowsSummaryCardsAndBreakdownsOfSelectedPeriod()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+            var room101 = tab.AddRoom("101");
+            var room102 = tab.AddRoom("102");
+            tab.AddRoom("103");
+            tab.AddTenant("หนึ่ง", room101);
+            tab.AddTenant("สอง", room102);
+            tab.AddBill(room101, CurrentPeriod, 3000m, paidBy: PaymentMethod.Cash);
+            tab.AddBill(room102, CurrentPeriod, 4000m);
+
+            tab.Refresh();
+
+            Assert.Equal("มีผู้เช่า 2/3", tab.Text("ReportRoomValueLabel"));
+            Assert.Equal("ว่าง 1 ห้อง", tab.Text("ReportRoomDetailLabel"));
+            Assert.Equal("2 บิล", tab.Text("ReportBilledDetailLabel"));
+            Assert.Equal(7000m.ToString("N2"), tab.Text("ReportBilledValueLabel"));
+            Assert.Equal(3000m.ToString("N2"), tab.Text("ReportReceivedValueLabel"));
+            Assert.Equal("1 บิล", tab.Text("ReportReceivedDetailLabel"));
+            Assert.Equal(4000m.ToString("N2"), tab.Text("ReportUnpaidValueLabel"));
+            Assert.Equal(7000m.ToString("N2"), tab.Text("ReportRentLabel"));
+            Assert.Equal(3000m.ToString("N2"), tab.Text("ReportCashLabel"));
+            Assert.Equal(0m.ToString("N2"), tab.Text("ReportBankTransferLabel"));
+        });
+    }
+
+    [Fact]
+    public void ChangingPeriod_UpdatesCardsButKeepsOutstandingListAcrossMonths()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+            var room = tab.AddRoom("101");
+            tab.AddBill(room, PreviousPeriod, 1000m);
+            tab.AddBill(room, CurrentPeriod, 2000m);
+            tab.Refresh();
+            Assert.Equal(2000m.ToString("N2"), tab.Text("ReportBilledValueLabel"));
+
+            tab.Selector.SetBillingPeriod(PreviousPeriod);
+
+            Assert.Equal(1000m.ToString("N2"), tab.Text("ReportBilledValueLabel"));
+            Assert.Equal(2, tab.Grid.Rows.Count);
+            Assert.Equal(
+                $"ค้างชำระทั้งหมด 2 บิล รวม {3000m:N2} บาท",
+                tab.Text("ReportOutstandingSummaryLabel"));
+        });
+    }
+
+    [Fact]
+    public void OutstandingGrid_ListsOldestFirstWithTenantAndOverdueStatus()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+            var room = tab.AddRoom("101");
+            var tenant = tab.AddTenant("ค้างจ่าย", room);
+            tab.AddBill(room, CurrentPeriod, 2000m, tenant);
+            tab.AddBill(room, PreviousPeriod, 1000m, tenant);
+
+            // Today คือวันครบกำหนดของรอบปัจจุบัน รอบนี้จึงยังไม่เกินกำหนด แต่รอบก่อนเกินแล้ว
+            tab.Refresh();
+
+            int previousOverdueDays = tab.Today.DayNumber - PreviousPeriod.GetPaymentDueDate().DayNumber;
+            Assert.Equal(
+                [PreviousPeriod.ToBuddhistValue(), CurrentPeriod.ToBuddhistValue()],
+                tab.Column("BillingPeriod"));
+            Assert.Equal(["ค้างจ่าย ทดสอบ", "ค้างจ่าย ทดสอบ"], tab.Column("TenantName"));
+            Assert.Equal([$"{previousOverdueDays} วัน", "ยังไม่ถึงกำหนด"], tab.Column("OverdueStatus"));
+            Assert.Equal("1 บิล", tab.Text("ReportUnpaidDetailLabel"));
+        });
+    }
+
+    [Fact]
+    public void UnpaidCard_WhenPeriodHasOverdueBill_ShowsOverdueCount()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+            tab.AddBill(tab.AddRoom("101"), CurrentPeriod, 1000m);
+            tab.AddBill(tab.AddRoom("102"), CurrentPeriod, 1000m);
+            tab.Today = tab.Today.AddDays(1);
+
+            tab.Refresh();
+
+            Assert.Equal("2 บิล (เกินกำหนด 2)", tab.Text("ReportUnpaidDetailLabel"));
+        });
+    }
+
+    [Fact]
+    public void Refresh_WhenNoBills_ShowsEmptyMessages()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+
+            tab.Refresh();
+
+            Assert.Equal("ยังไม่มีบิลในรอบนี้", tab.Text("ReportBilledDetailLabel"));
+            Assert.Equal("ไม่มีบิลค้างชำระ", tab.Text("ReportOutstandingSummaryLabel"));
+            Assert.Empty(tab.Column("RoomNumber"));
+        });
+    }
+
+    [Fact]
+    public void OutstandingGrid_HasBoldHeaderThatGrowsToFitText()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+
+            Assert.Equal(DataGridViewColumnHeadersHeightSizeMode.AutoSize, tab.Grid.ColumnHeadersHeightSizeMode);
+            Assert.True(tab.Grid.ColumnHeadersDefaultCellStyle.Font!.Bold);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_HasReportTabInFifthPosition_AndRefreshesWhenOpened()
+    {
+        RunInSta(() =>
+        {
+            var rooms = new InMemoryRoomRepository();
+            var bills = new InMemoryBillRepository();
+            using var form = new RoomForm(new CreateRoomService(rooms), rooms, billRepository: bills);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var reportPage = tabControl.TabPages[4];
+            Assert.Equal("รายงาน", reportPage.Text);
+
+            var room = new CreateRoomService(rooms).Create("101", 3000m, true);
+            var meter = MeterReading.Create(100m);
+            new CreateMonthlyBillService(bills).Create(new CreateMonthlyBillRequest(
+                room.Id, CurrentPeriod, 3000m, meter, meter, meter, meter, 19m, 8m));
+
+            tabControl.SelectedTab = reportPage;
+
+            var billedLabel = (Label)reportPage.Controls.Find("ReportBilledValueLabel", true)[0];
+            Assert.Equal(3000m.ToString("N2"), billedLabel.Text);
+        });
+    }
+}
