@@ -67,7 +67,7 @@ Sql --> DB[(SQL Server)]
 
 ดูรายละเอียดแผน implement ได้ที่ [Tenant foundation implementation plan](tenant-implementation-plan.md)
 
-**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository, `SqlServerTenantRepository` พร้อม `003_CreateTenants.sql`, WinForms UI และ tests ของ Tenant ผ่านแล้ว ([tenant-sql-persistence-plan.md](tenant-sql-persistence-plan.md)); ยังไม่มีการแก้ไขหรือลบผู้เช่า
+**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository, `SqlServerTenantRepository` พร้อม `003_CreateTenants.sql`, WinForms UI และ tests ของ Tenant ผ่านแล้ว ([tenant-sql-persistence-plan.md](tenant-sql-persistence-plan.md)); แก้ไขและย้ายออกได้แล้ว แต่ยังไม่มีการลบผู้เช่า
 
 **เงื่อนไขเริ่มต้น:** ระยะ 0 ยังผ่าน และยังไม่เพิ่มกติกา Cable/Parking เข้ามาปะปน
 
@@ -146,9 +146,10 @@ Sql --> DB[(SQL Server)]
 
 1. เก็บมิเตอร์และอัตราน้ำ-ไฟไว้ในบิล และเพิ่มวันครบกำหนด — เสร็จแล้ว
 2. พิมพ์ใบแจ้งหนี้ด้วย `PrintDocument` และ `PrintPreviewDialog` โดยไม่เพิ่ม package — เสร็จแล้ว
-3. บันทึกและยกเลิกการรับชำระ (วันที่รับเงินและช่องทาง รับเฉพาะเต็มจำนวน) และล็อกการแก้ไขบิลที่จ่ายแล้ว — เสร็จแล้ว (ใน In-Memory; `SqlServerBillRepository` ยังไม่เก็บการรับชำระ รอลำดับ 5)
+3. บันทึกและยกเลิกการรับชำระ (วันที่รับเงินและช่องทาง รับเฉพาะเต็มจำนวน) และล็อกการแก้ไขบิลที่จ่ายแล้ว — เสร็จแล้ว (ใน In-Memory; `SqlServerBillRepository` ยังไม่เก็บการรับชำระ รอลำดับ 6)
 4. สถานะเกินกำหนดและตัวกรองค้างชำระแบบข้ามเดือน — เสร็จแล้ว
-5. ย้ายบิล มิเตอร์ และการตั้งค่าไป SQL Server ก่อนใช้งานจริง (ต้องขออนุมัติการแก้ schema); ระหว่างนี้การตั้งค่าเก็บในไฟล์นอก repo
+5. ปรับแท็บผู้เช่า: ตารางซ่อนรหัส แก้ไข ย้ายออก ค้นหา ยอดค้างชำระ วันเข้าอยู่ เงินประกัน และเก็บผู้เช่าไว้ในบิล — เสร็จแล้ว
+6. ย้ายบิล มิเตอร์ และการตั้งค่าไป SQL Server ก่อนใช้งานจริง (ต้องขออนุมัติการแก้ schema รวมถึงคอลัมน์ผู้เช่าและการรับชำระที่เพิ่มในลำดับ 3-5); ระหว่างนี้การตั้งค่าเก็บในไฟล์นอก repo
 
 **ยังไม่ทำ:** ค่าปรับ, การจ่ายบางส่วน, การรวมยอดค้างเข้าบิลเดือนถัดไป, ใบเสร็จแยก และการส่ง SMS หรือ LINE
 

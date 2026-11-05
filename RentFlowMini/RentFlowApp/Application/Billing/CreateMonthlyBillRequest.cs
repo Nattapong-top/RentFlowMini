@@ -1,3 +1,4 @@
+using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Application.Billing;
@@ -17,4 +18,5 @@ public sealed record CreateMonthlyBillRequest(
     bool ChargeCarParking = false,
     decimal CarParkingRate = 0m,
     bool IsCableTvExempt = false,
-    decimal CableTvRate = 0m);
+    decimal CableTvRate = 0m,
+    BillTenantSnapshot? Tenant = null);

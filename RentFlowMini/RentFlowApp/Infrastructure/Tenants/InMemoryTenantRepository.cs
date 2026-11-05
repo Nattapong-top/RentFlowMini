@@ -28,6 +28,26 @@ public sealed class InMemoryTenantRepository : ITenantRepository
         _tenants.Add(tenant);
     }
 
+    public void Update(Tenant tenant)
+    {
+        ArgumentNullException.ThrowIfNull(tenant);
+
+        int index = _tenants.FindIndex(item => item.Id == tenant.Id);
+        if (index < 0)
+        {
+            throw new InvalidOperationException("ไม่พบผู้เช่าที่ต้องการแก้ไข");
+        }
+
+        var roomId = tenant.RoomId;
+        if (roomId is not null && _tenants.Exists(item => item.RoomId == roomId && item.Id != tenant.Id))
+        {
+            throw new InvalidOperationException(
+                "ห้องพักนี้มีผู้เช่าอยู่แล้ว ไม่สามารถผูกผู้เช่าซ้ำได้");
+        }
+
+        _tenants[index] = CopyTenant(tenant);
+    }
+
     public Tenant? GetById(TenantId tenantId)
     {
         ArgumentNullException.ThrowIfNull(tenantId);
@@ -60,6 +80,10 @@ public sealed class InMemoryTenantRepository : ITenantRepository
             tenant.FirstName,
             tenant.LastName,
             tenant.PhoneNumber,
-            tenant.RoomId is null ? null : RoomId.From(tenant.RoomId.Value));
+            tenant.RoomId is null ? null : RoomId.From(tenant.RoomId.Value),
+            tenant.MoveInDate,
+            tenant.SecurityDeposit,
+            tenant.MovedOutOn,
+            tenant.MovedOutFromRoomId is null ? null : RoomId.From(tenant.MovedOutFromRoomId.Value));
     }
 }

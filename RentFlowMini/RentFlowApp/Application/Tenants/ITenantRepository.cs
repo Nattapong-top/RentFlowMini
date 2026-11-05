@@ -7,6 +7,8 @@ public interface ITenantRepository
 {
     void Add(Tenant tenant);
 
+    void Update(Tenant tenant);
+
     Tenant? GetById(TenantId tenantId);
 
     bool ExistsByRoomId(RoomId roomId);

@@ -67,8 +67,9 @@ public class RoomForm : Form
         _tenantTabControl = new TenantTabControl(
             tenantRepo,
             roomRepository,
-            createTenantSvc);
-        _tenantTabControl.TenantAdded += (s, e) => _roomTabControl.RefreshRoomList();
+            createTenantSvc,
+            billRepo);
+        _tenantTabControl.TenantsChanged += (s, e) => _roomTabControl.RefreshRoomList();
 
         InitializeForm();
 

@@ -130,7 +130,6 @@ public class MonthlyBillTabControl : BaseTabControl
         _invoiceSettingsRepository = invoiceSettingsRepository ?? new InMemoryInvoiceSettingsRepository();
         _invoiceBuilder = new MonthlyInvoiceBuilder(
             _roomRepository,
-            _tenantRepository,
             _invoiceSettingsRepository);
         _showInvoicePreview = showInvoicePreview ?? ShowInvoicePreviewDialog;
         _confirmCancelPayment = confirmCancelPayment ?? ShowCancelPaymentConfirmation;
@@ -1089,7 +1088,6 @@ public class MonthlyBillTabControl : BaseTabControl
         UpdateOutstandingSummary(bills, today);
 
         var rooms = _roomRepository.GetAll().ToDictionary(r => r.Id, r => r.RoomNumber.Value);
-        var tenants = _tenantRepository.GetAll().Where(t => t.RoomId != null).GroupBy(t => t.RoomId!).ToDictionary(g => g.Key, g => g.First());
 
         // เรียงตามวันครบกำหนดก่อน เพื่อให้มุมมองข้ามเดือนเห็นบิลที่ค้างนานที่สุดเป็นแถวแรก
         _billGrid.DataSource = bills
@@ -1098,8 +1096,8 @@ public class MonthlyBillTabControl : BaseTabControl
             .Select((bill, index) =>
             {
                 var roomNum = rooms.TryGetValue(bill.RoomId, out var num) ? num : "-";
-                string tenantName = tenants.TryGetValue(bill.RoomId, out var tenant) ? $"{tenant.FirstName} {tenant.LastName}" : "-";
-                
+                string tenantName = bill.Tenant?.FullName ?? "-";
+
                 string waterReading = "-";
                 string waterUsed = "-";
                 string elecReading = "-";
@@ -1341,14 +1339,17 @@ public class MonthlyBillTabControl : BaseTabControl
                 chargeCar,
                 carRate,
                 isCableTvExempt,
-                cableTvRate);
+                cableTvRate,
+                // เก็บผู้เช่าปัจจุบันไว้ในบิล เพื่อไม่ให้บิลเก่าเปลี่ยนชื่อตามผู้เช่าคนใหม่ของห้อง
+                _tenantRepository.GetAll().FirstOrDefault(t => t.RoomId == selectedRoom.Id) is { } currentTenant
+                    ? BillTenantSnapshot.From(currentTenant)
+                    : null);
 
             var bill = _createMonthlyBillService.Create(request);
 
             // อัปเดตกล่องสรุปผลด้านขวาให้ละเอียด
-            var tenants = _tenantRepository.GetAll().Where(t => t.RoomId != null).GroupBy(t => t.RoomId!).ToDictionary(g => g.Key, g => g.First());
-            string tenantName = tenants.TryGetValue(selectedRoom.Id, out var tenant) ? $"{tenant.FirstName} {tenant.LastName}" : "-";
-            
+            string tenantName = bill.Tenant?.FullName ?? "-";
+
             decimal waterUsed = 0;
             if (prevWater != null && currWater != null) waterUsed = currWater.Value - prevWater.Value;
             decimal elecUsed = 0;
@@ -1482,8 +1483,7 @@ public class MonthlyBillTabControl : BaseTabControl
         }
 
         // ดึงข้อมูลผู้เช่าและมิเตอร์มาแสดงในกล่องสรุปด้านขวา
-        var tenants = _tenantRepository.GetAll().Where(t => t.RoomId != null).GroupBy(t => t.RoomId!).ToDictionary(g => g.Key, g => g.First());
-        string tenantName = tenants.TryGetValue(bill.RoomId, out var tenant) ? $"{tenant.FirstName} {tenant.LastName}" : "-";
+        string tenantName = bill.Tenant?.FullName ?? "-";
         
         string waterDetails = "-";
         string elecDetails = "-";

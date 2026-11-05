@@ -59,6 +59,48 @@ public sealed class SqlServerTenantRepository : ITenantRepository
         }
     }
 
+    public void Update(Tenant tenant)
+    {
+        ArgumentNullException.ThrowIfNull(tenant);
+
+        // dbo.Tenants ยังไม่มีคอลัมน์วันเข้าอยู่ เงินประกัน และการย้ายออก จึงบันทึกได้เฉพาะข้อมูลด้านล่าง
+        const string sql = """
+            UPDATE dbo.Tenants
+            SET FirstName = @FirstName,
+                LastName = @LastName,
+                PhoneNumber = @PhoneNumber,
+                RoomId = @RoomId
+            WHERE Id = @Id;
+            """;
+
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            using var command = new SqlCommand(sql, connection);
+
+            command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier)
+                .Value = tenant.Id.Value;
+            command.Parameters.Add("@FirstName", SqlDbType.NVarChar, 100)
+                .Value = tenant.FirstName;
+            command.Parameters.Add("@LastName", SqlDbType.NVarChar, 100)
+                .Value = tenant.LastName;
+            command.Parameters.Add("@PhoneNumber", SqlDbType.NVarChar, 20)
+                .Value = (object?)tenant.PhoneNumber ?? DBNull.Value;
+            command.Parameters.Add("@RoomId", SqlDbType.UniqueIdentifier)
+                .Value = (object?)tenant.RoomId?.Value ?? DBNull.Value;
+
+            connection.Open();
+            if (command.ExecuteNonQuery() == 0)
+            {
+                throw new InvalidOperationException("ไม่พบผู้เช่าที่ต้องการแก้ไข");
+            }
+        }
+        catch (SqlException ex) when (ex.Number is 2601 or 2627)
+        {
+            throw new InvalidOperationException("ห้องพักนี้มีผู้เช่าอยู่แล้ว ไม่สามารถผูกผู้เช่าซ้ำได้", ex);
+        }
+    }
+
     public Tenant? GetById(TenantId tenantId)
     {
         ArgumentNullException.ThrowIfNull(tenantId);

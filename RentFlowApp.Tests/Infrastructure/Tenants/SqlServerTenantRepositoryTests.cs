@@ -61,6 +61,54 @@ public class SqlServerTenantRepositoryTests
     }
 
     [Fact]
+    public void Update_ChangesStoredDetailsAndReleasesRoom()
+    {
+        var repository = new SqlServerTenantRepository(ConnectionString);
+        var roomId = RoomId.New();
+        var tenant = new Tenant(TenantId.New(), "สมชาย", "ใจดี", "0812345678", roomId);
+        var roomInserted = false;
+        var tenantInserted = false;
+
+        try
+        {
+            InsertTestRoom(roomId, $"TEST-{Guid.NewGuid():N}");
+            roomInserted = true;
+            repository.Add(tenant);
+            tenantInserted = true;
+
+            repository.Update(tenant.WithDetails("สมศักดิ์", "มีสุข", null, null, null, null));
+
+            var storedTenant = repository.GetById(tenant.Id);
+            Assert.NotNull(storedTenant);
+            Assert.Equal("สมศักดิ์ มีสุข", storedTenant.FullName);
+            Assert.Null(storedTenant.PhoneNumber);
+            Assert.Null(storedTenant.RoomId);
+            Assert.False(repository.ExistsByRoomId(roomId));
+        }
+        finally
+        {
+            if (tenantInserted)
+            {
+                DeleteTestTenant(tenant.Id);
+            }
+
+            if (roomInserted)
+            {
+                DeleteTestRoom(roomId);
+            }
+        }
+    }
+
+    [Fact]
+    public void Update_WhenTenantDoesNotExist_ThrowsInvalidOperationException()
+    {
+        var repository = new SqlServerTenantRepository(ConnectionString);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            repository.Update(new Tenant(TenantId.New(), "สมชาย", "ใจดี")));
+    }
+
+    [Fact]
     public void Add_WithDuplicateId_ThrowsInvalidOperationException()
     {
         var repository = new SqlServerTenantRepository(ConnectionString);

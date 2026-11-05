@@ -10,10 +10,12 @@ public sealed class Bill
         BillingCalculationResult calculation,
         string invoiceNumber,
         DateTime createdAt,
-        BillMeterSnapshot? meters)
+        BillMeterSnapshot? meters,
+        BillTenantSnapshot? tenant)
     {
         Id = BillId.New();
         Meters = meters;
+        Tenant = tenant;
         DueDate = billingPeriod.GetPaymentDueDate();
         RoomId = roomId;
         BillingPeriod = billingPeriod;
@@ -41,6 +43,8 @@ public sealed class Bill
     public DateOnly DueDate { get; }
 
     public BillMeterSnapshot? Meters { get; }
+
+    public BillTenantSnapshot? Tenant { get; }
 
     public Money Rent { get; }
 
@@ -116,8 +120,9 @@ public sealed class Bill
         BillingCalculationResult calculation,
         string invoiceNumber = "N001",
         DateTime? createdAt = null,
-        BillMeterSnapshot? meters = null)
+        BillMeterSnapshot? meters = null,
+        BillTenantSnapshot? tenant = null)
     {
-        return new Bill(roomId, billingPeriod, calculation, invoiceNumber, createdAt ?? DateTime.Now, meters);
+        return new Bill(roomId, billingPeriod, calculation, invoiceNumber, createdAt ?? DateTime.Now, meters, tenant);
     }
 }

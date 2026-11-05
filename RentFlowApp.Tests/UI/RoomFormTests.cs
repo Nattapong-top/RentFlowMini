@@ -298,7 +298,8 @@ public class RoomFormTests
 
             var tenantGrid = tenantTab.Controls.Find("TenantGrid", true).FirstOrDefault() as DataGridView;
             Assert.NotNull(tenantGrid);
-            Assert.Equal(4, tenantGrid.Columns.Count);
+            Assert.False(tenantGrid.Columns["TenantId"]!.Visible);
+            Assert.True(tenantGrid.Columns["FullName"]!.Visible);
         });
     }
 

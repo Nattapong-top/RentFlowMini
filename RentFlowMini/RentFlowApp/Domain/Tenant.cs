@@ -9,21 +9,83 @@ public sealed class Tenant : IEquatable<Tenant>
     public string LastName { get; }
     public string? PhoneNumber { get; }
     public RoomId? RoomId { get; }
+    public DateOnly? MoveInDate { get; }
+    public decimal? SecurityDeposit { get; }
+    public DateOnly? MovedOutOn { get; }
+    public RoomId? MovedOutFromRoomId { get; }
+
+    public bool IsMovedOut => MovedOutOn is not null;
+
+    public string FullName => $"{FirstName} {LastName}";
 
     public Tenant(
         TenantId id,
         string firstName,
         string lastName,
         string? phoneNumber = null,
-        RoomId? roomId = null)
+        RoomId? roomId = null,
+        DateOnly? moveInDate = null,
+        decimal? securityDeposit = null,
+        DateOnly? movedOutOn = null,
+        RoomId? movedOutFromRoomId = null)
     {
         ArgumentNullException.ThrowIfNull(id);
+
+        if (securityDeposit < 0m)
+        {
+            throw new InvalidSecurityDepositException();
+        }
 
         Id = id;
         FirstName = NormalizeFirstName(firstName);
         LastName = NormalizeLastName(lastName);
         PhoneNumber = NormalizePhoneNumber(phoneNumber);
         RoomId = roomId;
+        MoveInDate = moveInDate;
+        SecurityDeposit = securityDeposit;
+        MovedOutOn = movedOutOn;
+        MovedOutFromRoomId = movedOutFromRoomId;
+    }
+
+    public Tenant WithDetails(
+        string firstName,
+        string lastName,
+        string? phoneNumber,
+        RoomId? roomId,
+        DateOnly? moveInDate,
+        decimal? securityDeposit)
+    {
+        if (IsMovedOut)
+        {
+            throw new InvalidOperationException("ผู้เช่าที่ย้ายออกแล้วแก้ไขข้อมูลไม่ได้");
+        }
+
+        return new Tenant(Id, firstName, lastName, phoneNumber, roomId, moveInDate, securityDeposit);
+    }
+
+    public Tenant MoveOut(DateOnly movedOutOn)
+    {
+        if (IsMovedOut)
+        {
+            throw new InvalidOperationException("ผู้เช่ารายนี้ย้ายออกแล้ว");
+        }
+
+        if (movedOutOn < MoveInDate)
+        {
+            throw new InvalidOperationException("วันที่ย้ายออกต้องไม่ก่อนวันเข้าอยู่");
+        }
+
+        // คืนห้องทันที โดยจำห้องเดิมไว้แสดงเป็นประวัติ
+        return new Tenant(
+            Id,
+            FirstName,
+            LastName,
+            PhoneNumber,
+            roomId: null,
+            MoveInDate,
+            SecurityDeposit,
+            movedOutOn,
+            movedOutFromRoomId: RoomId);
     }
 
     public bool Equals(Tenant? other)
@@ -90,6 +152,14 @@ public sealed class TenantLastNameRequiredException : ArgumentException
 {
     public TenantLastNameRequiredException()
         : base("ต้องระบุนามสกุลผู้เช่า")
+    {
+    }
+}
+
+public sealed class InvalidSecurityDepositException : ArgumentException
+{
+    public InvalidSecurityDepositException()
+        : base("เงินประกันต้องไม่ติดลบ")
     {
     }
 }

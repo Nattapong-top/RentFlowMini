@@ -17,7 +17,9 @@ public sealed class CreateTenantService
         string firstName,
         string lastName,
         string? phoneNumber = null,
-        RoomId? roomId = null)
+        RoomId? roomId = null,
+        DateOnly? moveInDate = null,
+        decimal? securityDeposit = null)
     {
         if (roomId is not null && _repository.ExistsByRoomId(roomId))
         {
@@ -30,7 +32,9 @@ public sealed class CreateTenantService
             firstName,
             lastName,
             phoneNumber,
-            roomId);
+            roomId,
+            moveInDate,
+            securityDeposit);
 
         _repository.Add(tenant);
 

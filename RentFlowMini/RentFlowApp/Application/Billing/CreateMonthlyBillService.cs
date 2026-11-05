@@ -55,7 +55,8 @@ public sealed class CreateMonthlyBillService
                 request.PreviousElectricityMeter!,
                 request.CurrentElectricityMeter!,
                 request.WaterRate,
-                request.ElectricityRate));
+                request.ElectricityRate),
+            request.Tenant);
 
         _repository.Add(bill);
 

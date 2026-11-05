@@ -64,6 +64,11 @@ public class CreateTenantServiceTests
             Tenants.Add(tenant);
         }
 
+        public void Update(Tenant tenant)
+        {
+            Tenants[Tenants.FindIndex(item => item.Id == tenant.Id)] = tenant;
+        }
+
         public Tenant? GetById(TenantId tenantId)
         {
             return Tenants.Find(tenant => tenant.Id == tenantId);

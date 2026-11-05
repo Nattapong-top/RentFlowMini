@@ -1,5 +1,4 @@
 using RentFlowApp.Application.Rooms;
-using RentFlowApp.Application.Tenants;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 
@@ -10,20 +9,16 @@ public sealed class MonthlyInvoiceBuilder
     private const string NoValue = "-";
 
     private readonly IRoomRepository _roomRepository;
-    private readonly ITenantRepository _tenantRepository;
     private readonly IInvoiceSettingsRepository _settingsRepository;
 
     public MonthlyInvoiceBuilder(
         IRoomRepository roomRepository,
-        ITenantRepository tenantRepository,
         IInvoiceSettingsRepository settingsRepository)
     {
         ArgumentNullException.ThrowIfNull(roomRepository);
-        ArgumentNullException.ThrowIfNull(tenantRepository);
         ArgumentNullException.ThrowIfNull(settingsRepository);
 
         _roomRepository = roomRepository;
-        _tenantRepository = tenantRepository;
         _settingsRepository = settingsRepository;
     }
 
@@ -33,10 +28,6 @@ public sealed class MonthlyInvoiceBuilder
 
         var settings = _settingsRepository.Get();
         var roomNumbers = _roomRepository.GetAll().ToDictionary(room => room.Id, room => room.RoomNumber.Value);
-        var tenants = _tenantRepository.GetAll()
-            .Where(tenant => tenant.RoomId != null)
-            .GroupBy(tenant => tenant.RoomId!)
-            .ToDictionary(group => group.Key, group => group.First());
 
         return bills
             .Select(bill => new MonthlyInvoice(
@@ -49,7 +40,7 @@ public sealed class MonthlyInvoiceBuilder
                 $"{bill.BillingPeriod.Month:D2}/{bill.BillingPeriod.Year + 543}",
                 FormatThaiDate(DateOnly.FromDateTime(bill.CreatedAt)),
                 FormatThaiDate(bill.DueDate),
-                tenants.TryGetValue(bill.RoomId, out var tenant) ? $"คุณ {tenant.FirstName} {tenant.LastName}" : NoValue,
+                bill.Tenant is { } tenant ? $"คุณ {tenant.FullName}" : NoValue,
                 BuildLines(bill),
                 FormatAmount(bill.Total),
                 bill.Payment is { } payment

@@ -16,10 +16,12 @@ public class MonthlyInvoiceBuilderTests
     private readonly InMemoryInvoiceSettingsRepository _settings = new();
     private readonly InMemoryBillRepository _bills = new();
 
-    private MonthlyInvoiceBuilder CreateBuilder() => new(_rooms, _tenants, _settings);
+    private MonthlyInvoiceBuilder CreateBuilder() => new(_rooms, _settings);
 
     private Bill CreateBill(RoomId roomId, decimal rent = 3000m, decimal waterRate = 19m)
     {
+        var tenant = _tenants.GetAll().FirstOrDefault(item => item.RoomId == roomId);
+
         return new CreateMonthlyBillService(_bills).Create(new CreateMonthlyBillRequest(
             roomId,
             BillingPeriod.Create("2026-10"),
@@ -31,7 +33,8 @@ public class MonthlyInvoiceBuilderTests
             waterRate,
             8m,
             IsCableTvExempt: false,
-            CableTvRate: 60m));
+            CableTvRate: 60m,
+            Tenant: tenant is null ? null : BillTenantSnapshot.From(tenant)));
     }
 
     [Fact]
@@ -103,6 +106,19 @@ public class MonthlyInvoiceBuilderTests
         bill.RecordPayment(new DateOnly(2026, 11, 3), PaymentMethod.Cash);
 
         Assert.Equal("ชำระแล้ว เมื่อวันที่ 03/11/2569 (เงินสด)", CreateBuilder().Build([bill])[0].PaymentStatus);
+    }
+
+    [Fact]
+    public void Build_KeepsTenantNameOnOldBillAfterRoomGetsNewTenant()
+    {
+        var room = new CreateRoomService(_rooms).Create("303", 3000m, false);
+        var oldTenant = new CreateTenantService(_tenants).Create("คนเก่า", "ทดสอบ", null, room.Id);
+        var bill = CreateBill(room.Id);
+
+        new MoveOutTenantService(_tenants).MoveOut(oldTenant.Id, DateOnly.FromDateTime(DateTime.Now));
+        new CreateTenantService(_tenants).Create("คนใหม่", "ทดสอบ", null, room.Id);
+
+        Assert.Equal("คุณ คนเก่า ทดสอบ", CreateBuilder().Build([bill])[0].TenantName);
     }
 
     [Fact]
