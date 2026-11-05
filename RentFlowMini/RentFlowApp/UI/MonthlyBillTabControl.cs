@@ -316,6 +316,18 @@ public class MonthlyBillTabControl : BaseTabControl
         _isCableTvExemptCheckBox.Text = "ยกเว้น Cable";
         _isCableTvExemptCheckBox.SetBounds(345, 25, 110, 25);
 
+        HandleEnterKey(
+            () =>
+            {
+                if (_editingBill is not null)
+                {
+                    _createBillButton.PerformClick();
+                }
+            },
+            _chargeMotorcycleCheckBox,
+            _chargeCarCheckBox,
+            _isCableTvExemptCheckBox);
+
         
         var cableTvRateLbl = new Label { Text = "อัตรา Cable:", Left = 465, Top = 27, Width = 75, Height = 22 };
         _cableTvRateTextBox.Name = "CableTvRateTextBox";
@@ -589,7 +601,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _billGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         _billGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
         _billGrid.RowTemplate.Height = 30;
-        _billGrid.ColumnHeadersHeight = 35;
+        _billGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _billGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
         _billGrid.CellDoubleClick += BillGrid_CellDoubleClick;
         _billGrid.CellFormatting += BillGrid_CellFormatting;
@@ -665,6 +677,14 @@ public class MonthlyBillTabControl : BaseTabControl
             DataPropertyName = "PaymentStatus",
             AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
             Width = 210
+        });
+        _billGrid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "TotalAmount",
+            HeaderText = "ยอดรวมทั้งสิ้น",
+            DataPropertyName = "TotalAmount",
+            Width = 105,
+            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font(Font, FontStyle.Bold) }
         });
         _billGrid.Columns.Add(new DataGridViewTextBoxColumn
         {
@@ -745,14 +765,6 @@ public class MonthlyBillTabControl : BaseTabControl
             DataPropertyName = "CableAmount",
             Width = 80,
             DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
-        });
-        _billGrid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "TotalAmount",
-            HeaderText = "ยอดรวมทั้งสิ้น",
-            DataPropertyName = "TotalAmount",
-            Width = 105,
-            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font(Font, FontStyle.Bold) }
         });
 
         var printPanel = new Panel { Dock = DockStyle.Top, Height = 42 };
@@ -1524,6 +1536,9 @@ public class MonthlyBillTabControl : BaseTabControl
 
         _billMessageLabel.ForeColor = Color.DarkBlue;
         _billMessageLabel.Text = $"แก้ไขบิลห้อง {roomNum} รอบ {bill.BillingPeriod.Value}: แก้ได้เฉพาะค่าจอดรถและ Cable TV";
+
+        // ย้ายออกจากตาราง เพราะ Enter ในตารางจะเลื่อนแถวแทนการบันทึก
+        _chargeMotorcycleCheckBox.Focus();
     }
 
     private static MeterReading? TryParseMeterReading(string text)

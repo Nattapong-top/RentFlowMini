@@ -220,22 +220,76 @@ public class TenantTabTests
         });
     }
 
-    [Theory]
-    [InlineData("abc", "เงินประกันต้องเป็นตัวเลข")]
-    [InlineData("-100", "เงินประกันต้องไม่ติดลบ")]
-    public void AddTenant_WhenDepositIsInvalid_ShowsThaiMessageAndAddsNothing(string deposit, string expected)
+    [Fact]
+    public void AddTenant_WhenDepositIsOnlyDot_ShowsThaiMessageAndAddsNothing()
     {
         RunInSta(() =>
         {
             using var tab = new TenantTab();
             tab.Find<TextBox>("TenantFirstNameTextBox").Text = "สมปอง";
             tab.Find<TextBox>("TenantLastNameTextBox").Text = "มีสุข";
-            tab.Find<TextBox>("TenantSecurityDepositTextBox").Text = deposit;
+            tab.Find<TextBox>("TenantSecurityDepositTextBox").Text = ".";
 
             tab.Click("AddTenantButton");
 
-            Assert.Equal(expected, tab.Message.Text);
+            Assert.Equal("เงินประกันต้องเป็นตัวเลข", tab.Message.Text);
             Assert.Empty(tab.Tenants.GetAll());
+        });
+    }
+
+    [Fact]
+    public void Enter_WhileEditing_SavesAndLeavesEditMode()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new TenantTab();
+            var tenant = tab.AddTenant("ชื่อผิด", "101");
+            tab.DoubleClickRow(0);
+            var firstName = tab.Find<TextBox>("TenantFirstNameTextBox");
+            firstName.Text = "ชื่อถูก";
+
+            InputTestHelper.PressEnter(firstName);
+
+            Assert.Equal("ชื่อถูก ทดสอบ", tab.Tenants.GetById(tenant.Id)!.FullName);
+            Assert.Equal("เพิ่มผู้เช่า", tab.Find<Button>("AddTenantButton").Text);
+        });
+    }
+
+    [Fact]
+    public void Enter_WhileAddingNewTenant_DoesNotSave()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new TenantTab();
+            var firstName = tab.Find<TextBox>("TenantFirstNameTextBox");
+            firstName.Text = "ยังกรอกไม่ครบ";
+            tab.Find<TextBox>("TenantLastNameTextBox").Text = "ทดสอบ";
+
+            InputTestHelper.PressEnter(firstName);
+
+            Assert.Empty(tab.Tenants.GetAll());
+            Assert.Equal("ยังกรอกไม่ครบ", firstName.Text);
+        });
+    }
+
+    [Fact]
+    public void PhoneAndDeposit_AcceptOnlyNumbers()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new TenantTab();
+            var phone = tab.Find<TextBox>("TenantPhoneTextBox");
+            var deposit = tab.Find<TextBox>("TenantSecurityDepositTextBox");
+
+            // จำลองการวางข้อความ
+            phone.Text = "081-234.5678";
+            deposit.Text = "5,000.50.1บาท";
+
+            Assert.Equal("0812345678", phone.Text);
+            Assert.Equal("5,000.501", deposit.Text);
+            Assert.True(InputTestHelper.IsKeyBlocked(phone, 'ก'));
+            Assert.True(InputTestHelper.IsKeyBlocked(phone, '.'));
+            Assert.False(InputTestHelper.IsKeyBlocked(phone, '1'));
         });
     }
 

@@ -134,6 +134,16 @@ public sealed class RoomTabControl : BaseTabControl
         };
         _roomMonthlyRentTextBox.Name = "RoomMonthlyRentTextBox";
         _roomMonthlyRentTextBox.Dock = DockStyle.Fill;
+        ConfigureNumericTextBox(_roomMonthlyRentTextBox, allowThousandsSeparator: true);
+        HandleEnterKey(
+            () =>
+            {
+                if (_editingRoomId is not null)
+                {
+                    _editRoomRentButton.PerformClick();
+                }
+            },
+            _roomMonthlyRentTextBox);
 
         _roomCableTvExemptCheckBox.Name = "RoomCableTvExemptCheckBox";
         _roomCableTvExemptCheckBox.Text = "ยกเว้นค่า Cable TV";
@@ -204,7 +214,7 @@ public sealed class RoomTabControl : BaseTabControl
         _roomGrid.SelectionChanged += RoomGrid_SelectionChanged;
         _roomGrid.CellDoubleClick += RoomGrid_CellDoubleClick;
         _roomGrid.RowTemplate.Height = 32;
-        _roomGrid.ColumnHeadersHeight = 36;
+        _roomGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _roomGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
 
         var sequenceColumn = new DataGridViewTextBoxColumn

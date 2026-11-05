@@ -111,14 +111,14 @@ public class MeterReadingTabControl : BaseTabControl
         var prevWaterLabel = new Label { Text = "มิเตอร์ก่อนหน้า:", Left = 15, Top = 35, Width = 130, Height = 25 };
         _prevWaterTextBox.Name = "PrevWaterTextBox";
         _prevWaterTextBox.SetBounds(150, 32, 170, 30);
-        ConfigureNumericTextBox(_prevWaterTextBox);
+        ConfigureMeterTextBox(_prevWaterTextBox);
         _prevWaterTextBox.ReadOnly = true;
         _prevWaterTextBox.BackColor = SystemColors.ControlLight;
 
         var currWaterLabel = new Label { Text = "มิเตอร์ปัจจุบัน:", Left = 15, Top = 80, Width = 130, Height = 25 };
         _currWaterTextBox.Name = "CurrWaterTextBox";
         _currWaterTextBox.SetBounds(150, 77, 170, 30);
-        ConfigureNumericTextBox(_currWaterTextBox);
+        ConfigureMeterTextBox(_currWaterTextBox);
 
         waterGroup.Controls.AddRange(
         [
@@ -140,14 +140,14 @@ public class MeterReadingTabControl : BaseTabControl
         var prevElecLabel = new Label { Text = "มิเตอร์ก่อนหน้า:", Left = 15, Top = 35, Width = 130, Height = 25 };
         _prevElecTextBox.Name = "PrevElecTextBox";
         _prevElecTextBox.SetBounds(150, 32, 170, 30);
-        ConfigureNumericTextBox(_prevElecTextBox);
+        ConfigureMeterTextBox(_prevElecTextBox);
         _prevElecTextBox.ReadOnly = true;
         _prevElecTextBox.BackColor = SystemColors.ControlLight;
 
         var currElecLabel = new Label { Text = "มิเตอร์ปัจจุบัน:", Left = 15, Top = 80, Width = 130, Height = 25 };
         _currElecTextBox.Name = "CurrElecTextBox";
         _currElecTextBox.SetBounds(150, 77, 170, 30);
-        ConfigureNumericTextBox(_currElecTextBox);
+        ConfigureMeterTextBox(_currElecTextBox);
 
         elecGroup.Controls.AddRange(
         [
@@ -204,7 +204,7 @@ public class MeterReadingTabControl : BaseTabControl
         _meterGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         _meterGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
         _meterGrid.RowTemplate.Height = 30;
-        _meterGrid.ColumnHeadersHeight = 35;
+        _meterGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _meterGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
         _meterGrid.CellDoubleClick += MeterGrid_CellDoubleClick;
 
@@ -273,21 +273,9 @@ public class MeterReadingTabControl : BaseTabControl
 
     private BillingPeriod? GetSelectedBillingPeriod() => _periodSelector.GetBillingPeriod();
 
-    private void ConfigureNumericTextBox(TextBox textBox)
+    private void ConfigureMeterTextBox(TextBox textBox)
     {
-        textBox.KeyPress += (s, e) =>
-        {
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
-            {
-                e.Handled = true;
-            }
-
-            if (e.KeyChar == '.' && textBox.Text.Contains('.'))
-            {
-                e.Handled = true;
-            }
-        };
-
+        ConfigureNumericTextBox(textBox);
         textBox.KeyDown += Control_EnterKeyDown;
     }
 

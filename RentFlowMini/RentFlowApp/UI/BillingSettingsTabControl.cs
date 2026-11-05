@@ -191,24 +191,6 @@ public class BillingSettingsTabControl : BaseTabControl
         return group;
     }
 
-    private static void ConfigureNumericTextBox(TextBox textBox)
-    {
-        textBox.KeyPress += (s, e) =>
-        {
-            // อนุญาตเฉพาะตัวเลข (0-9), จุดทศนิยม (.), และปุ่มควบคุม (Backspace, etc.)
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.')
-            {
-                e.Handled = true;
-            }
-
-            // อนุญาตจุดทศนิยมได้เพียง 1 จุดเท่านั้น
-            if (e.KeyChar == '.' && textBox.Text.Contains('.'))
-            {
-                e.Handled = true;
-            }
-        };
-    }
-
     public void LoadSettings()
     {
         try

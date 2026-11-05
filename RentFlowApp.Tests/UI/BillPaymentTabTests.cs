@@ -248,6 +248,20 @@ public class BillPaymentTabTests
     }
 
     [Fact]
+    public void Grid_ShowsTotalRightAfterPaymentStatusWithItsValue()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new PaymentTab("101");
+
+            Assert.Equal(
+                tab.Grid.Columns["PaymentStatus"]!.DisplayIndex + 1,
+                tab.Grid.Columns["TotalAmount"]!.DisplayIndex);
+            Assert.Equal("3,000.00", tab.Grid.Rows[0].Cells["TotalAmount"].Value);
+        });
+    }
+
+    [Fact]
     public void BillOfCurrentPeriod_WhenPastDueDate_ShowsOverdueDaysInStatusAndSummary()
     {
         RunInSta(() =>

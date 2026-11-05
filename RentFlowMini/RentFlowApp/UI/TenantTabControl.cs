@@ -123,7 +123,7 @@ public class TenantTabControl : BaseTabControl
         _tenantPhoneTextBox.Name = "TenantPhoneTextBox";
         _tenantPhoneTextBox.SetBounds(605, 12, 130, 30);
         _tenantPhoneTextBox.MaxLength = 10;
-        _tenantPhoneTextBox.KeyPress += TenantPhoneTextBox_KeyPress;
+        ConfigureNumericTextBox(_tenantPhoneTextBox, allowDecimal: false);
 
         var roomLabel = CreateFieldLabel("ห้องพัก:", 12, 53, 80);
         _tenantRoomComboBox.Name = "TenantRoomComboBox";
@@ -140,6 +140,22 @@ public class TenantTabControl : BaseTabControl
         _securityDepositTextBox.Name = "TenantSecurityDepositTextBox";
         _securityDepositTextBox.SetBounds(605, 50, 130, 30);
         _securityDepositTextBox.TextAlign = HorizontalAlignment.Right;
+        ConfigureNumericTextBox(_securityDepositTextBox, allowThousandsSeparator: true);
+
+        HandleEnterKey(
+            () =>
+            {
+                if (_editingTenantId is not null)
+                {
+                    _addTenantButton.PerformClick();
+                }
+            },
+            _tenantFirstNameTextBox,
+            _tenantLastNameTextBox,
+            _tenantPhoneTextBox,
+            _tenantRoomComboBox,
+            _moveInDatePicker,
+            _securityDepositTextBox);
 
         _addTenantButton.Name = "AddTenantButton";
         _addTenantButton.Text = AddTenantButtonText;
@@ -210,6 +226,7 @@ public class TenantTabControl : BaseTabControl
         _tenantGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
         _tenantGrid.RowTemplate.Height = 30;
         _tenantGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        _tenantGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _tenantGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
         _tenantGrid.CellDoubleClick += TenantGrid_CellDoubleClick;
         _tenantGrid.CellFormatting += TenantGrid_CellFormatting;
@@ -523,6 +540,10 @@ public class TenantTabControl : BaseTabControl
 
         _tenantMessageLabel.ForeColor = Color.DarkBlue;
         _tenantMessageLabel.Text = $"กำลังแก้ไขข้อมูล {tenant.FullName}";
+
+        // ย้ายออกจากตาราง เพราะ Enter ในตารางจะเลื่อนแถวแทนการบันทึก
+        _tenantFirstNameTextBox.Focus();
+        _tenantFirstNameTextBox.SelectAll();
     }
 
     private void MoveOutButton_Click(object? sender, EventArgs e)
@@ -596,13 +617,5 @@ public class TenantTabControl : BaseTabControl
     {
         _tenantMessageLabel.ForeColor = Color.DarkRed;
         _tenantMessageLabel.Text = message;
-    }
-
-    private static void TenantPhoneTextBox_KeyPress(object? sender, KeyPressEventArgs e)
-    {
-        if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
-        {
-            e.Handled = true;
-        }
     }
 }
