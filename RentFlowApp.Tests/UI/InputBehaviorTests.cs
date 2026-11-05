@@ -58,7 +58,7 @@ public class InputBehaviorTests
 
             var grids = FindGrids(form).ToList();
 
-            Assert.Equal(5, grids.Count);
+            Assert.Equal(6, grids.Count);
             Assert.All(grids, grid =>
                 Assert.Equal(DataGridViewColumnHeadersHeightSizeMode.AutoSize, grid.ColumnHeadersHeightSizeMode));
         });

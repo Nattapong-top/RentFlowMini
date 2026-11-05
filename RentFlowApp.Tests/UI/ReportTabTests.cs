@@ -51,13 +51,35 @@ public class ReportTabTests
 
         public ReportTab()
         {
-            _tab = new ReportTabControl(_rooms, _tenants, _bills, () => Today);
+            _tab = new ReportTabControl(
+                _rooms,
+                _tenants,
+                _bills,
+                () => Today,
+                (suggestedFileName, _) =>
+                {
+                    SuggestedFileName = suggestedFileName;
+                    return SavePath;
+                },
+                (report, path) =>
+                {
+                    PdfExportReport = report;
+                    PdfExportPath = path;
+                });
             _form.Controls.Add(_tab);
             _form.Show();
             Selector.SetBillingPeriod(CurrentPeriod);
         }
 
         public DateOnly Today { get; set; } = CurrentPeriod.GetPaymentDueDate();
+
+        public string? SavePath { get; set; }
+
+        public string? SuggestedFileName { get; private set; }
+
+        public RentFlowApp.Application.Reports.YearlyReport? PdfExportReport { get; private set; }
+
+        public string? PdfExportPath { get; private set; }
 
         public BillingPeriodSelector Selector => Find<BillingPeriodSelector>("ReportPeriodSelector");
 
@@ -92,6 +114,13 @@ public class ReportTabTests
                 bill.RecordPayment(Today, method);
                 _bills.Update(bill);
             }
+        }
+
+        public void ClickExport(string buttonName)
+        {
+            // ปุ่มส่งออกแสดงเฉพาะมุมมองรายปี และ PerformClick ไม่ทำงานกับปุ่มที่ซ่อนอยู่
+            Find<RadioButton>("ReportYearlyRadioButton").Checked = true;
+            Find<Button>(buttonName).PerformClick();
         }
 
         public void Refresh() => _tab.RefreshReport();
@@ -203,6 +232,174 @@ public class ReportTabTests
             Assert.Equal("ไม่มีบิลค้างชำระ", tab.Text("ReportOutstandingSummaryLabel"));
             Assert.Empty(tab.Column("RoomNumber"));
         });
+    }
+
+    [Fact]
+    public void StartsInMonthlyView_AndSwitchingShowsYearlyControls()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+            var yearlyGrid = tab.Find<DataGridView>("ReportYearlyGrid");
+            Assert.False(yearlyGrid.Visible);
+            Assert.True(tab.Grid.Visible);
+
+            tab.Find<RadioButton>("ReportYearlyRadioButton").Checked = true;
+
+            Assert.True(yearlyGrid.Visible);
+            Assert.True(tab.Find<Button>("ExportExcelButton").Visible);
+            Assert.True(tab.Find<ComboBox>("ReportYearComboBox").Visible);
+            Assert.False(tab.Grid.Visible);
+            Assert.False(tab.Selector.Visible);
+        });
+    }
+
+    [Fact]
+    public void YearlyGrid_ShowsTwelveMonthsAndBoldTotal_AndChangesWithYear()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+            int year = tab.Today.Year;
+            var room = tab.AddRoom("101");
+            tab.AddBill(room, BillingPeriod.Create($"{year}-03"), 1000m);
+            tab.AddBill(room, BillingPeriod.Create($"{year}-04"), 2000m, paidBy: PaymentMethod.Cash);
+            tab.AddBill(room, BillingPeriod.Create($"{year - 1}-04"), 5000m);
+            var yearBox = tab.Find<ComboBox>("ReportYearComboBox");
+            var grid = tab.Find<DataGridView>("ReportYearlyGrid");
+            yearBox.SelectedItem = year + 543;
+            tab.Refresh();
+
+            Assert.Equal(13, grid.Rows.Count);
+            Assert.Equal("มีนาคม", grid.Rows[2].Cells[0].Value);
+            Assert.Equal("1", grid.Rows[2].Cells[1].Value);
+            Assert.Equal(1000m.ToString("N2"), grid.Rows[2].Cells[2].Value);
+            var total = grid.Rows[12];
+            Assert.Equal("รวมทั้งปี", total.Cells[0].Value);
+            Assert.Equal("2", total.Cells[1].Value);
+            Assert.Equal(3000m.ToString("N2"), total.Cells[7].Value);
+            Assert.Equal(2000m.ToString("N2"), total.Cells[8].Value);
+            Assert.Equal(1000m.ToString("N2"), total.Cells[9].Value);
+            Assert.True(total.DefaultCellStyle.Font!.Bold);
+
+            yearBox.SelectedItem = year - 1 + 543;
+
+            Assert.Equal(5000m.ToString("N2"), grid.Rows[12].Cells[7].Value);
+        });
+    }
+
+    [Fact]
+    public void ExportExcel_WritesChosenFileAndShowsSavedPath()
+    {
+        RunInSta(() =>
+        {
+            string filePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.xlsx");
+            try
+            {
+                using var tab = new ReportTab { SavePath = filePath };
+                tab.AddBill(tab.AddRoom("101"), BillingPeriod.Create($"{tab.Today.Year}-03"), 1000m);
+
+                tab.ClickExport("ExportExcelButton");
+
+                Assert.Equal($"รายงานประจำปี-{tab.Today.Year + 543}.xlsx", tab.SuggestedFileName);
+                Assert.True(File.Exists(filePath));
+                Assert.Equal($"ส่งออกรายงานแล้ว: {filePath}", tab.Text("ReportYearlyMessageLabel"));
+            }
+            finally
+            {
+                File.Delete(filePath);
+            }
+        });
+    }
+
+    [Fact]
+    public void ExportPdf_PassesSelectedYearAndChosenPathToExporter()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab { SavePath = "รายงาน.pdf" };
+            tab.AddBill(tab.AddRoom("101"), BillingPeriod.Create($"{tab.Today.Year}-03"), 1000m);
+
+            tab.ClickExport("ExportPdfButton");
+
+            Assert.Equal("รายงาน.pdf", tab.PdfExportPath);
+            Assert.Equal(tab.Today.Year, tab.PdfExportReport!.Year);
+            Assert.Equal(1000m, tab.PdfExportReport.Total.Rent);
+        });
+    }
+
+    [Fact]
+    public void Export_WhenYearHasNoBills_ShowsThaiMessageAndDoesNotAskForFile()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab { SavePath = "ไม่ควรถูกใช้.xlsx" };
+
+            tab.ClickExport("ExportExcelButton");
+
+            Assert.Null(tab.SuggestedFileName);
+            Assert.Equal(
+                $"ไม่มีบิลในปี {tab.Today.Year + 543} จึงไม่มีข้อมูลให้ส่งออก",
+                tab.Text("ReportYearlyMessageLabel"));
+        });
+    }
+
+    [Fact]
+    public void Export_WhenSaveDialogIsCancelled_DoesNothing()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab { SavePath = null };
+            tab.AddBill(tab.AddRoom("101"), BillingPeriod.Create($"{tab.Today.Year}-03"), 1000m);
+
+            tab.ClickExport("ExportPdfButton");
+
+            Assert.Null(tab.PdfExportPath);
+            Assert.Equal(string.Empty, tab.Text("ReportYearlyMessageLabel"));
+        });
+    }
+
+    [Fact]
+    public void ExportExcel_WhenFileIsOpen_ShowsThaiMessage()
+    {
+        RunInSta(() =>
+        {
+            string filePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.xlsx");
+            try
+            {
+                using var lockedFile = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+                using var tab = new ReportTab { SavePath = filePath };
+                tab.AddBill(tab.AddRoom("101"), BillingPeriod.Create($"{tab.Today.Year}-03"), 1000m);
+
+                tab.ClickExport("ExportExcelButton");
+
+                Assert.StartsWith("บันทึกไฟล์ไม่สำเร็จ", tab.Text("ReportYearlyMessageLabel"));
+            }
+            finally
+            {
+                File.Delete(filePath);
+            }
+        });
+    }
+
+    [Fact]
+    public void PrintDocument_FitsYearlyReportOnOneLandscapePage()
+    {
+        // เครื่องที่ไม่ได้ติดตั้งเครื่องพิมพ์จะสร้าง print preview ไม่ได้
+        if (System.Drawing.Printing.PrinterSettings.InstalledPrinters.Count == 0)
+        {
+            return;
+        }
+
+        var report = RentFlowApp.Application.Reports.YearlyReportBuilder.Build([], 2026);
+        var controller = new System.Drawing.Printing.PreviewPrintController();
+        using var document = new YearlyReportPrintDocument(report) { PrintController = controller };
+
+        document.Print();
+
+        var page = Assert.Single(controller.GetPreviewPageInfo());
+        Assert.True(document.DefaultPageSettings.Landscape);
+        page.Image.Dispose();
     }
 
     [Fact]
