@@ -5,6 +5,7 @@ using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Rooms;
+using RentFlowApp.Infrastructure.Settings;
 using RentFlowApp.Infrastructure.Tenants;
 
 namespace RentFlowApp;
@@ -25,6 +26,16 @@ internal static class Program
         IMonthlyMeterReadingRepository meterReadingRepository =
             new InMemoryMonthlyMeterReadingRepository();
 
+        var settingsRepository = new JsonFileSettingsRepository(GetSettingsFilePath());
+        if (settingsRepository.LoadFailed)
+        {
+            MessageBox.Show(
+                "ไม่สามารถอ่านไฟล์ตั้งค่าได้ ระบบจะใช้ค่าเริ่มต้นชั่วคราว กรุณาตรวจสอบข้อมูลในแท็บตั้งค่าพื้นฐาน เมื่อบันทึกใหม่ ระบบจะสำรองไฟล์เดิมไว้ให้",
+                "RentFlow",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
+
         var createRoomService =
             new CreateRoomService(roomRepository);
         var createMonthlyBillService =
@@ -44,8 +55,17 @@ internal static class Program
                 createTenantService,
                 tenantRepository,
                 meterReadingRepository,
-                billRepository));
+                billRepository,
+                billingSettingsRepository: settingsRepository,
+                invoiceSettingsRepository: settingsRepository));
     }
+
+    // เก็บนอกโฟลเดอร์โปรเจ็กต์ เพื่อไม่ให้ข้อมูลหอพักและเลขบัญชีติดไปกับ git
+    private static string GetSettingsFilePath() =>
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "RentFlow",
+            "settings.json");
 
     private sealed record SeedRoomData(
         string Number,

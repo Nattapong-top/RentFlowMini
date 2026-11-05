@@ -59,7 +59,7 @@ public class RoomFormTests
             Assert.Equal("บันทึกมิเตอร์น้ำประปา-ไฟฟ้า", tabControl.TabPages[1].Text);
             Assert.Equal("สร้างบิลประจำเดือน (Monthly Bill)", tabControl.TabPages[2].Text);
             Assert.Equal("ผู้เช่า (Tenants)", tabControl.TabPages[3].Text);
-            Assert.Equal("ตั้งค่าราคากลาง", tabControl.TabPages[4].Text);
+            Assert.Equal("ตั้งค่าพื้นฐาน", tabControl.TabPages[4].Text);
 
             var billingTab = tabControl.TabPages[2];
             var waterRateTextBox = billingTab.Controls.Find("WaterRateTextBox", true).FirstOrDefault() as TextBox;
@@ -836,6 +836,57 @@ public class RoomFormTests
             Assert.Contains("100 → 110", waterDetailsLabel.Text);
             Assert.Equal($"ครบกำหนด: 05/11/{year + 543}", dueDateLabel.Text);
             Assert.Equal($"05/11/{year + 543}", grid.Rows[0].Cells["DueDateDisplay"].Value);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_WhenPriceChangesInSettingsTab_NewBillUsesNewPriceAndIssuedBillStaysTheSame()
+    {
+        RunInSta(() =>
+        {
+            // Arrange
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createBillService = new CreateMonthlyBillService(billRepo);
+            var period = BillingPeriod.Create($"{DateTime.Now.Year}-10");
+
+            var room1 = createRoomService.Create("101", 3000m, true);
+            var room2 = createRoomService.Create("102", 3000m, true);
+            AddMeterReading(meterRepo, room1.Id, period);
+            AddMeterReading(meterRepo, room2.Id, period);
+
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            var settingsTab = tabControl.TabPages[4];
+            tabControl.SelectedTab = billingTab;
+
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            periodSelector.SetBillingPeriod(period);
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+            var billingWaterRateBox = (TextBox)billingTab.Controls.Find("WaterRateTextBox", true).First();
+
+            createButton.PerformClick();
+            var firstBill = billRepo.GetAll().Single();
+            decimal firstWaterAmount = firstBill.Water.Amount;
+
+            // Act
+            tabControl.SelectedTab = settingsTab;
+            ((TextBox)settingsTab.Controls.Find("WaterRateTextBox", true).First()).Text = "25";
+            ((Button)settingsTab.Controls.Find("SaveSettingsButton", true).First()).PerformClick();
+            tabControl.SelectedTab = billingTab;
+            createButton.PerformClick();
+
+            // Assert
+            Assert.Equal("25", billingWaterRateBox.Text);
+            var secondBill = billRepo.GetAll().Single(bill => bill.RoomId == room2.Id);
+            Assert.Equal(250m, secondBill.Water.Amount);
+            Assert.Equal(25m, secondBill.Meters!.WaterRate);
+            Assert.Equal(firstWaterAmount, firstBill.Water.Amount);
+            Assert.Equal(19m, firstBill.Meters!.WaterRate);
         });
     }
 

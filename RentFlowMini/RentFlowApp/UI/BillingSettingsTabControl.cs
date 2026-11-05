@@ -45,7 +45,7 @@ public class BillingSettingsTabControl : BaseTabControl
     private void InitializeComponents()
     {
         var mainLayout = CreateStandardLayout(4, [50f, 330f, 230f, -1f]);
-        var titleLabel = CreateTitleLabel("ตั้งค่าราคากลางประจำระบบ");
+        var titleLabel = CreateTitleLabel("ตั้งค่าพื้นฐาน");
         var group = BuildInputGroup();
         var invoiceGroup = BuildInvoiceSettingsGroup();
 
@@ -124,6 +124,10 @@ public class BillingSettingsTabControl : BaseTabControl
         catch (ArgumentException ex)
         {
             ShowError(ex.ParamName is null ? ex.Message : ex.Message.Split(" (Parameter")[0]);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowError(ex.Message);
         }
     }
 

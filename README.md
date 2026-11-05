@@ -44,7 +44,7 @@ Infrastructure (In-Memory / SQL Server)
 - **Domain** — โมเดล `Room`, `Tenant`, `Bill`, `MonthlyMeterReading`, `BillingSettings`, `BillingCalculator` และ Value Objects เช่น `RoomNumber`, `Money`, `MeterReading`, `BillingPeriod`
 - **Application** — Use Case ของห้องพัก ผู้เช่า มิเตอร์ ตั้งค่าราคา และสร้างบิล พร้อมสัญญา repository
 - **Infrastructure** — In-Memory Repository สำหรับทุกส่วน และ SQL Server Repository สำหรับห้องพัก ผู้เช่า และบิล
-- **UI** — WinForms แบ่งเป็นแท็บ: ห้องพัก, บันทึกมิเตอร์, สร้างบิลประจำเดือน, ผู้เช่า และตั้งค่าราคากลาง
+- **UI** — WinForms แบ่งเป็นแท็บ: ห้องพัก, บันทึกมิเตอร์, สร้างบิลประจำเดือน, ผู้เช่า และตั้งค่าพื้นฐาน
 - **Tests** — Unit Tests, UI Tests และ Integration Tests สำหรับ SQL Server
 
 ## ความสามารถในปัจจุบัน

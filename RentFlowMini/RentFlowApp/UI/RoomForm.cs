@@ -61,6 +61,7 @@ public class RoomForm : Form
             monthlyMeterReadingRepository: monthlyMeterReadingRepo,
             billRepository: billRepo,
             tenantRepository: tenantRepo,
+            billingSettingsRepository: billingSettingsRepo,
             invoiceSettingsRepository: invoiceSettingsRepo);
 
         _tenantTabControl = new TenantTabControl(
@@ -104,7 +105,7 @@ public class RoomForm : Form
         var meterReadingTabPage = new TabPage("บันทึกมิเตอร์น้ำประปา-ไฟฟ้า");
         var billingTabPage = new TabPage("สร้างบิลประจำเดือน (Monthly Bill)");
         var tenantTabPage = new TabPage("ผู้เช่า (Tenants)");
-        var settingsTabPage = new TabPage("ตั้งค่าราคากลาง");
+        var settingsTabPage = new TabPage("ตั้งค่าพื้นฐาน");
 
         roomTabPage.Controls.Add(_roomTabControl);
         meterReadingTabPage.Controls.Add(_meterReadingTabControl);

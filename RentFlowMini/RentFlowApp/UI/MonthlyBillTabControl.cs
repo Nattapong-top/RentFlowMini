@@ -122,7 +122,6 @@ public class MonthlyBillTabControl : BaseTabControl
         InitializeComponents();
         RefreshRoomList();
         RefreshBillGrid();
-        LoadDefaultSettings();
     }
 
     private void InitializeComponents()
@@ -813,6 +812,8 @@ public class MonthlyBillTabControl : BaseTabControl
 
     public void RefreshRoomList(RoomId? forceIncludeRoomId = null)
     {
+        LoadDefaultSettings();
+
         var selectedItem = _billRoomComboBox.SelectedItem as RoomItem;
         _billRoomComboBox.Items.Clear();
 
