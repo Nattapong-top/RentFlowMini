@@ -507,7 +507,7 @@ public class MeterReadingTabControl : BaseTabControl
         }
         catch (Exception ex)
         {
-            ShowError($"เกิดข้อผิดพลาด: {ex.Message}");
+            ShowError(LogUnexpectedError(ex));
         }
     }
 

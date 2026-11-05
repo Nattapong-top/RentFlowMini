@@ -17,6 +17,18 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
+        // กล่อง error มาตรฐานของ WinForms แสดง stack trace ให้ผู้ใช้เห็น จึงต้องดักไว้ก่อน
+        System.Windows.Forms.Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        System.Windows.Forms.Application.ThreadException += (_, e) =>
+        {
+            System.Diagnostics.Trace.TraceError(e.Exception.ToString());
+            MessageBox.Show(
+                BaseTabControl.UnexpectedErrorMessage,
+                "RentFlow",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        };
+
         IRoomEditor roomRepository =
             new InMemoryRoomRepository();
         IBillRepository billRepository =

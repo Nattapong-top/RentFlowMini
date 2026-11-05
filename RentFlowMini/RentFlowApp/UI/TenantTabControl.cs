@@ -78,6 +78,9 @@ public class TenantTabControl : BaseTabControl
         _confirmMoveOut = confirmMoveOut ?? ShowMoveOutConfirmation;
 
         Name = "TenantTabControl";
+        // แถบเครื่องมือจัดตำแหน่งตายตัว จอแคบจึงต้องเลื่อนแนวนอนเพื่อให้ถึงปุ่มย้ายออก
+        AutoScroll = true;
+        AutoScrollMinSize = new Size(850, 0);
 
         InitializeComponents();
         RefreshTab();

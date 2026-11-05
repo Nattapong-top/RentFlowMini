@@ -12,6 +12,9 @@ public class MonthlyBillTabControl : BaseTabControl
 {
     private const string CreateBillButtonText = "คำนวณและสร้างบิล";
     private const string SaveBillEditButtonText = "บันทึกการแก้ไขบิล";
+    private const int FullInputAreaHeight = 440;
+    // ส่วนหัวกลุ่ม แถบปุ่ม 2 แถว หัวตาราง แถบเลื่อน และบิลอย่างน้อย 3 แถว
+    private const int MinimumBillListHeight = 310;
 
     private readonly CreateMonthlyBillService? _createMonthlyBillService;
     private readonly UpdateBillChargesService _updateBillChargesService;
@@ -69,6 +72,9 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly Label _resultCableTvLabel = new();
     private readonly Label _resultTotalLabel = new();
     private readonly Label _billMessageLabel = new();
+
+    private readonly SplitContainer _billSplitContainer = new();
+    private bool _isSplitterMovedByUser;
 
     private Bill? _editingBill;
 
@@ -136,6 +142,9 @@ public class MonthlyBillTabControl : BaseTabControl
         _today = today ?? (() => DateOnly.FromDateTime(DateTime.Now));
 
         Name = "MonthlyBillTabControl";
+        // ฟอร์มและแถบปุ่มจัดตำแหน่งตายตัว จอแคบจึงต้องเลื่อนแนวนอนเพื่อให้ถึงกล่องสรุปและปุ่มรับชำระ
+        AutoScroll = true;
+        AutoScrollMinSize = new Size(1210, 0);
 
         InitializeComponents();
         RefreshRoomList();
@@ -144,22 +153,50 @@ public class MonthlyBillTabControl : BaseTabControl
 
     private void InitializeComponents()
     {
-        var mainLayout = CreateStandardLayout(3, [50f, 440f, -1f]);
+        var mainLayout = CreateStandardLayout(2, [50f, -1f]);
         var titleLabel = CreateTitleLabel("สร้างบิลประจำเดือน");
-        var inputAndResultPanel = BuildInputAndResultPanel();
-        var listGroup = BuildListGroup();
+
+        _billSplitContainer.Name = "BillSplitContainer";
+        _billSplitContainer.Dock = DockStyle.Fill;
+        _billSplitContainer.Orientation = Orientation.Horizontal;
+        _billSplitContainer.FixedPanel = FixedPanel.Panel1;
+        _billSplitContainer.TabStop = false;
+        _billSplitContainer.SplitterWidth = 6;
+        // ให้เห็นแถบลากชัด เพราะสีเดียวกับพื้นหลังผู้ใช้จะไม่รู้ว่าลากได้
+        _billSplitContainer.BackColor = SystemColors.ControlDark;
+        _billSplitContainer.Panel1.BackColor = SystemColors.Control;
+        _billSplitContainer.Panel2.BackColor = SystemColors.Control;
+        _billSplitContainer.Panel1.Controls.Add(BuildInputAndResultPanel());
+        _billSplitContainer.Panel2.Controls.Add(BuildListGroup());
+        _billSplitContainer.SplitterMoving += (s, e) => _isSplitterMovedByUser = true;
+        _billSplitContainer.SizeChanged += (s, e) => ApplyDefaultSplitterPosition();
 
         mainLayout.Controls.Add(titleLabel, 0, 0);
-        mainLayout.Controls.Add(inputAndResultPanel, 0, 1);
-        mainLayout.Controls.Add(listGroup, 0, 2);
+        mainLayout.Controls.Add(_billSplitContainer, 0, 1);
         Controls.Add(mainLayout);
+    }
+
+    private void ApplyDefaultSplitterPosition()
+    {
+        const int minimumPanelHeight = 25;
+        int largestPosition = _billSplitContainer.Height - _billSplitContainer.SplitterWidth - minimumPanelHeight;
+        if (_isSplitterMovedByUser || largestPosition < minimumPanelHeight)
+        {
+            return;
+        }
+
+        int wantedPosition = Math.Min(
+            FullInputAreaHeight,
+            _billSplitContainer.Height - _billSplitContainer.SplitterWidth - MinimumBillListHeight);
+        _billSplitContainer.SplitterDistance = Math.Clamp(wantedPosition, minimumPanelHeight, largestPosition);
     }
 
     private Panel BuildInputAndResultPanel()
     {
         var outerPanel = new Panel
         {
-            Dock = DockStyle.Fill
+            Dock = DockStyle.Fill,
+            AutoScroll = true
         };
 
         // Left Group: Input Controls (Width: 760, Height: 430)
@@ -214,21 +251,21 @@ public class MonthlyBillTabControl : BaseTabControl
 
         var prevWaterLabel = new Label { Text = "มิเตอร์ก่อนหน้า:", Left = 12, Top = 25, Width = 100, Height = 25 };
         _prevWaterTextBox.Name = "PrevWaterTextBox";
-        _prevWaterTextBox.SetBounds(125, 22, 120, 30);
+        _prevWaterTextBox.SetBounds(140, 22, 120, 30);
         _prevWaterTextBox.ReadOnly = true;
         _prevWaterTextBox.TabStop = false;
         _prevWaterTextBox.BackColor = SystemColors.ControlLight;
 
         var currWaterLabel = new Label { Text = "มิเตอร์ปัจจุบัน:", Left = 12, Top = 62, Width = 100, Height = 25 };
         _currWaterTextBox.Name = "CurrWaterTextBox";
-        _currWaterTextBox.SetBounds(125, 59, 120, 30);
+        _currWaterTextBox.SetBounds(140, 59, 120, 30);
         _currWaterTextBox.ReadOnly = true;
         _currWaterTextBox.TabStop = false;
         _currWaterTextBox.BackColor = SystemColors.ControlLight;
 
-        var waterRateLabel = new Label { Text = "อัตรา (บาท/หน่วย):", Left = 12, Top = 98, Width = 110, Height = 25 };
+        var waterRateLabel = new Label { Text = "อัตรา (บาท/หน่วย):", Left = 12, Top = 98, Width = 125, Height = 25 };
         _waterRateTextBox.Name = "WaterRateTextBox";
-        _waterRateTextBox.SetBounds(125, 95, 120, 30);
+        _waterRateTextBox.SetBounds(140, 95, 120, 30);
         _waterRateTextBox.Text = "19";
         _waterRateTextBox.ReadOnly = true;
         _waterRateTextBox.TabStop = false;
@@ -254,21 +291,21 @@ public class MonthlyBillTabControl : BaseTabControl
 
         var prevElecLabel = new Label { Text = "มิเตอร์ก่อนหน้า:", Left = 12, Top = 25, Width = 100, Height = 25 };
         _prevElecTextBox.Name = "PrevElecTextBox";
-        _prevElecTextBox.SetBounds(125, 22, 120, 30);
+        _prevElecTextBox.SetBounds(140, 22, 120, 30);
         _prevElecTextBox.ReadOnly = true;
         _prevElecTextBox.TabStop = false;
         _prevElecTextBox.BackColor = SystemColors.ControlLight;
 
         var currElecLabel = new Label { Text = "มิเตอร์ปัจจุบัน:", Left = 12, Top = 62, Width = 100, Height = 25 };
         _currElecTextBox.Name = "CurrElecTextBox";
-        _currElecTextBox.SetBounds(125, 59, 120, 30);
+        _currElecTextBox.SetBounds(140, 59, 120, 30);
         _currElecTextBox.ReadOnly = true;
         _currElecTextBox.TabStop = false;
         _currElecTextBox.BackColor = SystemColors.ControlLight;
 
-        var elecRateLabel = new Label { Text = "อัตรา (บาท/หน่วย):", Left = 12, Top = 98, Width = 110, Height = 25 };
+        var elecRateLabel = new Label { Text = "อัตรา (บาท/หน่วย):", Left = 12, Top = 98, Width = 125, Height = 25 };
         _elecRateTextBox.Name = "ElecRateTextBox";
-        _elecRateTextBox.SetBounds(125, 95, 120, 30);
+        _elecRateTextBox.SetBounds(140, 95, 120, 30);
         _elecRateTextBox.Text = "8";
         _elecRateTextBox.ReadOnly = true;
         _elecRateTextBox.TabStop = false;
@@ -329,9 +366,9 @@ public class MonthlyBillTabControl : BaseTabControl
             _isCableTvExemptCheckBox);
 
         
-        var cableTvRateLbl = new Label { Text = "อัตรา Cable:", Left = 465, Top = 27, Width = 75, Height = 22 };
+        var cableTvRateLbl = new Label { Text = "อัตรา Cable:", Left = 465, Top = 27, Width = 90, Height = 22 };
         _cableTvRateTextBox.Name = "CableTvRateTextBox";
-        _cableTvRateTextBox.SetBounds(545, 23, 75, 27);
+        _cableTvRateTextBox.SetBounds(560, 23, 75, 27);
         _cableTvRateTextBox.Text = "60";
         _cableTvRateTextBox.ReadOnly = true;
         _cableTvRateTextBox.TabStop = false;
@@ -408,7 +445,7 @@ public class MonthlyBillTabControl : BaseTabControl
             Left = 4,
             Top = 6,
             Width = 350,
-            Height = 68,
+            Height = 70,
             BackColor = Color.FromArgb(246, 248, 251)
         };
 
@@ -426,13 +463,14 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultInvoiceNumberLabel.Text = "ใบแจ้งหนี้ เลขที่ : -";
 
         _resultTenantLabel.Name = "ResultTenantLabel";
-        _resultTenantLabel.SetBounds(8, 32, 175, 21);
+        _resultTenantLabel.SetBounds(8, 32, 200, 21);
+        _resultTenantLabel.AutoEllipsis = true;
         _resultTenantLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Regular);
         _resultTenantLabel.ForeColor = Color.FromArgb(50, 50, 50);
         _resultTenantLabel.Text = "ผู้เช่า: -";
 
         _resultPeriodLabel.Name = "ResultPeriodLabel";
-        _resultPeriodLabel.SetBounds(185, 32, 157, 21);
+        _resultPeriodLabel.SetBounds(210, 32, 132, 21);
         _resultPeriodLabel.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
         _resultPeriodLabel.ForeColor = Color.FromArgb(70, 95, 125);
         _resultPeriodLabel.TextAlign = ContentAlignment.MiddleRight;
@@ -641,7 +679,7 @@ public class MonthlyBillTabControl : BaseTabControl
             Name = "TenantName",
             HeaderText = "ผู้เช่า",
             DataPropertyName = "TenantName",
-            Width = 120
+            Width = 180
         });
         _billGrid.Columns.Add(new DataGridViewTextBoxColumn
         {
@@ -676,7 +714,7 @@ public class MonthlyBillTabControl : BaseTabControl
             HeaderText = "สถานะการชำระ",
             DataPropertyName = "PaymentStatus",
             AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
-            Width = 210
+            Width = 230
         });
         _billGrid.Columns.Add(new DataGridViewTextBoxColumn
         {
@@ -1405,7 +1443,7 @@ public class MonthlyBillTabControl : BaseTabControl
         }
         catch (Exception ex)
         {
-            ShowBillError($"เกิดข้อผิดพลาด: {ex.Message}");
+            ShowBillError(LogUnexpectedError(ex));
         }
     }
 

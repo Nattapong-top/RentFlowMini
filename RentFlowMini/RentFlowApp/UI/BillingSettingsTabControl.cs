@@ -44,25 +44,33 @@ public class BillingSettingsTabControl : BaseTabControl
 
     private void InitializeComponents()
     {
-        var mainLayout = CreateStandardLayout(4, [50f, 330f, 230f, -1f]);
+        var mainLayout = CreateStandardLayout(3, [44f, 32f, -1f]);
         var titleLabel = CreateTitleLabel("ตั้งค่าพื้นฐาน");
-        var group = BuildInputGroup();
-        var invoiceGroup = BuildInvoiceSettingsGroup();
 
-        var messagePanel = new Panel
-        {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(4)
-        };
         _messageLabel.Name = "SettingsMessageLabel";
         _messageLabel.Dock = DockStyle.Fill;
+        _messageLabel.Margin = Padding.Empty;
+        _messageLabel.TextAlign = ContentAlignment.MiddleLeft;
         _messageLabel.Font = new Font("Segoe UI", 11, FontStyle.Regular);
-        messagePanel.Controls.Add(_messageLabel);
+
+        var groupsLayout = CreateStandardLayout(2, [330f, 230f]);
+        groupsLayout.Padding = Padding.Empty;
+        groupsLayout.Controls.Add(BuildInputGroup(), 0, 0);
+        groupsLayout.Controls.Add(BuildInvoiceSettingsGroup(), 0, 1);
+
+        // เลื่อนเฉพาะฟอร์มกรอกข้อมูล เพื่อให้ผลการบันทึกยังเห็นอยู่บนจอเล็กแม้เลื่อนลงมากดปุ่มล่างสุด
+        var scrollPanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Margin = Padding.Empty,
+            AutoScroll = true,
+            AutoScrollMinSize = new Size(790, 560)
+        };
+        scrollPanel.Controls.Add(groupsLayout);
 
         mainLayout.Controls.Add(titleLabel, 0, 0);
-        mainLayout.Controls.Add(group, 0, 1);
-        mainLayout.Controls.Add(invoiceGroup, 0, 2);
-        mainLayout.Controls.Add(messagePanel, 0, 3);
+        mainLayout.Controls.Add(_messageLabel, 0, 1);
+        mainLayout.Controls.Add(scrollPanel, 0, 2);
 
         Controls.Add(mainLayout);
     }
@@ -146,35 +154,35 @@ public class BillingSettingsTabControl : BaseTabControl
             Dock = DockStyle.Fill
         };
 
-        var waterLabel = new Label { Text = "ค่าน้ำประปา (บาท/หน่วย):", Left = 12, Top = 25, Width = 230, Height = 25 };
+        var waterLabel = new Label { Text = "ค่าน้ำประปา (บาท/หน่วย):", Left = 12, Top = 15, Width = 230, Height = 25 };
         _waterRateTextBox.Name = "WaterRateTextBox";
-        _waterRateTextBox.SetBounds(250, 22, 180, 30);
+        _waterRateTextBox.SetBounds(250, 12, 180, 30);
         ConfigureNumericTextBox(_waterRateTextBox);
 
-        var elecLabel = new Label { Text = "ค่าไฟฟ้า (บาท/หน่วย):", Left = 12, Top = 70, Width = 230, Height = 25 };
+        var elecLabel = new Label { Text = "ค่าไฟฟ้า (บาท/หน่วย):", Left = 12, Top = 60, Width = 230, Height = 25 };
         _elecRateTextBox.Name = "ElecRateTextBox";
-        _elecRateTextBox.SetBounds(250, 67, 180, 30);
+        _elecRateTextBox.SetBounds(250, 57, 180, 30);
         ConfigureNumericTextBox(_elecRateTextBox);
 
-        var motorcycleLabel = new Label { Text = "ค่าจอดรถมอเตอร์ไซค์ (บาท/เดือน):", Left = 12, Top = 115, Width = 230, Height = 25 };
+        var motorcycleLabel = new Label { Text = "ค่าจอดรถมอเตอร์ไซค์ (บาท/เดือน):", Left = 12, Top = 105, Width = 230, Height = 25 };
         _motorcycleRateTextBox.Name = "MotorcycleRateTextBox";
-        _motorcycleRateTextBox.SetBounds(250, 112, 180, 30);
+        _motorcycleRateTextBox.SetBounds(250, 102, 180, 30);
         ConfigureNumericTextBox(_motorcycleRateTextBox);
 
-        var carLabel = new Label { Text = "ค่าจอดรถยนต์ (บาท/เดือน):", Left = 12, Top = 160, Width = 230, Height = 25 };
+        var carLabel = new Label { Text = "ค่าจอดรถยนต์ (บาท/เดือน):", Left = 12, Top = 150, Width = 230, Height = 25 };
         _carRateTextBox.Name = "CarRateTextBox";
-        _carRateTextBox.SetBounds(250, 157, 180, 30);
+        _carRateTextBox.SetBounds(250, 147, 180, 30);
         ConfigureNumericTextBox(_carRateTextBox);
 
-        var cableTvLabel = new Label { Text = "ค่า Cable TV (บาท/เดือน):", Left = 12, Top = 205, Width = 230, Height = 25 };
+        var cableTvLabel = new Label { Text = "ค่า Cable TV (บาท/เดือน):", Left = 12, Top = 195, Width = 230, Height = 25 };
         _cableTvRateTextBox.Name = "CableTvRateTextBox";
-        _cableTvRateTextBox.SetBounds(250, 202, 180, 30);
+        _cableTvRateTextBox.SetBounds(250, 192, 180, 30);
         ConfigureNumericTextBox(_cableTvRateTextBox);
 
         _saveButton.Name = "SaveSettingsButton";
         _saveButton.Text = "บันทึกราคากลาง";
         _saveButton.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-        _saveButton.SetBounds(250, 245, 180, 40);
+        _saveButton.SetBounds(250, 235, 180, 40);
         _saveButton.Click += SaveButton_Click;
 
         panel.Controls.AddRange(
@@ -209,7 +217,7 @@ public class BillingSettingsTabControl : BaseTabControl
         }
         catch (Exception ex)
         {
-            ShowError($"ไม่สามารถโหลดราคากลางได้: {ex.Message}");
+            ShowError(LogUnexpectedError(ex, "ไม่สามารถโหลดการตั้งค่าได้ กรุณาปิดแล้วเปิดโปรแกรมใหม่อีกครั้ง"));
         }
     }
 
@@ -261,9 +269,13 @@ public class BillingSettingsTabControl : BaseTabControl
         {
             ShowError("อัตราค่าบริการต้องไม่ติดลบ");
         }
+        catch (InvalidOperationException ex)
+        {
+            ShowError(ex.Message);
+        }
         catch (Exception ex)
         {
-            ShowError($"เกิดข้อผิดพลาด: {ex.Message}");
+            ShowError(LogUnexpectedError(ex));
         }
     }
 

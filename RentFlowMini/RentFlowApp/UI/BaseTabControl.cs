@@ -2,6 +2,16 @@
 
 public abstract class BaseTabControl : UserControl
 {
+    internal const string UnexpectedErrorMessage =
+        "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง หากยังพบปัญหา กรุณาปิดแล้วเปิดโปรแกรมใหม่";
+
+    // ข้อความของ exception ที่ไม่ได้ตั้งใจเขียนให้ผู้ใช้อาจมีรายละเอียดภายในระบบ จึงเก็บไว้เฉพาะใน log
+    protected static string LogUnexpectedError(Exception exception, string userMessage = UnexpectedErrorMessage)
+    {
+        System.Diagnostics.Trace.TraceError(exception.ToString());
+        return userMessage;
+    }
+
     protected BaseTabControl()
     {
         Dock = DockStyle.Fill;

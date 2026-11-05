@@ -17,7 +17,7 @@ public sealed class InMemoryRoomRepository : IRoomEditor
                 existingRoom.RoomNumber.Value == room.RoomNumber.Value))
         {
             throw new InvalidOperationException(
-                $"Room number '{room.RoomNumber.Value}' already exists."
+                $"หมายเลขห้อง {room.RoomNumber.Value} มีอยู่แล้ว กรุณาระบุหมายเลขอื่น"
             );
         }
 

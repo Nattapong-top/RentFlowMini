@@ -42,7 +42,7 @@ public sealed class SqlServerRoomRepository : IRoomRepository
         catch (SqlException ex) when (ex.Number is 2601 or 2627)
         {
             throw new InvalidOperationException(
-                $"Room number '{room.RoomNumber.Value}' already exists.",
+                $"หมายเลขห้อง {room.RoomNumber.Value} มีอยู่แล้ว กรุณาระบุหมายเลขอื่น",
                 ex);
         }
     }

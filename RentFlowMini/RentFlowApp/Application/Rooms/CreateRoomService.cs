@@ -30,7 +30,7 @@ public class CreateRoomService
         if (_repository.ExistsByRoomNumber(number.Value))
         {
             throw new InvalidOperationException(
-                $"Room number '{number.Value}' already exists."
+                $"หมายเลขห้อง {number.Value} มีอยู่แล้ว กรุณาระบุหมายเลขอื่น"
             );
         }
 

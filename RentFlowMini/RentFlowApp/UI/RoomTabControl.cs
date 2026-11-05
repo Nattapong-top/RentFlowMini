@@ -16,6 +16,7 @@ public sealed class RoomTabControl : BaseTabControl
     private readonly CheckBox _roomCableTvExemptCheckBox = new();
     private readonly Button _addRoomButton = new();
     private readonly Button _editRoomRentButton = new();
+    private readonly Button _cancelEditButton = new();
     private readonly DataGridView _roomGrid = new();
     private readonly Label _roomMessageLabel = new();
     private RoomId? _editingRoomId;
@@ -72,7 +73,13 @@ public sealed class RoomTabControl : BaseTabControl
             })
             .ToList();
 
-        _editRoomRentButton.Enabled = false;
+        UpdateEditButtonAvailability();
+    }
+
+    // ระหว่างแก้ต้องบันทึกได้เสมอ เพราะห้องที่แก้อยู่ไม่ได้ผูกกับแถวที่เลือกในตาราง
+    private void UpdateEditButtonAvailability()
+    {
+        _editRoomRentButton.Enabled = _editingRoomId is not null || _roomGrid.SelectedRows.Count > 0;
     }
 
     public void ShowError(string message)
@@ -161,6 +168,16 @@ public sealed class RoomTabControl : BaseTabControl
         _editRoomRentButton.Enabled = false;
         _editRoomRentButton.Click += EditRoomRentButton_Click;
 
+        _cancelEditButton.Name = "CancelRoomEditButton";
+        _cancelEditButton.Text = "ยกเลิก";
+        _cancelEditButton.AutoSize = true;
+        _cancelEditButton.Enabled = false;
+        _cancelEditButton.Click += (s, e) =>
+        {
+            ResetRoomRentEditing();
+            _roomMessageLabel.Text = string.Empty;
+        };
+
         var buttonPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -168,6 +185,7 @@ public sealed class RoomTabControl : BaseTabControl
             WrapContents = false,
             Padding = new Padding(0, 2, 0, 0)
         };
+        buttonPanel.Controls.Add(_cancelEditButton);
         buttonPanel.Controls.Add(_editRoomRentButton);
         buttonPanel.Controls.Add(_addRoomButton);
 
@@ -319,7 +337,7 @@ public sealed class RoomTabControl : BaseTabControl
 
     private void RoomGrid_SelectionChanged(object? sender, EventArgs e)
     {
-        _editRoomRentButton.Enabled = _editingRoomId is null && _roomGrid.SelectedRows.Count > 0;
+        UpdateEditButtonAvailability();
     }
 
     private void RoomGrid_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
@@ -384,9 +402,13 @@ public sealed class RoomTabControl : BaseTabControl
     {
         _editingRoomId = null;
         _editRoomRentButton.Text = "แก้ไขค่าเช่า";
+        UpdateEditButtonAvailability();
+        _cancelEditButton.Enabled = false;
         _addRoomButton.Enabled = true;
         _roomNumberTextBox.ReadOnly = false;
         _roomCableTvExemptCheckBox.Enabled = true;
+        // ถ้าค้างติ๊กจากห้องที่เพิ่งแก้ ห้องใหม่ถัดไปจะไม่ถูกเก็บค่า Cable TV โดยไม่ตั้งใจ
+        _roomCableTvExemptCheckBox.Checked = false;
         _roomNumberTextBox.Clear();
         _roomMonthlyRentTextBox.Clear();
     }
@@ -401,6 +423,7 @@ public sealed class RoomTabControl : BaseTabControl
         _roomCableTvExemptCheckBox.Enabled = false;
         _editRoomRentButton.Text = "บันทึกค่าเช่า";
         _editRoomRentButton.Enabled = true;
+        _cancelEditButton.Enabled = true;
         _addRoomButton.Enabled = false;
         _roomMonthlyRentTextBox.Focus();
         _roomMonthlyRentTextBox.SelectAll();
