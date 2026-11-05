@@ -5,12 +5,9 @@ namespace RentFlowApp.Forms;
 
 public sealed class YearlyReportPrintDocument : PrintDocument
 {
-    private const string PdfPrinterName = "Microsoft Print to PDF";
     private const string FontFamilyName = "Tahoma";
 
     // หน่วยของ PrintDocument คือ 1/100 นิ้ว
-    private const int A4Width = 827;
-    private const int A4Height = 1169;
     private const int PageMargin = 40;
     private const int TitleHeight = 50;
     private const int RowHeight = 36;
@@ -32,31 +29,14 @@ public sealed class YearlyReportPrintDocument : PrintDocument
 
     public static void ExportPdf(YearlyReport report, string filePath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-
         using var document = new YearlyReportPrintDocument(report);
-        document.PrinterSettings.PrinterName = PdfPrinterName;
-        if (!document.PrinterSettings.IsValid)
-        {
-            throw new InvalidPrinterException(document.PrinterSettings);
-        }
-
-        // ไดรเวอร์เขียนไฟล์ภายหลังและไม่แจ้งกลับถ้าไฟล์เดิมเปิดค้าง จึงต้องตรวจก่อนสั่งพิมพ์
-        if (File.Exists(filePath))
-        {
-            using var lockCheck = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-        }
-
-        document.PrinterSettings.PrintToFile = true;
-        document.PrinterSettings.PrintFileName = filePath;
-        document.PrintController = new StandardPrintController();
-        document.Print();
+        ReportPdfExporter.Export(document, filePath);
     }
 
     protected override void OnBeginPrint(PrintEventArgs e)
     {
         base.OnBeginPrint(e);
-        DefaultPageSettings.PaperSize = FindA4PaperSize();
+        DefaultPageSettings.PaperSize = ReportPdfExporter.FindA4PaperSize(PrinterSettings);
     }
 
     protected override void OnPrintPage(PrintPageEventArgs e)
@@ -134,18 +114,5 @@ public sealed class YearlyReportPrintDocument : PrintDocument
 
             x += columnWidths[i];
         }
-    }
-
-    private PaperSize FindA4PaperSize()
-    {
-        foreach (PaperSize paperSize in PrinterSettings.PaperSizes)
-        {
-            if (paperSize.Kind == PaperKind.A4)
-            {
-                return paperSize;
-            }
-        }
-
-        return new PaperSize("A4", A4Width, A4Height);
     }
 }

@@ -16,6 +16,7 @@ public class ReportTabControl : BaseTabControl
     private readonly Func<DateOnly> _today;
     private readonly Func<string, string, string?> _chooseSavePath;
     private readonly Action<YearlyReport, string> _exportPdf;
+    private readonly Action<MonthlyReport, string> _exportMonthlyPdf;
 
     private readonly RadioButton _monthlyRadioButton = new();
     private readonly RadioButton _yearlyRadioButton = new();
@@ -44,6 +45,7 @@ public class ReportTabControl : BaseTabControl
     private readonly Label _cableTvLabel = CreateAmountLabel("ReportCableTvLabel");
     private readonly Label _cashLabel = CreateAmountLabel("ReportCashLabel");
     private readonly Label _bankTransferLabel = CreateAmountLabel("ReportBankTransferLabel");
+    private readonly Label _monthlyMessageLabel = new();
     private readonly Label _outstandingSummaryLabel = new();
     private readonly DataGridView _outstandingGrid = new();
 
@@ -62,7 +64,8 @@ public class ReportTabControl : BaseTabControl
         IBillRepository billRepository,
         Func<DateOnly>? today = null,
         Func<string, string, string?>? chooseSavePath = null,
-        Action<YearlyReport, string>? exportPdf = null)
+        Action<YearlyReport, string>? exportPdf = null,
+        Action<MonthlyReport, string>? exportMonthlyPdf = null)
     {
         ArgumentNullException.ThrowIfNull(roomRepository);
         ArgumentNullException.ThrowIfNull(tenantRepository);
@@ -74,6 +77,7 @@ public class ReportTabControl : BaseTabControl
         _today = today ?? (() => DateOnly.FromDateTime(DateTime.Now));
         _chooseSavePath = chooseSavePath ?? ShowSaveDialog;
         _exportPdf = exportPdf ?? YearlyReportPrintDocument.ExportPdf;
+        _exportMonthlyPdf = exportMonthlyPdf ?? MonthlyReportPrintDocument.ExportPdf;
         _monthlyContent = CreateStandardLayout(3, [115f, 195f, -1f]);
 
         Name = "ReportTabControl";
@@ -102,34 +106,53 @@ public class ReportTabControl : BaseTabControl
         ShowSelectedView();
     }
 
-    private Panel BuildHeader()
+    private FlowLayoutPanel BuildHeader()
     {
-        var header = new Panel { Dock = DockStyle.Fill };
+        // เรียงตามความกว้างจริงของตัวอักษร เพราะแต่ละเครื่องวาดตัวอักษรไทยกว้างไม่เท่ากัน
+        var header = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            Margin = Padding.Empty
+        };
 
         var titleLabel = CreateTitleLabel("รายงาน");
         titleLabel.Dock = DockStyle.None;
-        titleLabel.SetBounds(0, 3, 100, 40);
+        titleLabel.AutoSize = true;
+        titleLabel.UseCompatibleTextRendering = false;
+        titleLabel.Margin = new Padding(0, 5, 6, 0);
 
         _monthlyRadioButton.Name = "ReportMonthlyRadioButton";
         _monthlyRadioButton.Text = "รายเดือน";
         _monthlyRadioButton.Checked = true;
-        _monthlyRadioButton.SetBounds(105, 10, 90, 28);
+        _monthlyRadioButton.AutoSize = true;
+        _monthlyRadioButton.Margin = new Padding(0, 11, 4, 0);
         _monthlyRadioButton.CheckedChanged += (s, e) => ShowSelectedView();
 
         _yearlyRadioButton.Name = "ReportYearlyRadioButton";
         _yearlyRadioButton.Text = "รายปี";
-        _yearlyRadioButton.SetBounds(195, 10, 70, 28);
+        _yearlyRadioButton.AutoSize = true;
+        _yearlyRadioButton.Margin = new Padding(0, 11, 4, 0);
 
         _periodSelector.Name = "ReportPeriodSelector";
-        _periodSelector.SetBounds(270, 8, 350, 32);
-        _periodSelector.PeriodChanged += (s, e) => RefreshMonthlyReport();
+        _periodSelector.Size = new Size(350, 32);
+        _periodSelector.Margin = new Padding(0, 8, 2, 0);
+        _periodSelector.PeriodChanged += (s, e) =>
+        {
+            ShowMonthlyMessage(string.Empty, isError: false);
+            RefreshMonthlyReport();
+        };
 
         _yearLabel.Text = "ปี (พ.ศ.):";
-        _yearLabel.SetBounds(270, 13, 70, 25);
+        _yearLabel.AutoSize = true;
+        _yearLabel.UseCompatibleTextRendering = false;
+        _yearLabel.Margin = new Padding(6, 13, 2, 0);
 
         _yearComboBox.Name = "ReportYearComboBox";
         _yearComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        _yearComboBox.SetBounds(342, 10, 85, 30);
+        _yearComboBox.Width = 85;
+        _yearComboBox.Margin = new Padding(0, 10, 8, 0);
         int currentThaiYear = _today().Year + 543;
         for (int year = currentThaiYear - 2; year <= currentThaiYear + 2; year++)
         {
@@ -145,19 +168,23 @@ public class ReportTabControl : BaseTabControl
 
         _exportExcelButton.Name = "ExportExcelButton";
         _exportExcelButton.Text = "Excel";
-        _exportExcelButton.SetBounds(440, 6, 85, 34);
-        _exportExcelButton.Click += (s, e) => ExportYearlyReport(
+        _exportExcelButton.Size = new Size(58, 34);
+        _exportExcelButton.Margin = new Padding(0, 6, 3, 0);
+        _exportExcelButton.Click += (s, e) => ExportSelectedView(
             "xlsx",
             "ไฟล์ Excel (*.xlsx)|*.xlsx",
-            YearlyReportExcelExporter.Export);
+            YearlyReportExcelExporter.Export,
+            MonthlyReportExcelExporter.Export);
 
         _exportPdfButton.Name = "ExportPdfButton";
         _exportPdfButton.Text = "PDF";
-        _exportPdfButton.SetBounds(530, 6, 85, 34);
-        _exportPdfButton.Click += (s, e) => ExportYearlyReport(
+        _exportPdfButton.Size = new Size(58, 34);
+        _exportPdfButton.Margin = new Padding(0, 6, 0, 0);
+        _exportPdfButton.Click += (s, e) => ExportSelectedView(
             "pdf",
             "ไฟล์ PDF (*.pdf)|*.pdf",
-            _exportPdf);
+            _exportPdf,
+            _exportMonthlyPdf);
 
         header.Controls.AddRange(
         [
@@ -182,8 +209,6 @@ public class ReportTabControl : BaseTabControl
         _yearlyContent.Visible = isYearly;
         _yearLabel.Visible = isYearly;
         _yearComboBox.Visible = isYearly;
-        _exportExcelButton.Visible = isYearly;
-        _exportPdfButton.Visible = isYearly;
     }
 
     private void BuildYearlyContent()
@@ -197,6 +222,7 @@ public class ReportTabControl : BaseTabControl
         _yearlyMessageLabel.Dock = DockStyle.Top;
         _yearlyMessageLabel.Height = 28;
         _yearlyMessageLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _yearlyMessageLabel.AutoEllipsis = true;
 
         _yearlyGrid.Name = "ReportYearlyGrid";
         _yearlyGrid.Dock = DockStyle.Fill;
@@ -269,21 +295,63 @@ public class ReportTabControl : BaseTabControl
         _yearlyGrid.ClearSelection();
     }
 
-    private void ExportYearlyReport(string extension, string filter, Action<YearlyReport, string> export)
+    private void ExportSelectedView(
+        string extension,
+        string filter,
+        Action<YearlyReport, string> exportYearly,
+        Action<MonthlyReport, string> exportMonthly)
     {
-        var report = BuildSelectedYearlyReport();
-        if (report is null)
+        if (_yearlyRadioButton.Checked)
         {
-            return;
-        }
+            var report = BuildSelectedYearlyReport();
+            if (report is null)
+            {
+                return;
+            }
 
-        if (!report.HasBills)
+            if (!report.HasBills)
+            {
+                ShowYearlyMessage($"ไม่มีบิลในปี {report.BuddhistYear} จึงไม่มีข้อมูลให้ส่งออก", isError: true);
+                return;
+            }
+
+            SaveToChosenFile(
+                $"รายงานประจำปี-{report.BuddhistYear}.{extension}",
+                filter,
+                filePath => exportYearly(report, filePath),
+                ShowYearlyMessage);
+        }
+        else
         {
-            ShowYearlyMessage($"ไม่มีบิลในปี {report.BuddhistYear} จึงไม่มีข้อมูลให้ส่งออก", isError: true);
-            return;
-        }
+            var report = BuildSelectedMonthlyReport();
+            if (report is null)
+            {
+                return;
+            }
 
-        string? filePath = _chooseSavePath($"รายงานประจำปี-{report.BuddhistYear}.{extension}", filter);
+            if (!report.HasBills)
+            {
+                ShowMonthlyMessage(
+                    $"ไม่มีบิลรอบ {ThaiCalendar.FormatPeriod(report.Period)} และไม่มีบิลค้างชำระ จึงไม่มีข้อมูลให้ส่งออก",
+                    isError: true);
+                return;
+            }
+
+            SaveToChosenFile(
+                $"รายงานประจำเดือน-{report.Period.ToBuddhistValue()}.{extension}",
+                filter,
+                filePath => exportMonthly(report, filePath),
+                ShowMonthlyMessage);
+        }
+    }
+
+    private void SaveToChosenFile(
+        string suggestedFileName,
+        string filter,
+        Action<string> export,
+        Action<string, bool> showMessage)
+    {
+        string? filePath = _chooseSavePath(suggestedFileName, filter);
         if (filePath is null)
         {
             return;
@@ -291,20 +359,20 @@ public class ReportTabControl : BaseTabControl
 
         try
         {
-            export(report, filePath);
-            ShowYearlyMessage($"ส่งออกรายงานแล้ว: {filePath}", isError: false);
+            export(filePath);
+            showMessage($"ส่งออกรายงานแล้ว: {filePath}", false);
         }
         catch (InvalidPrinterException)
         {
-            ShowYearlyMessage(
+            showMessage(
                 "ไม่พบเครื่องพิมพ์ Microsoft Print to PDF กรุณาเปิดใช้งานใน Windows แล้วลองใหม่อีกครั้ง",
-                isError: true);
+                true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
         {
-            ShowYearlyMessage(
+            showMessage(
                 "บันทึกไฟล์ไม่สำเร็จ กรุณาปิดไฟล์เดิมหากเปิดอยู่ หรือเลือกที่บันทึกอื่น แล้วลองใหม่อีกครั้ง",
-                isError: true);
+                true);
         }
     }
 
@@ -312,6 +380,14 @@ public class ReportTabControl : BaseTabControl
     {
         _yearlyMessageLabel.ForeColor = isError ? Color.Firebrick : Color.DarkGreen;
         _yearlyMessageLabel.Text = message;
+    }
+
+    private void ShowMonthlyMessage(string message, bool isError)
+    {
+        _monthlyMessageLabel.ForeColor = isError ? Color.Firebrick : Color.DarkGreen;
+        _monthlyMessageLabel.Text = message;
+        // ซ่อนตอนไม่มีข้อความ เพื่อคืนพื้นที่ให้ตารางค้างชำระ
+        _monthlyMessageLabel.Visible = message.Length > 0;
     }
 
     private string? ShowSaveDialog(string suggestedFileName, string filter)
@@ -466,6 +542,13 @@ public class ReportTabControl : BaseTabControl
         _outstandingSummaryLabel.Height = 28;
         _outstandingSummaryLabel.TextAlign = ContentAlignment.MiddleLeft;
 
+        _monthlyMessageLabel.Name = "ReportMonthlyMessageLabel";
+        _monthlyMessageLabel.Dock = DockStyle.Bottom;
+        _monthlyMessageLabel.Height = 26;
+        _monthlyMessageLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _monthlyMessageLabel.AutoEllipsis = true;
+        _monthlyMessageLabel.Visible = false;
+
         _outstandingGrid.Name = "ReportOutstandingGrid";
         _outstandingGrid.Dock = DockStyle.Fill;
         _outstandingGrid.ReadOnly = true;
@@ -493,6 +576,7 @@ public class ReportTabControl : BaseTabControl
 
         group.Controls.Add(_outstandingGrid);
         group.Controls.Add(_outstandingSummaryLabel);
+        group.Controls.Add(_monthlyMessageLabel);
         return group;
     }
 
@@ -525,20 +609,29 @@ public class ReportTabControl : BaseTabControl
         RefreshYearlyReport();
     }
 
-    private void RefreshMonthlyReport()
+    private MonthlyReport? BuildSelectedMonthlyReport()
     {
         var period = _periodSelector.GetBillingPeriod();
         if (period is null)
         {
-            return;
+            return null;
         }
 
-        var report = MonthlyReportBuilder.Build(
+        return MonthlyReportBuilder.Build(
             _roomRepository.GetAll(),
             _tenantRepository.GetAll(),
             _billRepository.GetAll(),
             period,
             _today());
+    }
+
+    private void RefreshMonthlyReport()
+    {
+        var report = BuildSelectedMonthlyReport();
+        if (report is null)
+        {
+            return;
+        }
 
         _roomValueLabel.Text = $"มีผู้เช่า {report.OccupiedRooms}/{report.TotalRooms}";
         _roomDetailLabel.Text = $"ว่าง {report.VacantRooms} ห้อง";
@@ -572,13 +665,10 @@ public class ReportTabControl : BaseTabControl
                 row.RoomNumber,
                 row.TenantName,
                 row.BillingPeriod.ToBuddhistValue(),
-                FormatDateThai(row.DueDate),
-                row.OverdueDays > 0 ? $"{row.OverdueDays} วัน" : "ยังไม่ถึงกำหนด",
+                ThaiCalendar.FormatDate(row.DueDate),
+                row.OverdueStatus,
                 row.Amount.ToString("N2"),
                 row.OverdueDays > 0))
             .ToList();
     }
-
-    private static string FormatDateThai(DateOnly date) =>
-        $"{date.Day:D2}/{date.Month:D2}/{date.Year + 543}";
 }

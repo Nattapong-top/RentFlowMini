@@ -26,6 +26,8 @@ public static class MonthlyReportBuilder
         var unpaidBills = periodBills.Where(bill => !bill.IsPaid).ToList();
 
         return new MonthlyReport(
+            Period: period,
+            AsOf: today,
             TotalRooms: rooms.Count,
             OccupiedRooms: rooms.Count(room => tenants.Any(tenant => tenant.RoomId == room.Id)),
             BilledCount: periodBills.Count,

@@ -6,12 +6,6 @@ public static class YearlyReportBuilder
 {
     private const string TotalLabel = "รวมทั้งปี";
 
-    private static readonly string[] MonthNames =
-    [
-        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
-    ];
-
     public static YearlyReport Build(IReadOnlyCollection<Bill> bills, int year)
     {
         ArgumentNullException.ThrowIfNull(bills);
@@ -19,7 +13,7 @@ public static class YearlyReportBuilder
         // นับตามรอบบิลเหมือนรายงานรายเดือน บิลธันวาคมที่จ่ายเดือนมกราคมจึงยังอยู่ในเดือนธันวาคม
         var yearBills = bills.Where(bill => bill.BillingPeriod.Year == year).ToList();
 
-        var months = MonthNames
+        var months = ThaiCalendar.MonthNames
             .Select((name, index) => BuildRow(name, yearBills.Where(bill => bill.BillingPeriod.Month == index + 1)))
             .ToList();
 
