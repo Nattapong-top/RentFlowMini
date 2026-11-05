@@ -1420,29 +1420,7 @@ public class MonthlyBillTabControl : BaseTabControl
 
             var bill = _createMonthlyBillService.Create(request);
 
-            // อัปเดตกล่องสรุปผลด้านขวาให้ละเอียด
-            string tenantName = bill.Tenant?.FullName ?? "-";
-
-            decimal waterUsed = 0;
-            if (prevWater != null && currWater != null) waterUsed = currWater.Value - prevWater.Value;
-            decimal elecUsed = 0;
-            if (prevElec != null && currElec != null) elecUsed = currElec.Value - prevElec.Value;
-
-            _resultRoomLabel.Text = $"ห้อง {selectedRoom.RoomNumber}";
-            _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {bill.InvoiceNumber}";
-            _resultPeriodLabel.Text = $"(รอบเดือนที่ {bill.BillingPeriod.Month}/{bill.BillingPeriod.Year + 543})";
-            _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {FormatDateThai(bill.CreatedAt)}";
-            _resultDueDateLabel.Text = $"ครบกำหนด: {FormatDateThai(bill.DueDate)}";
-            _resultTenantLabel.Text = $"ผู้เช่า: {(string.IsNullOrWhiteSpace(tenantName) || tenantName == "-" ? "ไม่มีข้อมูลผู้เช่า" : tenantName)}";
-            _resultRentLabel.Text = $"{bill.Rent.Amount:N2} บาท";
-            _resultWaterDetailsLabel.Text = prevWater != null && currWater != null ? $"└ มิเตอร์ {prevWater.Value:0.##} → {currWater.Value:0.##} ({waterUsed:0.##} หน่วย)" : "-";
-            _resultWaterAmountLabel.Text = $"{bill.Water.Amount:N2} บาท";
-            _resultElecDetailsLabel.Text = prevElec != null && currElec != null ? $"└ มิเตอร์ {prevElec.Value:0.##} → {currElec.Value:0.##} ({elecUsed:0.##} หน่วย)" : "-";
-            _resultElecAmountLabel.Text = $"{bill.Electricity.Amount:N2} บาท";
-            _resultMotorcycleParkingLabel.Text = bill.MotorcycleParking.Amount > 0 ? $"{bill.MotorcycleParking.Amount:N2} บาท" : "-";
-            _resultCarParkingLabel.Text = bill.CarParking.Amount > 0 ? $"{bill.CarParking.Amount:N2} บาท" : "-";
-            _resultCableTvLabel.Text = bill.CableTv.Amount > 0 ? $"{bill.CableTv.Amount:N2} บาท" : (isCableTvExempt ? "ยกเว้น (0.00 บาท)" : "0.00 บาท");
-            _resultTotalLabel.Text = $"{bill.Total.Amount:N2} บาท";
+            ShowBillSummary(bill);
 
             // รีเฟรชตารางและเลื่อนไปยังห้องถัดไป (Auto-advance)
             RefreshBillGrid();
@@ -1490,10 +1468,7 @@ public class MonthlyBillTabControl : BaseTabControl
                 isCableTvExempt,
                 cableTvRate));
 
-            _resultMotorcycleParkingLabel.Text = bill.MotorcycleParking.Amount > 0 ? $"{bill.MotorcycleParking.Amount:N2} บาท" : "-";
-            _resultCarParkingLabel.Text = bill.CarParking.Amount > 0 ? $"{bill.CarParking.Amount:N2} บาท" : "-";
-            _resultCableTvLabel.Text = bill.CableTv.Amount > 0 ? $"{bill.CableTv.Amount:N2} บาท" : (isCableTvExempt ? "ยกเว้น (0.00 บาท)" : "0.00 บาท");
-            _resultTotalLabel.Text = $"{bill.Total.Amount:N2} บาท";
+            ShowBillSummary(bill);
 
             SetEditingBill(null);
             RefreshBillGrid();
@@ -1541,7 +1516,7 @@ public class MonthlyBillTabControl : BaseTabControl
                 _monthlyRentTextBox.Text = bill.Rent.Amount.ToString("0.##");
                 _chargeMotorcycleCheckBox.Checked = bill.MotorcycleParking.Amount > 0;
                 _chargeCarCheckBox.Checked = bill.CarParking.Amount > 0;
-                _isCableTvExemptCheckBox.Checked = bill.CableTv.Amount == 0;
+                _isCableTvExemptCheckBox.Checked = bill.IsCableTvExempt;
 
                 if (bill.Meters is { } billMeters)
                 {
@@ -1555,35 +1530,8 @@ public class MonthlyBillTabControl : BaseTabControl
             }
         }
 
-        // ดึงข้อมูลผู้เช่าและมิเตอร์มาแสดงในกล่องสรุปด้านขวา
-        string tenantName = bill.Tenant?.FullName ?? "-";
-        
-        string waterDetails = "-";
-        string elecDetails = "-";
-        if (bill.Meters is { } meters)
-        {
-            waterDetails = $"└ มิเตอร์ {meters.PreviousWater.Value:0.##} → {meters.CurrentWater.Value:0.##} ({meters.WaterUsage:0.##} หน่วย)";
-            elecDetails = $"└ มิเตอร์ {meters.PreviousElectricity.Value:0.##} → {meters.CurrentElectricity.Value:0.##} ({meters.ElectricityUsage:0.##} หน่วย)";
-        }
-
-        var roomObj = _roomRepository.GetAll().FirstOrDefault(r => r.Id == bill.RoomId);
-        string roomNum = roomObj != null ? roomObj.RoomNumber.Value : "-";
-
-        _resultRoomLabel.Text = $"ห้อง {roomNum}";
-        _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {bill.InvoiceNumber}";
-        _resultPeriodLabel.Text = $"(รอบเดือนที่ {bill.BillingPeriod.Month}/{bill.BillingPeriod.Year + 543})";
-        _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {FormatDateThai(bill.CreatedAt)}";
-        _resultDueDateLabel.Text = $"ครบกำหนด: {FormatDateThai(bill.DueDate)}";
-        _resultTenantLabel.Text = $"ผู้เช่า: {(string.IsNullOrWhiteSpace(tenantName) || tenantName == "-" ? "ไม่มีข้อมูลผู้เช่า" : tenantName)}";
-        _resultRentLabel.Text = $"{bill.Rent.Amount:N2} บาท";
-        _resultWaterDetailsLabel.Text = waterDetails;
-        _resultWaterAmountLabel.Text = $"{bill.Water.Amount:N2} บาท";
-        _resultElecDetailsLabel.Text = elecDetails;
-        _resultElecAmountLabel.Text = $"{bill.Electricity.Amount:N2} บาท";
-        _resultMotorcycleParkingLabel.Text = bill.MotorcycleParking.Amount > 0 ? $"{bill.MotorcycleParking.Amount:N2} บาท" : "-";
-        _resultCarParkingLabel.Text = bill.CarParking.Amount > 0 ? $"{bill.CarParking.Amount:N2} บาท" : "-";
-        _resultCableTvLabel.Text = bill.CableTv.Amount > 0 ? $"{bill.CableTv.Amount:N2} บาท" : (bill.CableTv.Amount == 0 ? "ยกเว้น (0.00 บาท)" : "0.00 บาท");
-        _resultTotalLabel.Text = $"{bill.Total.Amount:N2} บาท";
+        ShowBillSummary(bill);
+        string roomNum = GetRoomNumber(bill);
 
         if (bill.IsPaid)
         {
@@ -1601,6 +1549,39 @@ public class MonthlyBillTabControl : BaseTabControl
         // ย้ายออกจากตาราง เพราะ Enter ในตารางจะเลื่อนแถวแทนการบันทึก
         _chargeMotorcycleCheckBox.Focus();
     }
+
+    private void ShowBillSummary(Bill bill)
+    {
+        string? tenantName = bill.Tenant?.FullName;
+
+        _resultRoomLabel.Text = $"ห้อง {GetRoomNumber(bill)}";
+        _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {bill.InvoiceNumber}";
+        _resultPeriodLabel.Text = $"(รอบเดือนที่ {bill.BillingPeriod.Month}/{bill.BillingPeriod.Year + 543})";
+        _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {FormatDateThai(bill.CreatedAt)}";
+        _resultDueDateLabel.Text = $"ครบกำหนด: {FormatDateThai(bill.DueDate)}";
+        _resultTenantLabel.Text = $"ผู้เช่า: {(string.IsNullOrWhiteSpace(tenantName) ? "ไม่มีข้อมูลผู้เช่า" : tenantName)}";
+        _resultRentLabel.Text = FormatBaht(bill.Rent);
+        _resultWaterDetailsLabel.Text = bill.Meters is { } waterMeters
+            ? FormatMeterDetails(waterMeters.PreviousWater, waterMeters.CurrentWater, waterMeters.WaterUsage)
+            : "-";
+        _resultWaterAmountLabel.Text = FormatBaht(bill.Water);
+        _resultElecDetailsLabel.Text = bill.Meters is { } elecMeters
+            ? FormatMeterDetails(elecMeters.PreviousElectricity, elecMeters.CurrentElectricity, elecMeters.ElectricityUsage)
+            : "-";
+        _resultElecAmountLabel.Text = FormatBaht(bill.Electricity);
+        _resultMotorcycleParkingLabel.Text = bill.MotorcycleParking.Amount > 0 ? FormatBaht(bill.MotorcycleParking) : "-";
+        _resultCarParkingLabel.Text = bill.CarParking.Amount > 0 ? FormatBaht(bill.CarParking) : "-";
+        _resultCableTvLabel.Text = FormatBaht(bill.CableTv);
+        _resultTotalLabel.Text = FormatBaht(bill.Total);
+    }
+
+    private string GetRoomNumber(Bill bill) =>
+        _roomRepository.GetAll().FirstOrDefault(room => room.Id == bill.RoomId)?.RoomNumber.Value ?? "-";
+
+    private static string FormatBaht(Money amount) => $"{amount.Amount:N2} บาท";
+
+    private static string FormatMeterDetails(MeterReading previous, MeterReading current, decimal usage) =>
+        $"└ มิเตอร์ {previous.Value:0.##} → {current.Value:0.##} ({usage:0.##} หน่วย)";
 
     private static MeterReading? TryParseMeterReading(string text)
     {

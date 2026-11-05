@@ -23,12 +23,23 @@ public sealed class UpdateBillChargesService
         bill.UpdateAdditionalCharges(
             ResolveCharge(request.ChargeMotorcycleParking, bill.MotorcycleParking, request.MotorcycleParkingRate),
             ResolveCharge(request.ChargeCarParking, bill.CarParking, request.CarParkingRate),
-            ResolveCharge(!request.IsCableTvExempt, bill.CableTv, request.CableTvRate),
+            ResolveCableTvCharge(bill, request),
             request.IsCableTvExempt);
 
         _repository.Update(bill);
 
         return bill;
+    }
+
+    // บิลที่ไม่ได้ยกเว้นคิดเงินอยู่แล้ว จึงคงยอดเดิมแม้เป็น 0 จากราคากลางตอนออกบิล
+    private static Money ResolveCableTvCharge(Bill bill, UpdateBillChargesRequest request)
+    {
+        if (request.IsCableTvExempt)
+        {
+            return Money.Create(0m);
+        }
+
+        return bill.IsCableTvExempt ? Money.Create(request.CableTvRate) : bill.CableTv;
     }
 
     // ยอดในบิลเป็น snapshot: รายการที่คิดเงินอยู่แล้วต้องคงยอดเดิม แม้ราคากลางจะเปลี่ยนหลังออกบิล
