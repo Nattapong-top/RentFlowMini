@@ -66,11 +66,7 @@ public sealed class SqliteRoomRepository : IRoomEditor
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            rooms.Add(new Room(
-                RoomId.From(Guid.Parse(reader.GetString(0))),
-                new RoomNumber(reader.GetString(1)),
-                Money.Create(decimal.Parse(reader.GetString(2), CultureInfo.InvariantCulture)),
-                reader.GetInt64(3) == 1));
+            rooms.Add(ReadRoom(reader));
         }
 
         return rooms
@@ -81,11 +77,38 @@ public sealed class SqliteRoomRepository : IRoomEditor
 
     public Room? GetById(RoomId roomId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(roomId);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id, RoomNumber, MonthlyRent, IsCableTvExempt FROM Rooms WHERE Id = $id;";
+        command.Parameters.AddWithValue("$id", roomId.Value.ToString());
+
+        using var reader = command.ExecuteReader();
+
+        return reader.Read() ? ReadRoom(reader) : null;
     }
 
     public void Update(Room room)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(room);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        // แก้เฉพาะค่าเช่า เพราะ Room เปลี่ยนได้แค่ค่านี้
+        command.CommandText = "UPDATE Rooms SET MonthlyRent = $monthlyRent WHERE Id = $id;";
+        command.Parameters.AddWithValue("$monthlyRent", room.MonthlyRent.Amount.ToString(CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("$id", room.Id.Value.ToString());
+
+        command.ExecuteNonQuery();
+    }
+
+    private static Room ReadRoom(SqliteDataReader reader)
+    {
+        return new Room(
+            RoomId.From(Guid.Parse(reader.GetString(0))),
+            new RoomNumber(reader.GetString(1)),
+            Money.Create(decimal.Parse(reader.GetString(2), CultureInfo.InvariantCulture)),
+            reader.GetInt64(3) == 1);
     }
 }

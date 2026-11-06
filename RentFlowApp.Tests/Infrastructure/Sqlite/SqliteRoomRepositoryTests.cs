@@ -55,6 +55,26 @@ public sealed class SqliteRoomRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void Update_ChangesRentAndKeepsOtherValues()
+    {
+        var repository = new SqliteRoomRepository(_database);
+        var room = new Room(RoomId.New(), new RoomNumber("101"), Money.Create(3500.75m), isCableTvExempt: true);
+        var otherRoom = new Room(RoomId.New(), new RoomNumber("102"), Money.Create(4000m), isCableTvExempt: false);
+        repository.Add(room);
+        repository.Add(otherRoom);
+
+        var editableRoom = repository.GetById(room.Id)!;
+        editableRoom.ChangeMonthlyRent(Money.Create(4200.50m));
+        repository.Update(editableRoom);
+
+        var savedRoom = new SqliteRoomRepository(_database).GetById(room.Id)!;
+        Assert.Equal(4200.50m, savedRoom.MonthlyRent.Amount);
+        Assert.Equal("101", savedRoom.RoomNumber.Value);
+        Assert.True(savedRoom.IsCableTvExempt);
+        Assert.Equal(4000m, repository.GetById(otherRoom.Id)!.MonthlyRent.Amount);
+    }
+
+    [Fact]
     public void GetAll_ReturnsRoomsInDisplayOrder()
     {
         var repository = new SqliteRoomRepository(_database);
