@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Domain;
@@ -381,10 +382,10 @@ public class TenantTabControl : BaseTabControl
                 row.Room,
                 row.Tenant.FullName,
                 row.Tenant.PhoneNumber ?? NoValue,
-                row.Tenant.MoveInDate is { } moveIn ? FormatDateThai(moveIn) : NoValue,
+                row.Tenant.MoveInDate is { } moveIn ? ThaiCalendar.FormatDate(moveIn) : NoValue,
                 row.Tenant.SecurityDeposit is { } deposit ? deposit.ToString("N2") : NoValue,
                 row.Outstanding > 0m ? row.Outstanding.ToString("N2") : NoValue,
-                row.Tenant.MovedOutOn is { } movedOut ? FormatDateThai(movedOut) : NoValue,
+                row.Tenant.MovedOutOn is { } movedOut ? ThaiCalendar.FormatDate(movedOut) : NoValue,
                 row.Tenant.Id.Value,
                 row.Tenant.IsMovedOut,
                 row.Outstanding > 0m))
@@ -404,9 +405,6 @@ public class TenantTabControl : BaseTabControl
             ? room
             : "ไม่มีห้องพัก";
     }
-
-    private static string FormatDateThai(DateOnly date) =>
-        $"{date.Day:D2}/{date.Month:D2}/{date.Year + 543}";
 
     private void TenantGrid_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
     {
@@ -594,7 +592,7 @@ public class TenantTabControl : BaseTabControl
     private string BuildMoveOutConfirmation(TenantGridItem item, TenantId tenantId, DateOnly movedOutOn)
     {
         string message =
-            $"ยืนยันการย้ายออกของ {item.FullName} (ห้อง {item.RoomNumber}) เมื่อวันที่ {FormatDateThai(movedOutOn)} ใช่หรือไม่?\n\n" +
+            $"ยืนยันการย้ายออกของ {item.FullName} (ห้อง {item.RoomNumber}) เมื่อวันที่ {ThaiCalendar.FormatDate(movedOutOn)} ใช่หรือไม่?\n\n" +
             "ห้องจะว่างทันที และยกเลิกการย้ายออกภายหลังไม่ได้";
 
         var unpaidBills = _billRepository.GetAll()

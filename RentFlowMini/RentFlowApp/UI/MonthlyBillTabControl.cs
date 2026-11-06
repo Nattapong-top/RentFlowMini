@@ -1,4 +1,5 @@
 using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Domain.Billing;
@@ -419,12 +420,6 @@ public class MonthlyBillTabControl : BaseTabControl
         outerPanel.Controls.AddRange([inputGroup, resultGroup]);
         return outerPanel;
     }
-
-    private static string FormatDateThai(DateTime date) =>
-        $"{date.Day:D2}/{date.Month:D2}/{date.Year + 543}";
-
-    private static string FormatDateThai(DateOnly date) =>
-        FormatDateThai(date.ToDateTime(TimeOnly.MinValue));
 
     private GroupBox BuildResultGroup()
     {
@@ -914,7 +909,7 @@ public class MonthlyBillTabControl : BaseTabControl
     {
         if (bill.Payment is { } payment)
         {
-            return $"จ่ายแล้ว {FormatDateThai(payment.PaidOn)} ({payment.MethodName})";
+            return $"จ่ายแล้ว {ThaiCalendar.FormatDate(payment.PaidOn)} ({payment.MethodName})";
         }
 
         return bill.IsOverdue(today)
@@ -1177,8 +1172,8 @@ public class MonthlyBillTabControl : BaseTabControl
                     RoomNumber: roomNum,
                     TenantName: tenantName,
                     BillingPeriodDisplay: bill.BillingPeriod.ToBuddhistValue(),
-                    CreatedAtDisplay: FormatDateThai(bill.CreatedAt),
-                    DueDateDisplay: FormatDateThai(bill.DueDate),
+                    CreatedAtDisplay: ThaiCalendar.FormatDate(bill.CreatedAt),
+                    DueDateDisplay: ThaiCalendar.FormatDate(bill.DueDate),
                     PaymentStatus: FormatPaymentStatus(bill, today),
                     IsOverdue: bill.IsOverdue(today),
                     RentAmount: bill.Rent.Amount.ToString("N2"),
@@ -1267,7 +1262,7 @@ public class MonthlyBillTabControl : BaseTabControl
             _prevElecTextBox.Text = existingReading.PreviousElectricityMeter.Value.ToString("0.##");
             _currElecTextBox.Text = existingReading.CurrentElectricityMeter.Value.ToString("0.##");
             _billMessageLabel.ForeColor = Color.DarkGreen;
-            _billMessageLabel.Text = $"โหลดข้อมูลมิเตอร์รอบบิล {currentPeriod.Value} เรียบร้อย";
+            _billMessageLabel.Text = $"โหลดข้อมูลมิเตอร์รอบบิล {ThaiCalendar.FormatPeriod(currentPeriod)} เรียบร้อย";
             return;
         }
 
@@ -1428,7 +1423,7 @@ public class MonthlyBillTabControl : BaseTabControl
 
             _billMessageLabel.ForeColor = Color.DarkGreen;
             _billMessageLabel.Text =
-                $"สร้างบิลสำหรับห้อง {selectedRoom.RoomNumber} รอบ {bill.BillingPeriod.Value} สำเร็จเรียบร้อย";
+                $"สร้างบิลสำหรับห้อง {selectedRoom.RoomNumber} รอบ {ThaiCalendar.FormatPeriod(bill.BillingPeriod)} สำเร็จเรียบร้อย";
         }
         catch (InvalidMeterReadingException ex)
         {
@@ -1476,7 +1471,7 @@ public class MonthlyBillTabControl : BaseTabControl
 
             _billMessageLabel.ForeColor = Color.DarkGreen;
             _billMessageLabel.Text =
-                $"บันทึกการแก้ไขบิลห้อง {selectedRoom.RoomNumber} รอบ {bill.BillingPeriod.Value} สำเร็จเรียบร้อย";
+                $"บันทึกการแก้ไขบิลห้อง {selectedRoom.RoomNumber} รอบ {ThaiCalendar.FormatPeriod(bill.BillingPeriod)} สำเร็จเรียบร้อย";
         }
         catch (InvalidOperationException ex)
         {
@@ -1544,7 +1539,7 @@ public class MonthlyBillTabControl : BaseTabControl
         SetEditingBill(bill);
 
         _billMessageLabel.ForeColor = Color.DarkBlue;
-        _billMessageLabel.Text = $"แก้ไขบิลห้อง {roomNum} รอบ {bill.BillingPeriod.Value}: แก้ได้เฉพาะค่าจอดรถและ Cable TV";
+        _billMessageLabel.Text = $"แก้ไขบิลห้อง {roomNum} รอบ {ThaiCalendar.FormatPeriod(bill.BillingPeriod)}: แก้ได้เฉพาะค่าจอดรถและ Cable TV";
 
         // ย้ายออกจากตาราง เพราะ Enter ในตารางจะเลื่อนแถวแทนการบันทึก
         _chargeMotorcycleCheckBox.Focus();
@@ -1557,8 +1552,8 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultRoomLabel.Text = $"ห้อง {GetRoomNumber(bill)}";
         _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {bill.InvoiceNumber}";
         _resultPeriodLabel.Text = $"(รอบเดือนที่ {bill.BillingPeriod.Month}/{bill.BillingPeriod.Year + 543})";
-        _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {FormatDateThai(bill.CreatedAt)}";
-        _resultDueDateLabel.Text = $"ครบกำหนด: {FormatDateThai(bill.DueDate)}";
+        _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {ThaiCalendar.FormatDate(bill.CreatedAt)}";
+        _resultDueDateLabel.Text = $"ครบกำหนด: {ThaiCalendar.FormatDate(bill.DueDate)}";
         _resultTenantLabel.Text = $"ผู้เช่า: {(string.IsNullOrWhiteSpace(tenantName) ? "ไม่มีข้อมูลผู้เช่า" : tenantName)}";
         _resultRentLabel.Text = FormatBaht(bill.Rent);
         _resultWaterDetailsLabel.Text = bill.Meters is { } waterMeters

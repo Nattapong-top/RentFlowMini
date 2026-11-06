@@ -1,4 +1,5 @@
 ﻿using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
@@ -341,14 +342,6 @@ public class MeterReadingTabControl : BaseTabControl
             .Select((reading, index) =>
             {
                 var roomNum = rooms.TryGetValue(reading.RoomId, out var num) ? num : "-";
-                var parts = reading.BillingPeriod.Value.Split('-');
-                string periodDisplay = reading.BillingPeriod.Value;
-                if (parts.Length == 2 && int.TryParse(parts[0], out var gYear) && int.TryParse(parts[1], out var mNum))
-                {
-                    int thaiYear = gYear + 543;
-                    string monthName = GetThaiMonthName(mNum);
-                    periodDisplay = $"{monthName} {thaiYear}";
-                }
 
                 decimal waterUsed = reading.CurrentWaterMeter.Value - reading.PreviousWaterMeter.Value;
                 decimal elecUsed = reading.CurrentElectricityMeter.Value - reading.PreviousElectricityMeter.Value;
@@ -357,7 +350,7 @@ public class MeterReadingTabControl : BaseTabControl
                     RoomId: reading.RoomId,
                     Sequence: index + 1,
                     RoomNumber: roomNum,
-                    BillingPeriodDisplay: periodDisplay,
+                    BillingPeriodDisplay: ThaiCalendar.FormatPeriod(reading.BillingPeriod),
                     BillingPeriodRaw: reading.BillingPeriod.Value,
                     WaterReading: $"{reading.PreviousWaterMeter.Value:0.##} -> {reading.CurrentWaterMeter.Value:0.##}",
                     WaterUsed: waterUsed.ToString("N2"),
@@ -365,26 +358,6 @@ public class MeterReadingTabControl : BaseTabControl
                     ElecUsed: elecUsed.ToString("N2"));
             })
             .ToList();
-    }
-
-    private static string GetThaiMonthName(int month)
-    {
-        return month switch
-        {
-            1 => "มกราคม",
-            2 => "กุมภาพันธ์",
-            3 => "มีนาคม",
-            4 => "เมษายน",
-            5 => "พฤษภาคม",
-            6 => "มิถุนายน",
-            7 => "กรกฎาคม",
-            8 => "สิงหาคม",
-            9 => "กันยายน",
-            10 => "ตุลาคม",
-            11 => "พฤศจิกายน",
-            12 => "ธันวาคม",
-            _ => month.ToString()
-        };
     }
 
     private void TryAutoLoadPreviousReadings()
@@ -487,8 +460,8 @@ public class MeterReadingTabControl : BaseTabControl
 
             _messageLabel.ForeColor = Color.DarkGreen;
             _messageLabel.Text = isExisting
-                ? $"อัปเดตมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {billingPeriod.Value} สำเร็จ"
-                : $"บันทึกมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {billingPeriod.Value} สำเร็จ";
+                ? $"อัปเดตมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ"
+                : $"บันทึกมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ";
             
             RefreshRoomList();
             TryAutoLoadPreviousReadings();

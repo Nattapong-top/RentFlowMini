@@ -1,4 +1,5 @@
 using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
@@ -58,6 +59,24 @@ public class MeterTabTests
         }
 
         public void Dispose() => _form.Dispose();
+    }
+
+    [Fact]
+    public void SaveMessage_ShowsPeriodInBuddhistYear()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new MeterTab();
+            tab.AddRoom("101");
+            tab.Show();
+            tab.FillCurrentReadings();
+
+            tab.Find<Button>("SaveMeterButton").PerformClick();
+
+            Assert.Equal(
+                $"บันทึกมิเตอร์ห้อง 101 รอบบิล {ThaiCalendar.FormatPeriod(CurrentPeriod)} สำเร็จ",
+                tab.Find<Label>("MeterMessageLabel").Text);
+        });
     }
 
     [Fact]

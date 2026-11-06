@@ -13,6 +13,8 @@ public static class ThaiCalendar
     public static string FormatDate(DateOnly date) =>
         $"{date.Day:D2}/{date.Month:D2}/{date.Year + 543}";
 
+    public static string FormatDate(DateTime date) => FormatDate(DateOnly.FromDateTime(date));
+
     public static string FormatPeriod(BillingPeriod period) =>
         $"{MonthNames[period.Month - 1]} {period.Year + 543}";
 }
