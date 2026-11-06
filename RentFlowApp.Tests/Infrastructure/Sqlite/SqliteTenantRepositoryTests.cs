@@ -182,6 +182,60 @@ public sealed class SqliteTenantRepositoryTests : IDisposable
         Assert.Equal(["Anna Baker", "Anna Young", "Ben Adams"], names);
     }
 
+    [Fact]
+    public void Update_ChangesDetailsOfThatTenantOnly()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        var firstRoomId = AddRoom("101");
+        var newRoomId = AddRoom("102");
+        var otherRoomId = AddRoom("103");
+        var tenant = new Tenant(TenantId.New(), "Anna", "Example", "0800000000", firstRoomId, MoveInDate, 5000m);
+        var otherTenant = new Tenant(TenantId.New(), "Ben", "Other", roomId: otherRoomId);
+        repository.Add(tenant);
+        repository.Add(otherTenant);
+        var newMoveInDate = new DateOnly(2026, 2, 1);
+
+        repository.Update(repository.GetById(tenant.Id)!.WithDetails(
+            "Anne",
+            "Changed",
+            "0811111111",
+            newRoomId,
+            newMoveInDate,
+            6000.25m));
+
+        var saved = new SqliteTenantRepository(_database).GetById(tenant.Id)!;
+        Assert.Equal("Anne", saved.FirstName);
+        Assert.Equal("Changed", saved.LastName);
+        Assert.Equal("0811111111", saved.PhoneNumber);
+        Assert.Equal(newRoomId, saved.RoomId);
+        Assert.Equal(newMoveInDate, saved.MoveInDate);
+        Assert.Equal(6000.25m, saved.SecurityDeposit);
+        Assert.Equal("Ben", repository.GetById(otherTenant.Id)!.FirstName);
+    }
+
+    [Fact]
+    public void Update_WithMoveOut_FreesRoomForNewTenant()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        var roomId = AddRoom("101");
+        var tenant = new Tenant(TenantId.New(), "Anna", "Example", roomId: roomId, moveInDate: MoveInDate);
+        repository.Add(tenant);
+        var moveOutDate = new DateOnly(2026, 6, 30);
+
+        repository.Update(repository.GetById(tenant.Id)!.MoveOut(moveOutDate));
+
+        var saved = repository.GetById(tenant.Id)!;
+        Assert.Null(saved.RoomId);
+        Assert.Equal(moveOutDate, saved.MovedOutOn);
+        Assert.Equal(roomId, saved.MovedOutFromRoomId);
+        Assert.False(repository.ExistsByRoomId(roomId));
+
+        var newTenant = new Tenant(TenantId.New(), "Ben", "Example", roomId: roomId);
+        repository.Add(newTenant);
+
+        Assert.Equal(newTenant.Id, repository.GetById(newTenant.Id)!.Id);
+    }
+
     private RoomId AddRoom(string roomNumber)
     {
         var room = new Room(RoomId.New(), new RoomNumber(roomNumber));

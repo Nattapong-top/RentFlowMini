@@ -59,12 +59,39 @@ public sealed class SqliteTenantRepository : ITenantRepository
 
     public void Update(Tenant tenant)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(tenant);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE Tenants
+            SET FirstName = $firstName,
+                LastName = $lastName,
+                PhoneNumber = $phoneNumber,
+                RoomId = $roomId,
+                MoveInDate = $moveInDate,
+                SecurityDeposit = $securityDeposit,
+                MovedOutOn = $movedOutOn,
+                MovedOutFromRoomId = $movedOutFromRoomId
+            WHERE Id = $id;
+            """;
+        AddTenantParameters(command, tenant);
+
+        command.ExecuteNonQuery();
     }
 
     public Tenant? GetById(TenantId tenantId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(tenantId);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"{SelectColumns} WHERE Id = $id;";
+        command.Parameters.AddWithValue("$id", tenantId.Value.ToString());
+
+        using var reader = command.ExecuteReader();
+
+        return reader.Read() ? ReadTenant(reader) : null;
     }
 
     public bool ExistsByRoomId(RoomId roomId)
