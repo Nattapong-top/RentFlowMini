@@ -142,6 +142,61 @@ public sealed class SqliteDatabaseTests : IDisposable
         Assert.Equal("101", ReadFirstRoomNumber(connection));
     }
 
+    [Fact]
+    public void Initialize_WhenUpdateFails_KeepsBackup()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+        var database = new SqliteDatabase(DatabasePath, [FailingUpdate]);
+
+        Assert.Throws<SqliteException>(database.Initialize);
+
+        Assert.Single(FindBackups());
+    }
+
+    [Fact]
+    public void Initialize_BeforeUpdating_BacksUpDatabase()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+        AddRoom("101");
+        var database = new SqliteDatabase(
+            DatabasePath,
+            [new SchemaUpdate(2, "ALTER TABLE Rooms ADD COLUMN Note TEXT;")]);
+
+        database.Initialize();
+
+        using var backup = new SqliteConnection($"Data Source={Assert.Single(FindBackups())}");
+        backup.Open();
+
+        Assert.Equal(1L, ReadSchemaVersion(backup));
+        Assert.Equal("101", ReadFirstRoomNumber(backup));
+    }
+
+    [Fact]
+    public void Initialize_OnNewFile_DoesNotCreateBackup()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+
+        Assert.Empty(FindBackups());
+    }
+
+    [Fact]
+    public void Initialize_WhenAlreadyUpToDate_DoesNotCreateBackup()
+    {
+        var database = new SqliteDatabase(DatabasePath);
+        database.Initialize();
+
+        database.Initialize();
+
+        Assert.Empty(FindBackups());
+    }
+
+    private string[] FindBackups()
+    {
+        string folder = Path.Combine(_folder, "Backups");
+
+        return Directory.Exists(folder) ? Directory.GetFiles(folder) : [];
+    }
+
     private static string? ReadFirstRoomNumber(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();

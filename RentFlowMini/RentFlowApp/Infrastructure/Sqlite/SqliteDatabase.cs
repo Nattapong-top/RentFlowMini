@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Data.Sqlite;
 
 namespace RentFlowApp.Infrastructure.Sqlite;
@@ -5,6 +6,7 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 public sealed class SqliteDatabase
 {
     private const string InitialSchemaResource = "RentFlowApp.Database.Sqlite.001_InitialSchema.sql";
+    private const string BackupFolderName = "Backups";
     private const string NewerSchemaMessage = "ไฟล์ข้อมูลนี้มาจากโปรแกรมรุ่นใหม่กว่า กรุณาอัปเดตโปรแกรมก่อนเปิดใช้งาน";
 
     private readonly string _filePath;
@@ -45,6 +47,12 @@ public sealed class SqliteDatabase
             return;
         }
 
+        // ไฟล์ใหม่ยังไม่มีข้อมูลให้สำรอง
+        if (schemaVersion > 0)
+        {
+            BackUp(connection, schemaVersion);
+        }
+
         // ทำในธุรกรรมเดียว เพื่อไม่ให้เหลือตารางค้างครึ่งทางถ้าอัปเดตไม่สำเร็จ
         using var transaction = connection.BeginTransaction();
         foreach (var update in pendingUpdates)
@@ -65,6 +73,23 @@ public sealed class SqliteDatabase
         connection.Open();
 
         return connection;
+    }
+
+    private void BackUp(SqliteConnection connection, long schemaVersion)
+    {
+        string fullPath = Path.GetFullPath(_filePath);
+        string folder = Directory.CreateDirectory(
+            Path.Combine(Path.GetDirectoryName(fullPath)!, BackupFolderName)).FullName;
+        // ระบุ InvariantCulture เพราะเครื่องที่ตั้งค่าภาษาไทยจะได้ปี พ.ศ. ในชื่อไฟล์
+        string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        string backupPath = Path.Combine(
+            folder,
+            $"{Path.GetFileNameWithoutExtension(fullPath)}-before-update-v{schemaVersion}-{timestamp}.db");
+
+        // ปิด pool เพื่อไม่ให้แอปถือไฟล์สำรองค้างไว้ ผู้ใช้จะได้คัดลอกหรือย้ายไฟล์ได้
+        using var backup = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = backupPath, Pooling = false }.ToString());
+        connection.BackupDatabase(backup);
     }
 
     private static long ReadSchemaVersion(SqliteConnection connection)
