@@ -127,6 +127,17 @@ public sealed class SqliteMonthlyMeterReadingRepositoryTests : IDisposable
         Assert.Equal(3, repository.GetAll().Count());
     }
 
+    [Fact]
+    public void Update_WhenReadingDoesNotExist_AddsReading()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+        var roomId = AddRoom("101");
+
+        repository.Update(CreateReading(roomId, October));
+
+        Assert.True(repository.Exists(roomId, October));
+    }
+
     private static MonthlyMeterReading CreateReading(
         RoomId roomId,
         BillingPeriod billingPeriod,
