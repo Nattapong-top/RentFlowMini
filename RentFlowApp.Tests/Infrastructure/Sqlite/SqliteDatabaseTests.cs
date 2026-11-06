@@ -6,6 +6,7 @@ namespace RentFlowApp.Tests.Infrastructure.Sqlite;
 public sealed class SqliteDatabaseTests : IDisposable
 {
     private const int SqliteForeignKeyViolation = 787;
+    private const int FutureSchemaVersion = 999;
 
     private readonly string _folder =
         Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "RentFlowTests", Guid.NewGuid().ToString())).FullName;
@@ -78,6 +79,34 @@ public sealed class SqliteDatabaseTests : IDisposable
 
         var exception = Assert.Throws<SqliteException>(() => command.ExecuteNonQuery());
         Assert.Equal(SqliteForeignKeyViolation, exception.SqliteExtendedErrorCode);
+    }
+
+    [Fact]
+    public void Initialize_OnNewerSchemaVersion_RejectsWithoutChangingFile()
+    {
+        var database = new SqliteDatabase(DatabasePath);
+        database.Initialize();
+        AddRoom("101");
+        SetSchemaVersion(FutureSchemaVersion);
+        SqliteConnection.ClearAllPools();
+        byte[] fileBefore = File.ReadAllBytes(DatabasePath);
+
+        var exception = Assert.Throws<InvalidOperationException>(database.Initialize);
+
+        Assert.Equal(
+            "ไฟล์ข้อมูลนี้มาจากโปรแกรมรุ่นใหม่กว่า กรุณาอัปเดตโปรแกรมก่อนเปิดใช้งาน",
+            exception.Message);
+        SqliteConnection.ClearAllPools();
+        Assert.Equal(fileBefore, File.ReadAllBytes(DatabasePath));
+    }
+
+    private void SetSchemaVersion(int version)
+    {
+        using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA user_version = {version};";
+        command.ExecuteNonQuery();
     }
 
     private void AddRoom(string roomNumber)

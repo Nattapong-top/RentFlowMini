@@ -5,6 +5,8 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 public sealed class SqliteDatabase
 {
     private const string InitialSchemaResource = "RentFlowApp.Database.Sqlite.001_InitialSchema.sql";
+    private const long CurrentSchemaVersion = 1;
+    private const string NewerSchemaMessage = "ไฟล์ข้อมูลนี้มาจากโปรแกรมรุ่นใหม่กว่า กรุณาอัปเดตโปรแกรมก่อนเปิดใช้งาน";
 
     private readonly string _filePath;
 
@@ -20,7 +22,14 @@ public sealed class SqliteDatabase
 
         using var connection = OpenConnection();
 
-        if (ReadSchemaVersion(connection) != 0)
+        long schemaVersion = ReadSchemaVersion(connection);
+
+        if (schemaVersion > CurrentSchemaVersion)
+        {
+            throw new InvalidOperationException(NewerSchemaMessage);
+        }
+
+        if (schemaVersion != 0)
         {
             return;
         }
