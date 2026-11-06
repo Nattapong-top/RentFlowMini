@@ -18,9 +18,7 @@ public sealed class SqliteDatabase
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(_filePath))!);
 
-        using var connection = new SqliteConnection(
-            new SqliteConnectionStringBuilder { DataSource = _filePath }.ToString());
-        connection.Open();
+        using var connection = OpenConnection();
 
         if (ReadSchemaVersion(connection) != 0)
         {
@@ -34,6 +32,15 @@ public sealed class SqliteDatabase
         command.CommandText = ReadInitialSchema();
         command.ExecuteNonQuery();
         transaction.Commit();
+    }
+
+    public SqliteConnection OpenConnection()
+    {
+        var connection = new SqliteConnection(
+            new SqliteConnectionStringBuilder { DataSource = _filePath, ForeignKeys = true }.ToString());
+        connection.Open();
+
+        return connection;
     }
 
     private static long ReadSchemaVersion(SqliteConnection connection)
