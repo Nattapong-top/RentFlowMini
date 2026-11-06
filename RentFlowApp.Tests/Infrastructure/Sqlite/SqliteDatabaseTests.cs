@@ -100,6 +100,26 @@ public sealed class SqliteDatabaseTests : IDisposable
         Assert.Equal(fileBefore, File.ReadAllBytes(DatabasePath));
     }
 
+    [Fact]
+    public void Initialize_OnOlderSchemaVersion_AppliesUpdateAndKeepsData()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+        AddRoom("101");
+        var database = new SqliteDatabase(
+            DatabasePath,
+            [new SchemaUpdate(2, "ALTER TABLE Rooms ADD COLUMN Note TEXT;")]);
+
+        database.Initialize();
+
+        using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT RoomNumber, Note FROM Rooms;";
+
+        Assert.Equal("101", command.ExecuteScalar());
+        Assert.Equal(2L, ReadSchemaVersion(connection));
+    }
+
     private void SetSchemaVersion(int version)
     {
         using var connection = new SqliteConnection($"Data Source={DatabasePath}");

@@ -5,15 +5,21 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 public sealed class SqliteDatabase
 {
     private const string InitialSchemaResource = "RentFlowApp.Database.Sqlite.001_InitialSchema.sql";
-    private const long CurrentSchemaVersion = 1;
     private const string NewerSchemaMessage = "ไฟล์ข้อมูลนี้มาจากโปรแกรมรุ่นใหม่กว่า กรุณาอัปเดตโปรแกรมก่อนเปิดใช้งาน";
 
     private readonly string _filePath;
+    private readonly IReadOnlyList<SchemaUpdate> _updates;
 
     public SqliteDatabase(string filePath)
+        : this(filePath, [new SchemaUpdate(1, ReadInitialSchema())])
+    {
+    }
+
+    public SqliteDatabase(string filePath, IReadOnlyList<SchemaUpdate> updates)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         _filePath = filePath;
+        _updates = updates;
     }
 
     public void Initialize()
@@ -24,22 +30,31 @@ public sealed class SqliteDatabase
 
         long schemaVersion = ReadSchemaVersion(connection);
 
-        if (schemaVersion > CurrentSchemaVersion)
+        if (schemaVersion > _updates.Max(update => update.Version))
         {
             throw new InvalidOperationException(NewerSchemaMessage);
         }
 
-        if (schemaVersion != 0)
+        var pendingUpdates = _updates
+            .Where(update => update.Version > schemaVersion)
+            .OrderBy(update => update.Version)
+            .ToList();
+
+        if (pendingUpdates.Count == 0)
         {
             return;
         }
 
-        // ทำในธุรกรรมเดียว เพื่อไม่ให้เหลือตารางค้างครึ่งทางถ้าสร้างไม่สำเร็จ
+        // ทำในธุรกรรมเดียว เพื่อไม่ให้เหลือตารางค้างครึ่งทางถ้าอัปเดตไม่สำเร็จ
         using var transaction = connection.BeginTransaction();
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = ReadInitialSchema();
-        command.ExecuteNonQuery();
+        foreach (var update in pendingUpdates)
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = $"{update.Sql}\nPRAGMA user_version = {update.Version};";
+            command.ExecuteNonQuery();
+        }
+
         transaction.Commit();
     }
 
