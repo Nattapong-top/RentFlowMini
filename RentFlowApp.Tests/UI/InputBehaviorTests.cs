@@ -4,35 +4,12 @@ using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Rooms;
+using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.UI;
 
 public class InputBehaviorTests
 {
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (exception != null)
-        {
-            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception).Throw();
-        }
-    }
-
     private static void DoubleClickFirstRow(DataGridView grid)
     {
         var onCellDoubleClick = typeof(DataGridView).GetMethod(

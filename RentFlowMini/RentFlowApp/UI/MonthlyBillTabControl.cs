@@ -270,7 +270,6 @@ public class MonthlyBillTabControl : BaseTabControl
         var waterRateLabel = new Label { Text = "อัตรา (บาท/หน่วย):", Left = 12, Top = 98, Width = 125, Height = 25 };
         _waterRateTextBox.Name = "WaterRateTextBox";
         _waterRateTextBox.SetBounds(140, 95, 120, 30);
-        _waterRateTextBox.Text = "19";
         _waterRateTextBox.ReadOnly = true;
         _waterRateTextBox.TabStop = false;
         _waterRateTextBox.BackColor = SystemColors.ControlLight;
@@ -310,7 +309,6 @@ public class MonthlyBillTabControl : BaseTabControl
         var elecRateLabel = new Label { Text = "อัตรา (บาท/หน่วย):", Left = 12, Top = 98, Width = 125, Height = 25 };
         _elecRateTextBox.Name = "ElecRateTextBox";
         _elecRateTextBox.SetBounds(140, 95, 120, 30);
-        _elecRateTextBox.Text = "8";
         _elecRateTextBox.ReadOnly = true;
         _elecRateTextBox.TabStop = false;
         _elecRateTextBox.BackColor = SystemColors.ControlLight;
@@ -338,7 +336,6 @@ public class MonthlyBillTabControl : BaseTabControl
         _chargeMotorcycleCheckBox.SetBounds(12, 25, 95, 25);
         _motorcycleRateTextBox.Name = "MotorcycleRateTextBox";
         _motorcycleRateTextBox.SetBounds(110, 23, 70, 27);
-        _motorcycleRateTextBox.Text = "300";
         _motorcycleRateTextBox.ReadOnly = true;
         _motorcycleRateTextBox.TabStop = false;
         _motorcycleRateTextBox.BackColor = SystemColors.ControlLight;
@@ -348,7 +345,6 @@ public class MonthlyBillTabControl : BaseTabControl
         _chargeCarCheckBox.SetBounds(190, 25, 75, 25);
         _carRateTextBox.Name = "CarRateTextBox";
         _carRateTextBox.SetBounds(265, 23, 70, 27);
-        _carRateTextBox.Text = "500";
         _carRateTextBox.ReadOnly = true;
         _carRateTextBox.TabStop = false;
         _carRateTextBox.BackColor = SystemColors.ControlLight;
@@ -373,7 +369,6 @@ public class MonthlyBillTabControl : BaseTabControl
         var cableTvRateLbl = new Label { Text = "อัตรา Cable:", Left = 465, Top = 27, Width = 90, Height = 22 };
         _cableTvRateTextBox.Name = "CableTvRateTextBox";
         _cableTvRateTextBox.SetBounds(560, 23, 75, 27);
-        _cableTvRateTextBox.Text = "60";
         _cableTvRateTextBox.ReadOnly = true;
         _cableTvRateTextBox.TabStop = false;
         _cableTvRateTextBox.BackColor = SystemColors.ControlLight;
@@ -410,7 +405,7 @@ public class MonthlyBillTabControl : BaseTabControl
         ]);
         inputGroup.Controls.Add(inputPanel);
 
-        // Right Group: Detailed Result Summary Box (Width: 360, Height: 430)
+        // Right Group: Detailed Result Summary Box
         var resultGroup = BuildResultGroup();
         resultGroup.Left = 770;
         resultGroup.Top = 0;

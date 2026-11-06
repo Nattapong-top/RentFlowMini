@@ -280,11 +280,7 @@ public sealed class RoomTabControl : BaseTabControl
             Name = "MonthlyRent",
             HeaderText = "ค่าเช่ารายเดือน",
             DataPropertyName = "MonthlyRent",
-            DefaultCellStyle = new DataGridViewCellStyle
-            {
-                Alignment = DataGridViewContentAlignment.MiddleRight,
-                Format = "N2"
-            }
+            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
         });
         _roomGrid.Columns.Add(new DataGridViewTextBoxColumn
         {

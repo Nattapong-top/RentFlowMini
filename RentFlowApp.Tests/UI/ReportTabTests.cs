@@ -8,6 +8,7 @@ using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Rooms;
 using RentFlowApp.Infrastructure.Tenants;
+using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.UI;
 
@@ -16,30 +17,6 @@ public class ReportTabTests
     // ตัวเลือกปีมีแค่รอบปีปัจจุบัน จึงต้องอิงรอบบิลกับวันนี้ ไม่ให้เทสต์หมดอายุ
     private static readonly BillingPeriod CurrentPeriod = BillingPeriod.Create(DateTime.Now.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
     private static readonly BillingPeriod PreviousPeriod = CurrentPeriod.GetPrevious();
-
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (exception != null)
-        {
-            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception).Throw();
-        }
-    }
 
     private sealed class ReportTab : IDisposable
     {

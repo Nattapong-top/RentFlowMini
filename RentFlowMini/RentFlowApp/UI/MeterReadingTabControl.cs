@@ -249,7 +249,7 @@ public class MeterReadingTabControl : BaseTabControl
             HeaderText = "น้ำประปาใช้ไป (หน่วย)",
             DataPropertyName = "WaterUsed",
             Width = 120,
-            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Format = "N2" }
+            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
         });
         _meterGrid.Columns.Add(new DataGridViewTextBoxColumn
         {
@@ -265,7 +265,7 @@ public class MeterReadingTabControl : BaseTabControl
             HeaderText = "ไฟฟ้าใช้ไป (หน่วย)",
             DataPropertyName = "ElecUsed",
             Width = 120,
-            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Format = "N2" }
+            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
         });
 
         group.Controls.Add(_meterGrid);

@@ -8,35 +8,12 @@ using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Rooms;
 using RentFlowApp.Infrastructure.Tenants;
+using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.UI;
 
 public class TenantTabTests
 {
-    private static void RunInSta(Action action)
-    {
-        Exception? exception = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (exception != null)
-        {
-            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exception).Throw();
-        }
-    }
-
     private sealed class TenantTab : IDisposable
     {
         private readonly Form _form = new();
