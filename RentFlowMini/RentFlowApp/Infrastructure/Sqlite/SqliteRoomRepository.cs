@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Data.Sqlite;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Domain.ValueObjects;
 
@@ -6,6 +7,9 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 
 public sealed class SqliteRoomRepository : IRoomEditor
 {
+    private const int SqliteUniqueViolation = 2067;
+    private const int SqlitePrimaryKeyViolation = 1555;
+
     private readonly SqliteDatabase _database;
 
     public SqliteRoomRepository(SqliteDatabase database)
@@ -30,7 +34,16 @@ public sealed class SqliteRoomRepository : IRoomEditor
         command.Parameters.AddWithValue("$monthlyRent", room.MonthlyRent.Amount.ToString(CultureInfo.InvariantCulture));
         command.Parameters.AddWithValue("$isCableTvExempt", room.IsCableTvExempt ? 1 : 0);
 
-        command.ExecuteNonQuery();
+        try
+        {
+            command.ExecuteNonQuery();
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode is SqliteUniqueViolation or SqlitePrimaryKeyViolation)
+        {
+            throw new InvalidOperationException(
+                $"หมายเลขห้อง {room.RoomNumber.Value} มีอยู่แล้ว กรุณาระบุหมายเลขอื่น",
+                ex);
+        }
     }
 
     public bool ExistsByRoomNumber(string roomNumber)

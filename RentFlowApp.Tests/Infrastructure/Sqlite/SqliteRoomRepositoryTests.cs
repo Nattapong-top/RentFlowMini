@@ -41,4 +41,27 @@ public sealed class SqliteRoomRepositoryTests : IDisposable
         Assert.Equal(3500.75m, savedRoom.MonthlyRent.Amount);
         Assert.True(savedRoom.IsCableTvExempt);
     }
+
+    [Fact]
+    public void Add_WithDuplicateRoomNumber_ThrowsThaiMessage()
+    {
+        var repository = new SqliteRoomRepository(_database);
+        repository.Add(new Room(RoomId.New(), new RoomNumber("101")));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(new Room(RoomId.New(), new RoomNumber("101"))));
+
+        Assert.Equal("หมายเลขห้อง 101 มีอยู่แล้ว กรุณาระบุหมายเลขอื่น", exception.Message);
+    }
+
+    [Fact]
+    public void Add_WithDuplicateRoomId_ThrowsInvalidOperation()
+    {
+        var repository = new SqliteRoomRepository(_database);
+        var roomId = RoomId.New();
+        repository.Add(new Room(roomId, new RoomNumber("101")));
+
+        Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(new Room(roomId, new RoomNumber("102"))));
+    }
 }
