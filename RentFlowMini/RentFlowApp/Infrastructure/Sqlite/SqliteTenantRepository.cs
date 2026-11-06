@@ -77,7 +77,17 @@ public sealed class SqliteTenantRepository : ITenantRepository
             """;
         AddTenantParameters(command, tenant);
 
-        command.ExecuteNonQuery();
+        try
+        {
+            if (command.ExecuteNonQuery() == 0)
+            {
+                throw new InvalidOperationException("ไม่พบผู้เช่าที่ต้องการแก้ไข");
+            }
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteUniqueViolation)
+        {
+            throw new InvalidOperationException(RoomOccupiedMessage, ex);
+        }
     }
 
     public Tenant? GetById(TenantId tenantId)

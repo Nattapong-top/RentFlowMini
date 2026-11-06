@@ -236,6 +236,42 @@ public sealed class SqliteTenantRepositoryTests : IDisposable
         Assert.Equal(newTenant.Id, repository.GetById(newTenant.Id)!.Id);
     }
 
+    [Fact]
+    public void GetById_WithUnknownTenant_ReturnsNull()
+    {
+        var repository = new SqliteTenantRepository(_database);
+
+        Assert.Null(repository.GetById(TenantId.New()));
+    }
+
+    [Fact]
+    public void Update_WithUnknownTenant_ThrowsThaiMessage()
+    {
+        var repository = new SqliteTenantRepository(_database);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Update(new Tenant(TenantId.New(), "Anna", "Example")));
+
+        Assert.Equal("ไม่พบผู้เช่าที่ต้องการแก้ไข", exception.Message);
+    }
+
+    [Fact]
+    public void Update_ToOccupiedRoom_ThrowsThaiMessageAndKeepsTenant()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        var occupiedRoomId = AddRoom("101");
+        var currentRoomId = AddRoom("102");
+        repository.Add(new Tenant(TenantId.New(), "Anna", "Example", roomId: occupiedRoomId));
+        var tenant = new Tenant(TenantId.New(), "Ben", "Example", roomId: currentRoomId);
+        repository.Add(tenant);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Update(tenant.WithDetails("Ben", "Example", null, occupiedRoomId, null, null)));
+
+        Assert.Equal(RoomOccupiedMessage, exception.Message);
+        Assert.Equal(currentRoomId, repository.GetById(tenant.Id)!.RoomId);
+    }
+
     private RoomId AddRoom(string roomNumber)
     {
         var room = new Room(RoomId.New(), new RoomNumber(roomNumber));
