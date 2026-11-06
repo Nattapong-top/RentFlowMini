@@ -138,6 +138,33 @@ public sealed class SqliteMonthlyMeterReadingRepositoryTests : IDisposable
         Assert.True(repository.Exists(roomId, October));
     }
 
+    [Fact]
+    public void SaveServiceTwiceForSamePeriod_KeepsOneUpdatedReading()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+        var service = new SaveMonthlyMeterReadingService(repository);
+        var roomId = AddRoom("101");
+
+        service.Save(
+            roomId,
+            October,
+            MeterReading.Create(100m),
+            MeterReading.Create(125m),
+            MeterReading.Create(1000m),
+            MeterReading.Create(1010m));
+        service.Save(
+            roomId,
+            October,
+            MeterReading.Create(100m),
+            MeterReading.Create(140m),
+            MeterReading.Create(1000m),
+            MeterReading.Create(1030m));
+
+        var saved = Assert.Single(new SqliteMonthlyMeterReadingRepository(_database).GetAll());
+        Assert.Equal(140m, saved.CurrentWaterMeter.Value);
+        Assert.Equal(1030m, saved.CurrentElectricityMeter.Value);
+    }
+
     private static MonthlyMeterReading CreateReading(
         RoomId roomId,
         BillingPeriod billingPeriod,
