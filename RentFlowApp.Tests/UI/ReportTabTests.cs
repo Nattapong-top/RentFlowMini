@@ -289,6 +289,25 @@ public class ReportTabTests
     }
 
     [Fact]
+    public void YearlyGrid_ReusesTotalRowFont_WhenRefreshed()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new ReportTab();
+            int thisYear = tab.Today.Year + 543;
+            var yearBox = tab.Find<ComboBox>("ReportYearComboBox");
+            var grid = tab.Find<DataGridView>("ReportYearlyGrid");
+            yearBox.SelectedItem = thisYear;
+            tab.Refresh();
+            var firstFont = grid.Rows[12].DefaultCellStyle.Font;
+
+            yearBox.SelectedItem = thisYear - 1;
+
+            Assert.Same(firstFont, grid.Rows[12].DefaultCellStyle.Font);
+        });
+    }
+
+    [Fact]
     public void ExportExcel_WritesChosenFileAndShowsSavedPath()
     {
         RunInSta(() =>

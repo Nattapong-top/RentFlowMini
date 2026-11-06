@@ -62,6 +62,40 @@ public class MeterTabTests
     }
 
     [Fact]
+    public void Enter_WhileRoomListIsOpen_SelectsWithoutSaving()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new MeterTab();
+            tab.AddRoom("101");
+            tab.Show();
+            tab.FillCurrentReadings();
+            var roomBox = tab.Find<ComboBox>("MeterRoomComboBox");
+            roomBox.DroppedDown = true;
+
+            PressEnter(roomBox);
+
+            Assert.Empty(tab.Readings.GetAll());
+        });
+    }
+
+    [Fact]
+    public void Enter_WhileRoomListIsClosed_Saves()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new MeterTab();
+            tab.AddRoom("101");
+            tab.Show();
+            tab.FillCurrentReadings();
+
+            PressEnter(tab.Find<ComboBox>("MeterRoomComboBox"));
+
+            Assert.Single(tab.Readings.GetAll());
+        });
+    }
+
+    [Fact]
     public void SaveMessage_ShowsPeriodInBuddhistYear()
     {
         RunInSta(() =>

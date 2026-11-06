@@ -91,7 +91,7 @@ public class MeterReadingTabControl : BaseTabControl
         _roomComboBox.SetBounds(110, 22, 180, 30);
         _roomComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         _roomComboBox.SelectedIndexChanged += (s, e) => TryAutoLoadPreviousReadings();
-        _roomComboBox.KeyDown += Control_EnterKeyDown;
+        HandleEnterKey(_saveButton.PerformClick, _roomComboBox);
 
         // Billing Period Selector (Month & Year ComboBoxes)
         _periodSelector.Name = "BillingPeriodSelector";
@@ -277,16 +277,7 @@ public class MeterReadingTabControl : BaseTabControl
     private void ConfigureMeterTextBox(TextBox textBox)
     {
         ConfigureNumericTextBox(textBox);
-        textBox.KeyDown += Control_EnterKeyDown;
-    }
-
-    private void Control_EnterKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.KeyCode == Keys.Enter)
-        {
-            e.SuppressKeyPress = true;
-            _saveButton.PerformClick();
-        }
+        HandleEnterKey(_saveButton.PerformClick, textBox);
     }
 
     public void RefreshRoomList(RoomId? forceIncludeRoomId = null)
