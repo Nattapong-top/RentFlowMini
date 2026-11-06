@@ -11,10 +11,15 @@
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Database\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Database\Sqlite\001_InitialSchema.sql" LogicalName="RentFlowApp.Database.Sqlite.001_InitialSchema.sql" />
   </ItemGroup>
 
 </Project>
