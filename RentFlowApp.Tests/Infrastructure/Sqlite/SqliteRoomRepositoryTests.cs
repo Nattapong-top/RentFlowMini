@@ -55,6 +55,19 @@ public sealed class SqliteRoomRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void GetAll_ReturnsRoomsInDisplayOrder()
+    {
+        var repository = new SqliteRoomRepository(_database);
+        repository.Add(new Room(RoomId.New(), new RoomNumber("102")));
+        repository.Add(new Room(RoomId.New(), new RoomNumber("101")));
+        repository.Add(new Room(RoomId.New(), new RoomNumber("99")));
+
+        var roomNumbers = repository.GetAll().Select(room => room.RoomNumber.Value);
+
+        Assert.Equal(["99", "101", "102"], roomNumbers);
+    }
+
+    [Fact]
     public void ExistsByRoomNumber_ReturnsTrueOnlyForSavedRoomNumber()
     {
         var repository = new SqliteRoomRepository(_database);

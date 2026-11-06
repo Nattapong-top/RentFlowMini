@@ -73,7 +73,10 @@ public sealed class SqliteRoomRepository : IRoomEditor
                 reader.GetInt64(3) == 1));
         }
 
-        return rooms.AsReadOnly();
+        return rooms
+            .OrderBy(room => room.RoomNumber.Value, RoomNumber.DisplayOrder)
+            .ToList()
+            .AsReadOnly();
     }
 
     public Room? GetById(RoomId roomId)
