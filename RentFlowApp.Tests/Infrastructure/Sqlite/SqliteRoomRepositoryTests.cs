@@ -75,6 +75,25 @@ public sealed class SqliteRoomRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void GetById_WithUnknownRoom_ReturnsNull()
+    {
+        var repository = new SqliteRoomRepository(_database);
+
+        Assert.Null(repository.GetById(RoomId.New()));
+    }
+
+    [Fact]
+    public void Update_WithUnknownRoom_ThrowsThaiMessage()
+    {
+        var repository = new SqliteRoomRepository(_database);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Update(new Room(RoomId.New(), new RoomNumber("101"))));
+
+        Assert.Equal("ไม่พบห้องพักที่ต้องการแก้ไข", exception.Message);
+    }
+
+    [Fact]
     public void GetAll_ReturnsRoomsInDisplayOrder()
     {
         var repository = new SqliteRoomRepository(_database);

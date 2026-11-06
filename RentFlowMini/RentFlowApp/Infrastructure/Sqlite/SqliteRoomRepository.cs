@@ -100,7 +100,10 @@ public sealed class SqliteRoomRepository : IRoomEditor
         command.Parameters.AddWithValue("$monthlyRent", room.MonthlyRent.Amount.ToString(CultureInfo.InvariantCulture));
         command.Parameters.AddWithValue("$id", room.Id.Value.ToString());
 
-        command.ExecuteNonQuery();
+        if (command.ExecuteNonQuery() == 0)
+        {
+            throw new InvalidOperationException("ไม่พบห้องพักที่ต้องการแก้ไข");
+        }
     }
 
     private static Room ReadRoom(SqliteDataReader reader)
