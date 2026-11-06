@@ -8,6 +8,8 @@ namespace RentFlowApp.Tests.Infrastructure.Sqlite;
 
 public sealed class SqliteTenantRepositoryTests : IDisposable
 {
+    private const string RoomOccupiedMessage = "ห้องพักนี้มีผู้เช่าอยู่แล้ว ไม่สามารถผูกผู้เช่าซ้ำได้";
+
     private static readonly DateOnly MoveInDate = new(2026, 1, 15);
 
     private readonly string _folder =
@@ -127,6 +129,32 @@ public sealed class SqliteTenantRepositoryTests : IDisposable
         var saved = Assert.Single(new SqliteTenantRepository(_database).GetAll());
 
         Assert.Equal(0m, saved.SecurityDeposit);
+    }
+
+    [Fact]
+    public void Add_WithDuplicateTenantId_ThrowsThaiMessage()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        var tenantId = TenantId.New();
+        repository.Add(new Tenant(tenantId, "Anna", "Example"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(new Tenant(tenantId, "Ben", "Example")));
+
+        Assert.Equal("ผู้เช่ารายนี้มีอยู่แล้ว ไม่สามารถเพิ่มข้อมูลซ้ำได้", exception.Message);
+    }
+
+    [Fact]
+    public void Add_ToOccupiedRoom_ThrowsThaiMessage()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        var roomId = AddRoom("101");
+        repository.Add(new Tenant(TenantId.New(), "Anna", "Example", roomId: roomId));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(new Tenant(TenantId.New(), "Ben", "Example", roomId: roomId)));
+
+        Assert.Equal(RoomOccupiedMessage, exception.Message);
     }
 
     private RoomId AddRoom(string roomNumber)

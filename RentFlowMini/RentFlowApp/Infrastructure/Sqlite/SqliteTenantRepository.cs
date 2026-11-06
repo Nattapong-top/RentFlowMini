@@ -8,7 +8,10 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 
 public sealed class SqliteTenantRepository : ITenantRepository
 {
+    private const int SqliteUniqueViolation = 2067;
+    private const int SqlitePrimaryKeyViolation = 1555;
     private const string DateFormat = "yyyy-MM-dd";
+    private const string RoomOccupiedMessage = "ห้องพักนี้มีผู้เช่าอยู่แล้ว ไม่สามารถผูกผู้เช่าซ้ำได้";
 
     private const string SelectColumns = """
         SELECT Id, FirstName, LastName, PhoneNumber, RoomId,
@@ -40,7 +43,18 @@ public sealed class SqliteTenantRepository : ITenantRepository
             """;
         AddTenantParameters(command, tenant);
 
-        command.ExecuteNonQuery();
+        try
+        {
+            command.ExecuteNonQuery();
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqlitePrimaryKeyViolation)
+        {
+            throw new InvalidOperationException("ผู้เช่ารายนี้มีอยู่แล้ว ไม่สามารถเพิ่มข้อมูลซ้ำได้", ex);
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteUniqueViolation)
+        {
+            throw new InvalidOperationException(RoomOccupiedMessage, ex);
+        }
     }
 
     public void Update(Tenant tenant)
