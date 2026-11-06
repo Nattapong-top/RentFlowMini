@@ -20,6 +20,11 @@ public sealed class SqliteDatabase
             new SqliteConnectionStringBuilder { DataSource = _filePath }.ToString());
         connection.Open();
 
+        if (ReadSchemaVersion(connection) != 0)
+        {
+            return;
+        }
+
         // ทำในธุรกรรมเดียว เพื่อไม่ให้เหลือตารางค้างครึ่งทางถ้าสร้างไม่สำเร็จ
         using var transaction = connection.BeginTransaction();
         using var command = connection.CreateCommand();
@@ -27,6 +32,14 @@ public sealed class SqliteDatabase
         command.CommandText = ReadInitialSchema();
         command.ExecuteNonQuery();
         transaction.Commit();
+    }
+
+    private static long ReadSchemaVersion(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA user_version;";
+
+        return (long)command.ExecuteScalar()!;
     }
 
     private static string ReadInitialSchema()

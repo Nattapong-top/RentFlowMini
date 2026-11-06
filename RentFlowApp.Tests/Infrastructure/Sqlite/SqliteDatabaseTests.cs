@@ -31,6 +31,37 @@ public sealed class SqliteDatabaseTests : IDisposable
         Assert.Equal(1L, ReadSchemaVersion(connection));
     }
 
+    [Fact]
+    public void Initialize_OnExistingDatabase_KeepsSavedData()
+    {
+        var database = new SqliteDatabase(DatabasePath);
+        database.Initialize();
+        AddRoom("101");
+
+        database.Initialize();
+
+        using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT RoomNumber FROM Rooms;";
+
+        Assert.Equal("101", command.ExecuteScalar());
+    }
+
+    private void AddRoom(string roomNumber)
+    {
+        using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO Rooms (Id, RoomNumber, MonthlyRent, IsCableTvExempt)
+            VALUES ($id, $roomNumber, '3000', 0);
+            """;
+        command.Parameters.AddWithValue("$id", Guid.NewGuid().ToString());
+        command.Parameters.AddWithValue("$roomNumber", roomNumber);
+        command.ExecuteNonQuery();
+    }
+
     private static List<string> ReadTableNames(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
