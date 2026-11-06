@@ -92,7 +92,11 @@ public sealed class SqliteTenantRepository : ITenantRepository
             tenants.Add(ReadTenant(reader));
         }
 
-        return tenants.AsReadOnly();
+        return tenants
+            .OrderBy(tenant => tenant.FirstName)
+            .ThenBy(tenant => tenant.LastName)
+            .ToList()
+            .AsReadOnly();
     }
 
     private static void AddTenantParameters(SqliteCommand command, Tenant tenant)

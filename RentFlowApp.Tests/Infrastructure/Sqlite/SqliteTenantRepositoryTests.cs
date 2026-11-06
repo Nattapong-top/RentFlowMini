@@ -169,6 +169,19 @@ public sealed class SqliteTenantRepositoryTests : IDisposable
         Assert.False(repository.ExistsByRoomId(emptyRoomId));
     }
 
+    [Fact]
+    public void GetAll_ReturnsTenantsOrderedByFirstNameThenLastName()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        repository.Add(new Tenant(TenantId.New(), "Ben", "Adams"));
+        repository.Add(new Tenant(TenantId.New(), "Anna", "Young"));
+        repository.Add(new Tenant(TenantId.New(), "Anna", "Baker"));
+
+        var names = repository.GetAll().Select(tenant => tenant.FullName);
+
+        Assert.Equal(["Anna Baker", "Anna Young", "Ben Adams"], names);
+    }
+
     private RoomId AddRoom(string roomNumber)
     {
         var room = new Room(RoomId.New(), new RoomNumber(roomNumber));
