@@ -48,7 +48,12 @@ public sealed class SqliteRoomRepository : IRoomEditor
 
     public bool ExistsByRoomNumber(string roomNumber)
     {
-        throw new NotImplementedException();
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT EXISTS (SELECT 1 FROM Rooms WHERE RoomNumber = $roomNumber);";
+        command.Parameters.AddWithValue("$roomNumber", roomNumber);
+
+        return (long)command.ExecuteScalar()! == 1;
     }
 
     public IReadOnlyList<Room> GetAll()
