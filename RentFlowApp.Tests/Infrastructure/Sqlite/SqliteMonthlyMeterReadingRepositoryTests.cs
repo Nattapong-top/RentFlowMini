@@ -51,6 +51,21 @@ public sealed class SqliteMonthlyMeterReadingRepositoryTests : IDisposable
         Assert.Equal(1010.125m, saved.CurrentElectricityMeter.Value);
     }
 
+    [Fact]
+    public void GetAndExists_MatchBothRoomAndPeriod()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+        var roomId = AddRoom("101");
+        var otherRoomId = AddRoom("102");
+        repository.Add(CreateReading(roomId, October));
+
+        Assert.True(repository.Exists(roomId, October));
+        Assert.False(repository.Exists(roomId, November));
+        Assert.False(repository.Exists(otherRoomId, October));
+        Assert.Null(repository.Get(roomId, November));
+        Assert.Null(repository.Get(otherRoomId, October));
+    }
+
     private static MonthlyMeterReading CreateReading(
         RoomId roomId,
         BillingPeriod billingPeriod,

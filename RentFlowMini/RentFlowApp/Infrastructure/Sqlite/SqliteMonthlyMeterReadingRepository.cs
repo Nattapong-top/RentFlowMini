@@ -69,7 +69,7 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
 
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)
     {
-        throw new NotImplementedException();
+        return Get(roomId, billingPeriod) is not null;
     }
 
     public IEnumerable<MonthlyMeterReading> GetAll()
