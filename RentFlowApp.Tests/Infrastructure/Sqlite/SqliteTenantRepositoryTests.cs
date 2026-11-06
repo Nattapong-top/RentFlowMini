@@ -157,6 +157,18 @@ public sealed class SqliteTenantRepositoryTests : IDisposable
         Assert.Equal(RoomOccupiedMessage, exception.Message);
     }
 
+    [Fact]
+    public void ExistsByRoomId_ReturnsTrueOnlyForOccupiedRoom()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        var occupiedRoomId = AddRoom("101");
+        var emptyRoomId = AddRoom("102");
+        repository.Add(new Tenant(TenantId.New(), "Anna", "Example", roomId: occupiedRoomId));
+
+        Assert.True(repository.ExistsByRoomId(occupiedRoomId));
+        Assert.False(repository.ExistsByRoomId(emptyRoomId));
+    }
+
     private RoomId AddRoom(string roomNumber)
     {
         var room = new Room(RoomId.New(), new RoomNumber(roomNumber));

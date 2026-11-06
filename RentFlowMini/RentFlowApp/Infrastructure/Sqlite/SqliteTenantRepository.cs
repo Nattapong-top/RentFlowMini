@@ -69,7 +69,14 @@ public sealed class SqliteTenantRepository : ITenantRepository
 
     public bool ExistsByRoomId(RoomId roomId)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(roomId);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT EXISTS (SELECT 1 FROM Tenants WHERE RoomId = $roomId);";
+        command.Parameters.AddWithValue("$roomId", roomId.Value.ToString());
+
+        return (long)command.ExecuteScalar()! == 1;
     }
 
     public IReadOnlyList<Tenant> GetAll()
