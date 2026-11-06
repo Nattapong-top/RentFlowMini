@@ -290,7 +290,8 @@ public class ReportTabControl : BaseTabControl
         }
 
         var totalRow = _yearlyGrid.Rows[_yearlyGrid.Rows.Count - 1];
-        totalRow.DefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
+        // ใช้ Font เดียวกับหัวตาราง เพราะเมธอดนี้ถูกเรียกซ้ำ ถ้าสร้างใหม่ทุกครั้งจะไม่ได้คืนทรัพยากร
+        totalRow.DefaultCellStyle.Font = _yearlyGrid.ColumnHeadersDefaultCellStyle.Font;
         totalRow.DefaultCellStyle.BackColor = Color.Gainsboro;
         _yearlyGrid.ClearSelection();
     }

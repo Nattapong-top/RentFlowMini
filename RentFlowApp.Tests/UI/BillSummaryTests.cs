@@ -1,4 +1,5 @@
 using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Domain.ValueObjects;
@@ -138,6 +139,76 @@ public class BillSummaryTests
 
             Assert.False(bill.IsCableTvExempt);
             Assert.Equal(0m, bill.CableTv.Amount);
+        });
+    }
+
+    [Fact]
+    public void Messages_ShowPeriodInBuddhistYear_WhenLoadedCreatedOpenedAndEdited()
+    {
+        RunInSta(() =>
+        {
+            var period = BillingPeriod.Create(DateTime.Now.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            string thaiPeriod = ThaiCalendar.FormatPeriod(period);
+            var rooms = new InMemoryRoomRepository();
+            var room = new CreateRoomService(rooms).Create("101", 3000m, false);
+            var meters = new InMemoryMonthlyMeterReadingRepository();
+            new SaveMonthlyMeterReadingService(meters).Save(
+                room.Id,
+                period,
+                MeterReading.Create(0m),
+                MeterReading.Create(10m),
+                MeterReading.Create(0m),
+                MeterReading.Create(10m));
+            var bills = new InMemoryBillRepository();
+            using var form = new Form();
+            var tab = new MonthlyBillTabControl(
+                new CreateMonthlyBillService(bills),
+                rooms,
+                monthlyMeterReadingRepository: meters,
+                billRepository: bills);
+            form.Controls.Add(tab);
+            form.Show();
+            var button = Find<Button>(tab, "CreateBillButton");
+            var message = Find<Label>(tab, "BillMessageLabel");
+
+            Assert.Equal($"โหลดข้อมูลมิเตอร์รอบบิล {thaiPeriod} เรียบร้อย", message.Text);
+
+            button.PerformClick();
+            Assert.Equal($"สร้างบิลสำหรับห้อง 101 รอบ {thaiPeriod} สำเร็จเรียบร้อย", message.Text);
+
+            DoubleClickRow(Find<DataGridView>(tab, "BillGrid"), 0);
+            Assert.Equal($"แก้ไขบิลห้อง 101 รอบ {thaiPeriod}: แก้ได้เฉพาะค่าจอดรถและ Cable TV", message.Text);
+
+            button.PerformClick();
+            Assert.Equal($"บันทึกการแก้ไขบิลห้อง 101 รอบ {thaiPeriod} สำเร็จเรียบร้อย", message.Text);
+        });
+    }
+
+    [Fact]
+    public void BillGrid_SortsRoomsByNumberWithinTheSameDueDate()
+    {
+        RunInSta(() =>
+        {
+            var period = BillingPeriod.Create(DateTime.Now.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            var rooms = new InMemoryRoomRepository();
+            var bills = new InMemoryBillRepository();
+            var meter = MeterReading.Create(100m);
+            foreach (string number in new[] { "101", "99" })
+            {
+                var room = new CreateRoomService(rooms).Create(number, 3000m, false);
+                new CreateMonthlyBillService(bills).Create(new CreateMonthlyBillRequest(
+                    room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+            }
+
+            using var form = new Form();
+            var tab = new MonthlyBillTabControl(new CreateMonthlyBillService(bills), rooms, billRepository: bills);
+            form.Controls.Add(tab);
+            form.Show();
+
+            var shownRooms = Find<DataGridView>(tab, "BillGrid").Rows.Cast<DataGridViewRow>()
+                .Select(row => row.Cells["RoomNumber"].Value?.ToString());
+
+            Assert.Equal(["99", "101"], shownRooms);
         });
     }
 

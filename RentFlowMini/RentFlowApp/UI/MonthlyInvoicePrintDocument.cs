@@ -8,8 +8,6 @@ public sealed class MonthlyInvoicePrintDocument : PrintDocument
     public const int InvoicesPerPage = 3;
 
     // หน่วยของ PrintDocument คือ 1/100 นิ้ว
-    private const int A4Width = 827;
-    private const int A4Height = 1169;
     private const int PageMargin = 30;
     private const int SlotPadding = 14;
     private const int InfoBoxWidth = 235;
@@ -37,7 +35,7 @@ public sealed class MonthlyInvoicePrintDocument : PrintDocument
     {
         base.OnBeginPrint(e);
         _nextInvoiceIndex = 0;
-        DefaultPageSettings.PaperSize = FindA4PaperSize();
+        DefaultPageSettings.PaperSize = ReportPdfExporter.FindA4PaperSize(PrinterSettings);
     }
 
     protected override void OnPrintPage(PrintPageEventArgs e)
@@ -69,19 +67,6 @@ public sealed class MonthlyInvoicePrintDocument : PrintDocument
         }
 
         e.HasMorePages = _nextInvoiceIndex < Invoices.Count;
-    }
-
-    private PaperSize FindA4PaperSize()
-    {
-        foreach (PaperSize paperSize in PrinterSettings.PaperSizes)
-        {
-            if (paperSize.Kind == PaperKind.A4)
-            {
-                return paperSize;
-            }
-        }
-
-        return new PaperSize("A4", A4Width, A4Height);
     }
 
     private static void DrawInvoice(Graphics graphics, MonthlyInvoice invoice, Rectangle slot)

@@ -1,4 +1,5 @@
-﻿using RentFlowApp.Domain.ValueObjects;
+﻿using RentFlowApp.Application.Reports;
+using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Forms;
 
@@ -60,10 +61,9 @@ public sealed class BillingPeriodSelector : UserControl
     private void PopulateMonths()
     {
         _monthComboBox.Items.Clear();
-        string[] months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-        for (int i = 0; i < months.Length; i++)
+        for (int i = 0; i < ThaiCalendar.MonthNames.Count; i++)
         {
-            _monthComboBox.Items.Add(new MonthItem(i + 1, months[i]));
+            _monthComboBox.Items.Add(new MonthItem(i + 1, ThaiCalendar.MonthNames[i]));
         }
 
         int currentMonth = DateTime.Now.Month;
@@ -97,27 +97,31 @@ public sealed class BillingPeriodSelector : UserControl
     public void SetBillingPeriod(BillingPeriod period)
     {
         if (period == null) return;
-        var parts = period.Value.Split('-');
-        if (parts.Length == 2 && int.TryParse(parts[0], out var gYear) && int.TryParse(parts[1], out var mNum))
-        {
-            int thaiYear = gYear + 543;
-            foreach (var y in _yearComboBox.Items)
-            {
-                if (y is int ty && ty == thaiYear)
-                {
-                    _yearComboBox.SelectedItem = ty;
-                    break;
-                }
-            }
 
-            foreach (MonthItem m in _monthComboBox.Items)
+        int thaiYear = period.Year + 543;
+        AddYearIfMissing(thaiYear);
+        _yearComboBox.SelectedItem = thaiYear;
+
+        foreach (MonthItem m in _monthComboBox.Items)
+        {
+            if (m.MonthNumber == period.Month)
             {
-                if (m.MonthNumber == mNum)
-                {
-                    _monthComboBox.SelectedItem = m;
-                    break;
-                }
+                _monthComboBox.SelectedItem = m;
+                break;
             }
         }
+    }
+
+    // บิลค้างเก่าอาจอยู่นอกช่วงปีที่แสดง ถ้าไม่เพิ่มปีนั้น เดือนจะเปลี่ยนแต่ปีไม่เปลี่ยน รอบบิลจึงผิดโดยไม่มีการเตือน
+    private void AddYearIfMissing(int thaiYear)
+    {
+        var years = _yearComboBox.Items.Cast<int>().ToList();
+        if (years.Contains(thaiYear))
+        {
+            return;
+        }
+
+        int position = years.Count(year => year < thaiYear);
+        _yearComboBox.Items.Insert(position, thaiYear);
     }
 }

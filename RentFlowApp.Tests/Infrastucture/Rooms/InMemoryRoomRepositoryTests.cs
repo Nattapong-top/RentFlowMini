@@ -157,6 +157,19 @@ public class InMemoryRoomRepositoryTests
     }
 
     [Fact]
+    public void GetAll_SortsShorterRoomNumbersFirst()
+    {
+        var repository = new InMemoryRoomRepository();
+        repository.Add(new Room(RoomId.New(), new RoomNumber("101")));
+        repository.Add(new Room(RoomId.New(), new RoomNumber("99")));
+
+        var rooms = repository.GetAll();
+
+        Assert.Equal("99", rooms[0].RoomNumber.Value);
+        Assert.Equal("101", rooms[1].RoomNumber.Value);
+    }
+
+    [Fact]
     public void GetAll_ReturnsRoomsWithPersistedValues()
     {
         var repository = new InMemoryRoomRepository();
