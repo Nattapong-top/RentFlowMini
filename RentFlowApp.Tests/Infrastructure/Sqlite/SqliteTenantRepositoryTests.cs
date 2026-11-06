@@ -100,6 +100,35 @@ public sealed class SqliteTenantRepositoryTests : IDisposable
         Assert.Equal("2026-01-15", command.ExecuteScalar());
     }
 
+    [Fact]
+    public void GetAll_WithOnlyRequiredValues_ReturnsEmptyOptionalValues()
+    {
+        new SqliteTenantRepository(_database).Add(new Tenant(TenantId.New(), "Anna", "Example"));
+
+        var saved = Assert.Single(new SqliteTenantRepository(_database).GetAll());
+
+        Assert.Null(saved.PhoneNumber);
+        Assert.Null(saved.RoomId);
+        Assert.Null(saved.MoveInDate);
+        Assert.Null(saved.SecurityDeposit);
+        Assert.Null(saved.MovedOutOn);
+        Assert.Null(saved.MovedOutFromRoomId);
+    }
+
+    [Fact]
+    public void GetAll_WithZeroDeposit_KeepsZero()
+    {
+        new SqliteTenantRepository(_database).Add(new Tenant(
+            TenantId.New(),
+            "Anna",
+            "Example",
+            securityDeposit: 0m));
+
+        var saved = Assert.Single(new SqliteTenantRepository(_database).GetAll());
+
+        Assert.Equal(0m, saved.SecurityDeposit);
+    }
+
     private RoomId AddRoom(string roomNumber)
     {
         var room = new Room(RoomId.New(), new RoomNumber(roomNumber));
