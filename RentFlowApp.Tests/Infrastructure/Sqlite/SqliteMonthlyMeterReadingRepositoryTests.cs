@@ -79,6 +79,26 @@ public sealed class SqliteMonthlyMeterReadingRepositoryTests : IDisposable
         Assert.Equal("มีข้อมูลมิเตอร์ของห้องและรอบบิลนี้อยู่แล้ว", exception.Message);
     }
 
+    [Fact]
+    public void GetAll_ReturnsEveryRoomAndPeriod()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+        var roomId = AddRoom("101");
+        var otherRoomId = AddRoom("102");
+        repository.Add(CreateReading(roomId, October));
+        repository.Add(CreateReading(roomId, November));
+        repository.Add(CreateReading(otherRoomId, October));
+
+        var saved = repository.GetAll()
+            .Select(reading => (reading.RoomId, reading.BillingPeriod))
+            .ToList();
+
+        Assert.Equal(3, saved.Count);
+        Assert.Contains((roomId, October), saved);
+        Assert.Contains((roomId, November), saved);
+        Assert.Contains((otherRoomId, October), saved);
+    }
+
     private static MonthlyMeterReading CreateReading(
         RoomId roomId,
         BillingPeriod billingPeriod,

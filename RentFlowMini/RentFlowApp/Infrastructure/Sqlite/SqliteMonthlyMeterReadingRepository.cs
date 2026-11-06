@@ -83,7 +83,18 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
 
     public IEnumerable<MonthlyMeterReading> GetAll()
     {
-        throw new NotImplementedException();
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"{SelectColumns};";
+
+        var readings = new List<MonthlyMeterReading>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            readings.Add(ReadReading(reader));
+        }
+
+        return readings.AsReadOnly();
     }
 
     private static void AddReadingParameters(SqliteCommand command, MonthlyMeterReading reading)
