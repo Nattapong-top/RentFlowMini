@@ -5,6 +5,8 @@ namespace RentFlowApp.Tests.Infrastructure.Sqlite;
 
 public sealed class SqliteDatabaseTests : IDisposable
 {
+    private const int SqliteForeignKeyViolation = 787;
+
     private readonly string _folder =
         Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "RentFlowTests", Guid.NewGuid().ToString())).FullName;
 
@@ -56,6 +58,26 @@ public sealed class SqliteDatabaseTests : IDisposable
         new SqliteDatabase(path).Initialize();
 
         Assert.True(File.Exists(path));
+    }
+
+    [Fact]
+    public void OpenConnection_RejectsReferenceToMissingRoom()
+    {
+        var database = new SqliteDatabase(DatabasePath);
+        database.Initialize();
+
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO MonthlyMeterReadings (
+                RoomId, BillingPeriod,
+                PreviousWaterMeter, CurrentWaterMeter,
+                PreviousElectricityMeter, CurrentElectricityMeter)
+            VALUES ('missing-room', '2026-11', '0', '10', '0', '10');
+            """;
+
+        var exception = Assert.Throws<SqliteException>(() => command.ExecuteNonQuery());
+        Assert.Equal(SqliteForeignKeyViolation, exception.SqliteExtendedErrorCode);
     }
 
     private void AddRoom(string roomNumber)
