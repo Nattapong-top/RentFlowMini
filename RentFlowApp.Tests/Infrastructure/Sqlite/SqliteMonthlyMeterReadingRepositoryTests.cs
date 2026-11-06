@@ -66,6 +66,19 @@ public sealed class SqliteMonthlyMeterReadingRepositoryTests : IDisposable
         Assert.Null(repository.Get(otherRoomId, October));
     }
 
+    [Fact]
+    public void Add_WhenRoomAndPeriodAlreadyExist_ThrowsThaiMessage()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+        var roomId = AddRoom("101");
+        repository.Add(CreateReading(roomId, October));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(CreateReading(roomId, October)));
+
+        Assert.Equal("มีข้อมูลมิเตอร์ของห้องและรอบบิลนี้อยู่แล้ว", exception.Message);
+    }
+
     private static MonthlyMeterReading CreateReading(
         RoomId roomId,
         BillingPeriod billingPeriod,

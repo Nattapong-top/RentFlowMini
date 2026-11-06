@@ -8,6 +8,8 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 
 public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRepository
 {
+    private const int SqlitePrimaryKeyViolation = 1555;
+
     private const string InsertSql = """
         INSERT INTO MonthlyMeterReadings (
             RoomId, BillingPeriod,
@@ -43,7 +45,14 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
         command.CommandText = $"{InsertSql};";
         AddReadingParameters(command, reading);
 
-        command.ExecuteNonQuery();
+        try
+        {
+            command.ExecuteNonQuery();
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqlitePrimaryKeyViolation)
+        {
+            throw new InvalidOperationException("มีข้อมูลมิเตอร์ของห้องและรอบบิลนี้อยู่แล้ว", ex);
+        }
     }
 
     public void Update(MonthlyMeterReading reading)
