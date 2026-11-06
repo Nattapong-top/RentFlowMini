@@ -8,6 +8,11 @@ public sealed class SqliteDatabaseTests : IDisposable
     private const int SqliteForeignKeyViolation = 787;
     private const int FutureSchemaVersion = 999;
 
+    // คำสั่งแรกสำเร็จแล้วคำสั่งที่สองพัง เพื่อตรวจว่าคำสั่งแรกถูกยกเลิกด้วย
+    private static readonly SchemaUpdate FailingUpdate = new(
+        2,
+        "CREATE TABLE AddedByFailingUpdate (Id TEXT NOT NULL); INSERT INTO TableThatDoesNotExist VALUES (1);");
+
     private readonly string _folder =
         Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "RentFlowTests", Guid.NewGuid().ToString())).FullName;
 
@@ -98,6 +103,106 @@ public sealed class SqliteDatabaseTests : IDisposable
             exception.Message);
         SqliteConnection.ClearAllPools();
         Assert.Equal(fileBefore, File.ReadAllBytes(DatabasePath));
+    }
+
+    [Fact]
+    public void Initialize_OnOlderSchemaVersion_AppliesUpdateAndKeepsData()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+        AddRoom("101");
+        var database = new SqliteDatabase(
+            DatabasePath,
+            [new SchemaUpdate(2, "ALTER TABLE Rooms ADD COLUMN Note TEXT;")]);
+
+        database.Initialize();
+
+        using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT RoomNumber, Note FROM Rooms;";
+
+        Assert.Equal("101", command.ExecuteScalar());
+        Assert.Equal(2L, ReadSchemaVersion(connection));
+    }
+
+    [Fact]
+    public void Initialize_WhenUpdateFails_LeavesDatabaseAsBeforeUpdate()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+        AddRoom("101");
+        var database = new SqliteDatabase(DatabasePath, [FailingUpdate]);
+
+        Assert.Throws<SqliteException>(database.Initialize);
+
+        using var connection = new SqliteConnection($"Data Source={DatabasePath}");
+        connection.Open();
+
+        Assert.Equal(1L, ReadSchemaVersion(connection));
+        Assert.DoesNotContain("AddedByFailingUpdate", ReadTableNames(connection));
+        Assert.Equal("101", ReadFirstRoomNumber(connection));
+    }
+
+    [Fact]
+    public void Initialize_WhenUpdateFails_KeepsBackup()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+        var database = new SqliteDatabase(DatabasePath, [FailingUpdate]);
+
+        Assert.Throws<SqliteException>(database.Initialize);
+
+        Assert.Single(FindBackups());
+    }
+
+    [Fact]
+    public void Initialize_BeforeUpdating_BacksUpDatabase()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+        AddRoom("101");
+        var database = new SqliteDatabase(
+            DatabasePath,
+            [new SchemaUpdate(2, "ALTER TABLE Rooms ADD COLUMN Note TEXT;")]);
+
+        database.Initialize();
+
+        using var backup = new SqliteConnection($"Data Source={Assert.Single(FindBackups())}");
+        backup.Open();
+
+        Assert.Equal(1L, ReadSchemaVersion(backup));
+        Assert.Equal("101", ReadFirstRoomNumber(backup));
+    }
+
+    [Fact]
+    public void Initialize_OnNewFile_DoesNotCreateBackup()
+    {
+        new SqliteDatabase(DatabasePath).Initialize();
+
+        Assert.Empty(FindBackups());
+    }
+
+    [Fact]
+    public void Initialize_WhenAlreadyUpToDate_DoesNotCreateBackup()
+    {
+        var database = new SqliteDatabase(DatabasePath);
+        database.Initialize();
+
+        database.Initialize();
+
+        Assert.Empty(FindBackups());
+    }
+
+    private string[] FindBackups()
+    {
+        string folder = Path.Combine(_folder, "Backups");
+
+        return Directory.Exists(folder) ? Directory.GetFiles(folder) : [];
+    }
+
+    private static string? ReadFirstRoomNumber(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT RoomNumber FROM Rooms;";
+
+        return (string?)command.ExecuteScalar();
     }
 
     private void SetSchemaVersion(int version)
