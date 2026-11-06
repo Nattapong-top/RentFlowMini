@@ -99,6 +99,34 @@ public sealed class SqliteMonthlyMeterReadingRepositoryTests : IDisposable
         Assert.Contains((otherRoomId, October), saved);
     }
 
+    [Fact]
+    public void Update_ReplacesOnlyThatRoomAndPeriod()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+        var roomId = AddRoom("101");
+        var otherRoomId = AddRoom("102");
+        repository.Add(CreateReading(roomId, October));
+        repository.Add(CreateReading(roomId, November));
+        repository.Add(CreateReading(otherRoomId, October));
+
+        repository.Update(CreateReading(
+            roomId,
+            October,
+            previousWater: 110m,
+            currentWater: 130.5m,
+            previousElectricity: 1005m,
+            currentElectricity: 1020.5m));
+
+        var saved = repository.Get(roomId, October)!;
+        Assert.Equal(110m, saved.PreviousWaterMeter.Value);
+        Assert.Equal(130.5m, saved.CurrentWaterMeter.Value);
+        Assert.Equal(1005m, saved.PreviousElectricityMeter.Value);
+        Assert.Equal(1020.5m, saved.CurrentElectricityMeter.Value);
+        Assert.Equal(125m, repository.Get(roomId, November)!.CurrentWaterMeter.Value);
+        Assert.Equal(125m, repository.Get(otherRoomId, October)!.CurrentWaterMeter.Value);
+        Assert.Equal(3, repository.GetAll().Count());
+    }
+
     private static MonthlyMeterReading CreateReading(
         RoomId roomId,
         BillingPeriod billingPeriod,

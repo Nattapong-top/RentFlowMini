@@ -57,7 +57,21 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
 
     public void Update(MonthlyMeterReading reading)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(reading);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        // ถ้ายังไม่มีรายการจะเพิ่มให้ ตามพฤติกรรมเดิมของ InMemoryMonthlyMeterReadingRepository
+        command.CommandText = $"""
+            {InsertSql}
+            ON CONFLICT (RoomId, BillingPeriod) DO UPDATE SET
+                PreviousWaterMeter = excluded.PreviousWaterMeter,
+                CurrentWaterMeter = excluded.CurrentWaterMeter,
+                PreviousElectricityMeter = excluded.PreviousElectricityMeter,
+                CurrentElectricityMeter = excluded.CurrentElectricityMeter;
+            """;
+        AddReadingParameters(command, reading);
+        command.ExecuteNonQuery();
     }
 
     public MonthlyMeterReading? Get(RoomId roomId, BillingPeriod billingPeriod)
