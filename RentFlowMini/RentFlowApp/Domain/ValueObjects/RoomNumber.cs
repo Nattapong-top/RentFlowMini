@@ -3,6 +3,12 @@ namespace RentFlowApp.Domain.ValueObjects;
 
 public sealed class RoomNumber
 {
+    // เรียงตามความยาวก่อน เพื่อให้ห้อง 99 มาก่อน 101 ซึ่งการเรียงแบบตัวอักษรทำไม่ได้
+    public static IComparer<string> DisplayOrder { get; } = Comparer<string>.Create((left, right) =>
+        left.Length != right.Length
+            ? left.Length.CompareTo(right.Length)
+            : string.CompareOrdinal(left, right));
+
     public string Value { get; }
 
     public RoomNumber(string value)

@@ -337,7 +337,7 @@ public class MeterReadingTabControl : BaseTabControl
         var rooms = _roomRepository.GetAll().ToDictionary(r => r.Id, r => r.RoomNumber.Value);
 
         _meterGrid.DataSource = readings
-            .OrderBy(r => rooms.TryGetValue(r.RoomId, out var num) ? num : "")
+            .OrderBy(r => rooms.TryGetValue(r.RoomId, out var num) ? num : "", RoomNumber.DisplayOrder)
             .Select((reading, index) =>
             {
                 var roomNum = rooms.TryGetValue(reading.RoomId, out var num) ? num : "-";

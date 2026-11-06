@@ -1151,7 +1151,7 @@ public class MonthlyBillTabControl : BaseTabControl
         // เรียงตามวันครบกำหนดก่อน เพื่อให้มุมมองข้ามเดือนเห็นบิลที่ค้างนานที่สุดเป็นแถวแรก
         _billGrid.DataSource = bills
             .OrderBy(b => b.DueDate)
-            .ThenBy(b => rooms.TryGetValue(b.RoomId, out var num) ? num : "")
+            .ThenBy(b => rooms.TryGetValue(b.RoomId, out var num) ? num : "", RoomNumber.DisplayOrder)
             .Select((bill, index) =>
             {
                 var roomNum = rooms.TryGetValue(bill.RoomId, out var num) ? num : "-";

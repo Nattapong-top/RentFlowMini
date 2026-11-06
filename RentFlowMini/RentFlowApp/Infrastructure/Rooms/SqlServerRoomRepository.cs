@@ -77,8 +77,7 @@ public sealed class SqlServerRoomRepository : IRoomRepository
     {
         const string sql = """
             SELECT Id, RoomNumber
-            FROM dbo.Rooms
-            ORDER BY RoomNumber;
+            FROM dbo.Rooms;
             """;
 
         var rooms = new List<Room>();
@@ -98,6 +97,9 @@ public sealed class SqlServerRoomRepository : IRoomRepository
             rooms.Add(new Room(id, roomNumber));
         }
 
-        return rooms.AsReadOnly();
+        return rooms
+            .OrderBy(room => room.RoomNumber.Value, RoomNumber.DisplayOrder)
+            .ToList()
+            .AsReadOnly();
     }
 }

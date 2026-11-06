@@ -34,7 +34,7 @@ public sealed class InMemoryRoomRepository : IRoomEditor
     public IReadOnlyList<Room> GetAll()
     {
         return _rooms
-            .OrderBy(room => room.RoomNumber.Value)
+            .OrderBy(room => room.RoomNumber.Value, RoomNumber.DisplayOrder)
             .Select(room => new Room(
                 RoomId.From(room.Id.Value),
                 new RoomNumber(room.RoomNumber.Value),

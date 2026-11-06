@@ -142,6 +142,34 @@ public class BillSummaryTests
     }
 
     [Fact]
+    public void BillGrid_SortsRoomsByNumberWithinTheSameDueDate()
+    {
+        RunInSta(() =>
+        {
+            var period = BillingPeriod.Create(DateTime.Now.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            var rooms = new InMemoryRoomRepository();
+            var bills = new InMemoryBillRepository();
+            var meter = MeterReading.Create(100m);
+            foreach (string number in new[] { "101", "99" })
+            {
+                var room = new CreateRoomService(rooms).Create(number, 3000m, false);
+                new CreateMonthlyBillService(bills).Create(new CreateMonthlyBillRequest(
+                    room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+            }
+
+            using var form = new Form();
+            var tab = new MonthlyBillTabControl(new CreateMonthlyBillService(bills), rooms, billRepository: bills);
+            form.Controls.Add(tab);
+            form.Show();
+
+            var shownRooms = Find<DataGridView>(tab, "BillGrid").Rows.Cast<DataGridViewRow>()
+                .Select(row => row.Cells["RoomNumber"].Value?.ToString());
+
+            Assert.Equal(["99", "101"], shownRooms);
+        });
+    }
+
+    [Fact]
     public void ExemptBill_ShowsZeroCableTvAmount_WhenCreatedOpenedAndEdited()
     {
         RunInSta(() =>
