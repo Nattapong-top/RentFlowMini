@@ -16,6 +16,8 @@ public sealed class SqliteDatabase
 
     public void Initialize()
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(_filePath))!);
+
         using var connection = new SqliteConnection(
             new SqliteConnectionStringBuilder { DataSource = _filePath }.ToString());
         connection.Open();

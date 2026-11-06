@@ -48,6 +48,16 @@ public sealed class SqliteDatabaseTests : IDisposable
         Assert.Equal("101", command.ExecuteScalar());
     }
 
+    [Fact]
+    public void Initialize_WhenFolderDoesNotExist_CreatesFolderAndDatabase()
+    {
+        string path = Path.Combine(_folder, "RentFlow", "rentflow.db");
+
+        new SqliteDatabase(path).Initialize();
+
+        Assert.True(File.Exists(path));
+    }
+
     private void AddRoom(string roomNumber)
     {
         using var connection = new SqliteConnection($"Data Source={DatabasePath}");
