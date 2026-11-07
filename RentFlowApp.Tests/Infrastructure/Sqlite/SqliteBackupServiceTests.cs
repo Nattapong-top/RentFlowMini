@@ -1,7 +1,10 @@
 using Microsoft.Data.Sqlite;
+using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
+using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Sqlite;
+using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.Infrastructure.Sqlite;
 
@@ -234,6 +237,40 @@ public sealed class SqliteBackupServiceTests : IDisposable
         AssertCurrentDataKept();
     }
 
+    [Fact]
+    public void SettingsTab_ShowsLastBackupTimeAndBacksUpOnClick()
+    {
+        RunInSta(() =>
+        {
+            var storage = SqliteAppStorage.Open(_folder);
+            using var form = CreateForm(storage, CreateService());
+            form.Show();
+            var tabs = form.Controls.OfType<TabControl>().First();
+            var settingsTab = tabs.TabPages[5];
+            tabs.SelectedTab = settingsTab;
+            var lastBackupLabel = (Label)settingsTab.Controls.Find("LastBackupLabel", true)[0];
+            Assert.Equal("ยังไม่มีไฟล์สำรอง", lastBackupLabel.Text);
+
+            ((Button)settingsTab.Controls.Find("BackUpNowButton", true)[0]).PerformClick();
+
+            Assert.True(File.Exists(Path.Combine(BackupFolder, "rentflow-20261107-101530.db")));
+            Assert.Equal("สำรองล่าสุด: 07/11/2569 10:15", lastBackupLabel.Text);
+            Assert.Equal("สำรองข้อมูลเรียบร้อยแล้ว", settingsTab.Controls.Find("SettingsMessageLabel", true)[0].Text);
+        });
+    }
+
+    [Fact]
+    public void SettingsTab_WithoutBackupService_HidesBackupGroup()
+    {
+        RunInSta(() =>
+        {
+            using var form = CreateForm(SqliteAppStorage.Open(_folder), backupService: null);
+            var settingsTab = form.Controls.OfType<TabControl>().First().TabPages[5];
+
+            Assert.Empty(settingsTab.Controls.Find("BackupGroup", true));
+        });
+    }
+
     private SqliteBackupService CreateService()
     {
         return new SqliteBackupService(new SqliteDatabase(DatabasePath), BackupFolder, () => _now);
@@ -271,5 +308,20 @@ public sealed class SqliteBackupServiceTests : IDisposable
         }
 
         File.WriteAllBytes(path, bytes);
+    }
+
+    private static RoomForm CreateForm(SqliteAppStorage storage, SqliteBackupService? backupService)
+    {
+        return new RoomForm(
+            new CreateRoomService(storage.Rooms),
+            storage.Rooms,
+            new CreateMonthlyBillService(storage.Bills),
+            new CreateTenantService(storage.Tenants),
+            storage.Tenants,
+            storage.MeterReadings,
+            storage.Bills,
+            billingSettingsRepository: storage.Settings,
+            invoiceSettingsRepository: storage.Settings,
+            backupService: backupService);
     }
 }

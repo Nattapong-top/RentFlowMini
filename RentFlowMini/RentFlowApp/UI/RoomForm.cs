@@ -2,6 +2,7 @@ using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Infrastructure.Billing;
+using RentFlowApp.Infrastructure.Sqlite;
 using RentFlowApp.Infrastructure.Tenants;
 
 namespace RentFlowApp.Forms;
@@ -25,7 +26,8 @@ public class RoomForm : Form
         IBillRepository? billRepository = null,
         IBillingSettingsRepository? billingSettingsRepository = null,
         UpdateBillingSettingsService? updateBillingSettingsService = null,
-        IInvoiceSettingsRepository? invoiceSettingsRepository = null)
+        IInvoiceSettingsRepository? invoiceSettingsRepository = null,
+        SqliteBackupService? backupService = null)
     {
         ArgumentNullException.ThrowIfNull(createRoomService);
         ArgumentNullException.ThrowIfNull(roomRepository);
@@ -48,7 +50,8 @@ public class RoomForm : Form
         _billingSettingsTabControl = new BillingSettingsTabControl(
             billingSettingsRepo,
             updateBillingSettingsSvc,
-            invoiceSettingsRepo);
+            invoiceSettingsRepo,
+            backupService);
 
         _meterReadingTabControl = new MeterReadingTabControl(
             roomRepository,

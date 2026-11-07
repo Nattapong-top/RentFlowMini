@@ -1,6 +1,9 @@
-﻿﻿using RentFlowApp.Application.Billing;
+﻿using System.Globalization;
+using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Reports;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
+using RentFlowApp.Infrastructure.Sqlite;
 
 namespace RentFlowApp.Forms;
 
@@ -23,10 +26,14 @@ public class BillingSettingsTabControl : BaseTabControl
     private readonly TextBox _bankAccountTextBox = new();
     private readonly Button _saveInvoiceSettingsButton = new();
 
+    private readonly SqliteBackupService? _backupService;
+    private readonly Label _lastBackupLabel = new();
+
     public BillingSettingsTabControl(
         IBillingSettingsRepository settingsRepository,
         UpdateBillingSettingsService updateSettingsService,
-        IInvoiceSettingsRepository invoiceSettingsRepository)
+        IInvoiceSettingsRepository invoiceSettingsRepository,
+        SqliteBackupService? backupService = null)
     {
         ArgumentNullException.ThrowIfNull(settingsRepository);
         ArgumentNullException.ThrowIfNull(updateSettingsService);
@@ -35,11 +42,13 @@ public class BillingSettingsTabControl : BaseTabControl
         _settingsRepository = settingsRepository;
         _updateSettingsService = updateSettingsService;
         _invoiceSettingsRepository = invoiceSettingsRepository;
+        _backupService = backupService;
 
         Name = "BillingSettingsTabControl";
 
         InitializeComponents();
         LoadSettings();
+        ShowLastBackupTime();
     }
 
     private void InitializeComponents()
@@ -53,10 +62,17 @@ public class BillingSettingsTabControl : BaseTabControl
         _messageLabel.TextAlign = ContentAlignment.MiddleLeft;
         _messageLabel.Font = new Font("Segoe UI", 11, FontStyle.Regular);
 
-        var groupsLayout = CreateStandardLayout(2, [330f, 230f]);
+        bool hasBackup = _backupService is not null;
+        var groupsLayout = hasBackup
+            ? CreateStandardLayout(3, [330f, 230f, 150f])
+            : CreateStandardLayout(2, [330f, 230f]);
         groupsLayout.Padding = Padding.Empty;
         groupsLayout.Controls.Add(BuildInputGroup(), 0, 0);
         groupsLayout.Controls.Add(BuildInvoiceSettingsGroup(), 0, 1);
+        if (hasBackup)
+        {
+            groupsLayout.Controls.Add(BuildBackupGroup(), 0, 2);
+        }
 
         // เลื่อนเฉพาะฟอร์มกรอกข้อมูล เพื่อให้ผลการบันทึกยังเห็นอยู่บนจอเล็กแม้เลื่อนลงมากดปุ่มล่างสุด
         var scrollPanel = new Panel
@@ -64,7 +80,7 @@ public class BillingSettingsTabControl : BaseTabControl
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             AutoScroll = true,
-            AutoScrollMinSize = new Size(790, 560)
+            AutoScrollMinSize = new Size(790, hasBackup ? 710 : 560)
         };
         scrollPanel.Controls.Add(groupsLayout);
 
@@ -276,6 +292,146 @@ public class BillingSettingsTabControl : BaseTabControl
         catch (Exception ex)
         {
             ShowError(LogUnexpectedError(ex));
+        }
+    }
+
+    private GroupBox BuildBackupGroup()
+    {
+        var group = new GroupBox
+        {
+            Name = "BackupGroup",
+            Text = "สำรองและกู้คืนข้อมูล",
+            Dock = DockStyle.Fill,
+            Padding = new Padding(12)
+        };
+
+        var panel = new Panel { Dock = DockStyle.Fill };
+
+        _lastBackupLabel.Name = "LastBackupLabel";
+        _lastBackupLabel.SetBounds(12, 12, 740, 25);
+
+        var backUpNowButton = CreateBackupButton("BackUpNowButton", "สำรองตอนนี้", 12);
+        backUpNowButton.Click += BackUpNowButton_Click;
+
+        var restoreButton = CreateBackupButton("RestoreBackupButton", "กู้คืนจากไฟล์สำรอง", 222);
+        restoreButton.Click += RestoreBackupButton_Click;
+
+        var openFolderButton = CreateBackupButton("OpenBackupFolderButton", "เปิดโฟลเดอร์ไฟล์สำรอง", 432);
+        openFolderButton.Click += OpenBackupFolderButton_Click;
+
+        panel.Controls.AddRange([_lastBackupLabel, backUpNowButton, restoreButton, openFolderButton]);
+        group.Controls.Add(panel);
+        return group;
+    }
+
+    private static Button CreateBackupButton(string name, string text, int left)
+    {
+        var button = new Button
+        {
+            Name = name,
+            Text = text,
+            Font = new Font("Segoe UI", 10, FontStyle.Bold)
+        };
+        button.SetBounds(left, 50, 200, 40);
+        return button;
+    }
+
+    private void ShowLastBackupTime()
+    {
+        if (_backupService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _lastBackupLabel.Text = _backupService.LastBackupTime is { } time
+                ? $"สำรองล่าสุด: {ThaiCalendar.FormatDate(time)} {time.ToString("HH:mm", CultureInfo.InvariantCulture)}"
+                : "ยังไม่มีไฟล์สำรอง";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _lastBackupLabel.Text = "ไม่สามารถอ่านรายการไฟล์สำรองได้";
+        }
+    }
+
+    private void BackUpNowButton_Click(object? sender, EventArgs e)
+    {
+        try
+        {
+            _backupService!.BackUpNow();
+
+            _messageLabel.ForeColor = Color.DarkGreen;
+            _messageLabel.Text = "สำรองข้อมูลเรียบร้อยแล้ว";
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowError(ex.Message);
+        }
+
+        ShowLastBackupTime();
+    }
+
+    private void RestoreBackupButton_Click(object? sender, EventArgs e)
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Title = "เลือกไฟล์สำรองที่ต้องการกู้คืน",
+            Filter = "ไฟล์สำรอง RentFlow (*.db)|*.db",
+            InitialDirectory = Directory.Exists(_backupService!.BackupFolder) ? _backupService.BackupFolder : string.Empty
+        };
+
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var answer = MessageBox.Show(
+            $"ต้องการกู้คืนข้อมูลจากไฟล์ {Path.GetFileName(dialog.FileName)} ใช่หรือไม่\n\n" +
+            "ข้อมูลที่บันทึกหลังจากวันที่สำรองไฟล์นี้จะหายไป ระบบจะเก็บสำเนาข้อมูลปัจจุบันไว้ในโฟลเดอร์ไฟล์สำรองก่อน แล้วเปิดโปรแกรมใหม่",
+            "ยืนยันการกู้คืนข้อมูล",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+
+        if (answer != DialogResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            _backupService.RestoreFrom(dialog.FileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowError(ex.Message);
+            return;
+        }
+
+        MessageBox.Show(
+            "กู้คืนข้อมูลเรียบร้อยแล้ว ระบบจะเปิดโปรแกรมใหม่",
+            "RentFlow",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
+        // เปิดใหม่ เพื่อให้ทุกแท็บโหลดข้อมูลจากไฟล์ที่กู้คืน และอัปเดต schema ถ้าไฟล์สำรองเป็นรุ่นเก่า
+        System.Windows.Forms.Application.Restart();
+    }
+
+    private void OpenBackupFolderButton_Click(object? sender, EventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(_backupService!.BackupFolder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = _backupService.BackupFolder,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            ShowError("ไม่สามารถเปิดโฟลเดอร์ไฟล์สำรองได้ กรุณาลองใหม่อีกครั้ง");
         }
     }
 
