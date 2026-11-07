@@ -595,14 +595,28 @@ public class TenantTabControl : BaseTabControl
             $"ยืนยันการย้ายออกของ {item.FullName} (ห้อง {item.RoomNumber}) เมื่อวันที่ {ThaiCalendar.FormatDate(movedOutOn)} ใช่หรือไม่?\n\n" +
             "ห้องจะว่างทันที และยกเลิกการย้ายออกภายหลังไม่ได้";
 
-        var unpaidBills = _billRepository.GetAll()
+        var bills = _billRepository.GetAll();
+        var unpaidBills = bills
             .Where(bill => !bill.IsPaid && bill.Tenant?.TenantId == tenantId)
             .ToList();
 
-        return unpaidBills.Count == 0
-            ? message
-            : $"{message}\n\nผู้เช่ารายนี้ยังค้างชำระ {unpaidBills.Count} บิล รวม {unpaidBills.Sum(bill => bill.Total.Amount):N2} บาท " +
-              "และยังติดตามรับชำระได้ในแท็บสร้างบิล";
+        if (unpaidBills.Count > 0)
+        {
+            message += $"\n\nผู้เช่ารายนี้ยังค้างชำระ {unpaidBills.Count} บิล รวม {unpaidBills.Sum(bill => bill.Total.Amount):N2} บาท " +
+                       "และยังติดตามรับชำระได้ในแท็บสร้างบิล";
+        }
+
+        // เตือนเท่านั้น ไม่บังคับ เพราะบางห้องอาจไม่ต้องเก็บเงินเดือนสุดท้าย
+        // ใช้เดือนของวันที่ย้ายออก ไม่ใช่เดือนที่กดปุ่ม เพราะอาจบันทึกย้อนหลัง
+        var moveOutPeriod = BillingPeriod.Create($"{movedOutOn.Year:D4}-{movedOutOn.Month:D2}");
+        var roomId = _tenantRepository.GetById(tenantId)?.RoomId;
+        if (roomId is not null && !bills.Any(bill => bill.RoomId == roomId && bill.BillingPeriod == moveOutPeriod))
+        {
+            message += $"\n\nห้อง {item.RoomNumber} ยังไม่มีบิลรอบ {ThaiCalendar.FormatPeriod(moveOutPeriod)} " +
+                       "หลังย้ายออกแล้วจะออกบิลรอบนี้ไม่ได้ ถ้าต้องเก็บเงินรอบนี้ กรุณาออกบิลก่อนย้ายออก";
+        }
+
+        return message;
     }
 
     private bool ShowMoveOutConfirmation(string message) =>
