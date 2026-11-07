@@ -190,6 +190,32 @@ public sealed class SqliteBillRepositoryTests : IDisposable
         Assert.Equal("มีบิลของห้องและรอบบิลนี้อยู่แล้ว", exception.Message);
     }
 
+    [Fact]
+    public void Exists_MatchesBothRoomAndPeriod()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var billedRoomId = AddRoom("101");
+        var otherRoomId = AddRoom("102");
+        repository.Add(Bill.Create(billedRoomId, September, RentOnly()));
+
+        Assert.True(repository.Exists(billedRoomId, September));
+        Assert.False(repository.Exists(billedRoomId, BillingPeriod.Create("2026-10")));
+        Assert.False(repository.Exists(otherRoomId, September));
+    }
+
+    [Fact]
+    public void Get_ReturnsRequestedBillOrNull()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var firstBill = Bill.Create(AddRoom("101"), September, RentOnly(), "N001");
+        var secondBill = Bill.Create(AddRoom("102"), September, RentOnly(), "N002");
+        repository.Add(firstBill);
+        repository.Add(secondBill);
+
+        Assert.Equal(secondBill.Id, repository.Get(secondBill.Id)?.Id);
+        Assert.Null(repository.Get(BillId.New()));
+    }
+
     private static BillingCalculationResult RentOnly()
     {
         return new BillingCalculationResult(

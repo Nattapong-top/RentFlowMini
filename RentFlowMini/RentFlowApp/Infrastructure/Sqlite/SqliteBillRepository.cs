@@ -81,7 +81,17 @@ public sealed class SqliteBillRepository : IBillRepository
 
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)
     {
-        throw new NotImplementedException();
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT EXISTS (
+                SELECT 1 FROM Bills
+                WHERE RoomId = $roomId AND BillingPeriod = $billingPeriod);
+            """;
+        command.Parameters.AddWithValue("$roomId", roomId.Value.ToString());
+        command.Parameters.AddWithValue("$billingPeriod", billingPeriod.Value);
+
+        return (long)command.ExecuteScalar()! == 1;
     }
 
     public IReadOnlyCollection<Bill> GetAll()
@@ -102,7 +112,14 @@ public sealed class SqliteBillRepository : IBillRepository
 
     public Bill? Get(BillId id)
     {
-        throw new NotImplementedException();
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"{SelectColumns} WHERE Id = $id;";
+        command.Parameters.AddWithValue("$id", id.Value.ToString());
+
+        using var reader = command.ExecuteReader();
+
+        return reader.Read() ? ReadBill(reader) : null;
     }
 
     private static void AddBillParameters(SqliteCommand command, Bill bill)
