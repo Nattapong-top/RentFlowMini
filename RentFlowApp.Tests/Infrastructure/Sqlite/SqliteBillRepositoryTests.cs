@@ -297,6 +297,43 @@ public sealed class SqliteBillRepositoryTests : IDisposable
         Assert.Equal("ไม่พบบิลที่ต้องการแก้ไข กรุณาเลือกบิลจากตารางอีกครั้ง", exception.Message);
     }
 
+    [Fact]
+    public void Add_WithSameInvoiceNumberInPeriod_ThrowsThaiMessage()
+    {
+        var repository = new SqliteBillRepository(_database);
+        repository.Add(Bill.Create(AddRoom("101"), September, RentOnly(), "N001"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(Bill.Create(AddRoom("102"), September, RentOnly(), "N001")));
+
+        Assert.Equal("เลขที่ใบแจ้งหนี้นี้ถูกใช้แล้ว กรุณาออกบิลใหม่อีกครั้ง", exception.Message);
+    }
+
+    [Fact]
+    public void Add_WithMissingRoom_ThrowsThaiMessage()
+    {
+        var repository = new SqliteBillRepository(_database);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(Bill.Create(RoomId.New(), September, RentOnly())));
+
+        Assert.Equal("ไม่พบห้องพักหรือผู้เช่าของบิลนี้ กรุณาตรวจสอบข้อมูลแล้วลองอีกครั้ง", exception.Message);
+    }
+
+    [Fact]
+    public void GetAll_ReturnsBillsInOrderAdded()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var added = new[] { "101", "102", "103", "104", "105" }
+            .Select((roomNumber, index) => Bill.Create(AddRoom(roomNumber), September, RentOnly(), $"N00{index + 1}"))
+            .ToList();
+        added.ForEach(repository.Add);
+
+        Assert.Equal(
+            added.Select(bill => bill.Id),
+            repository.GetAll().Select(bill => bill.Id));
+    }
+
     private static BillingCalculationResult RentOnly()
     {
         return new BillingCalculationResult(

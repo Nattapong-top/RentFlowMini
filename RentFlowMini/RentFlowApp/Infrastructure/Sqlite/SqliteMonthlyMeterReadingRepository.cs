@@ -9,6 +9,8 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRepository
 {
     private const int SqlitePrimaryKeyViolation = 1555;
+    private const int SqliteForeignKeyViolation = 787;
+    private const string RoomNotFoundMessage = "ไม่พบห้องพักที่เลือก กรุณาเลือกห้องจากรายการอีกครั้ง";
 
     private const string InsertSql = """
         INSERT INTO MonthlyMeterReadings (
@@ -53,6 +55,10 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
         {
             throw new InvalidOperationException("มีข้อมูลมิเตอร์ของห้องและรอบบิลนี้อยู่แล้ว", ex);
         }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteForeignKeyViolation)
+        {
+            throw new InvalidOperationException(RoomNotFoundMessage, ex);
+        }
     }
 
     public void Update(MonthlyMeterReading reading)
@@ -71,7 +77,15 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
                 CurrentElectricityMeter = excluded.CurrentElectricityMeter;
             """;
         AddReadingParameters(command, reading);
-        command.ExecuteNonQuery();
+
+        try
+        {
+            command.ExecuteNonQuery();
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteForeignKeyViolation)
+        {
+            throw new InvalidOperationException(RoomNotFoundMessage, ex);
+        }
     }
 
     public MonthlyMeterReading? Get(RoomId roomId, BillingPeriod billingPeriod)
@@ -99,7 +113,8 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
     {
         using var connection = _database.OpenConnection();
         using var command = connection.CreateCommand();
-        command.CommandText = $"{SelectColumns};";
+        // ระบุลำดับเอง เพราะ SQLite ไม่รับประกันลำดับเมื่อไม่มี ORDER BY
+        command.CommandText = $"{SelectColumns} ORDER BY rowid;";
 
         var readings = new List<MonthlyMeterReading>();
         using var reader = command.ExecuteReader();

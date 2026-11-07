@@ -165,6 +165,42 @@ public sealed class SqliteMonthlyMeterReadingRepositoryTests : IDisposable
         Assert.Equal(1030m, saved.CurrentElectricityMeter.Value);
     }
 
+    [Fact]
+    public void Add_WithMissingRoom_ThrowsThaiMessage()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(CreateReading(RoomId.New(), October)));
+
+        Assert.Equal("ไม่พบห้องพักที่เลือก กรุณาเลือกห้องจากรายการอีกครั้ง", exception.Message);
+    }
+
+    [Fact]
+    public void Update_WithMissingRoom_ThrowsThaiMessage()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Update(CreateReading(RoomId.New(), October)));
+
+        Assert.Equal("ไม่พบห้องพักที่เลือก กรุณาเลือกห้องจากรายการอีกครั้ง", exception.Message);
+    }
+
+    [Fact]
+    public void GetAll_ReturnsReadingsInOrderAdded()
+    {
+        var repository = new SqliteMonthlyMeterReadingRepository(_database);
+        var added = new[] { "101", "102", "103", "104", "105" }
+            .Select(roomNumber => CreateReading(AddRoom(roomNumber), October))
+            .ToList();
+        added.ForEach(repository.Add);
+
+        Assert.Equal(
+            added.Select(reading => reading.RoomId),
+            repository.GetAll().Select(reading => reading.RoomId));
+    }
+
     private static MonthlyMeterReading CreateReading(
         RoomId roomId,
         BillingPeriod billingPeriod,
