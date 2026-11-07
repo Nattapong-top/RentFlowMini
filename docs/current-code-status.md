@@ -78,7 +78,7 @@ RentFlowMini/
 │   ├── Application/       (CreateMonthlyBill, SaveMonthlyMeterReading, UpdateBillingSettings,
 │   │                       CreateRoom, UpdateRoomRent, CreateTenant)
 │   ├── Infrastructure/    (Bill, BillingSettings, MonthlyMeterReading, Tenant repositories)
-│   ├── Infrastucture/     (Room repositories และ SQL Server connection)
+│   ├── Infrastucture/     (Room In-Memory repository)
 │   ├── UI/RoomFormTests.cs
 │   ├── RoomIdTests.cs, RoomNumberTests.cs, RoomTests.cs
 │   └── RentFlowApp.Tests.csproj
@@ -189,23 +189,17 @@ RentFlowMini/
 
 ยังไม่มีระบบสำรองข้อมูลอัตโนมัติ จึงยังไม่ควรใส่ข้อมูลจริงจนกว่าระยะ 8 ของแผนจะเสร็จ
 
-### SQL Server (แอปไม่ได้ใช้ จะลบในระยะ 7 ของแผน)
-
-1. `dbo.Rooms` — `Id`, `RoomNumber` (unique)
-2. `dbo.Bills` — `Id`, `RoomId` (FK), `BillingPeriod` (`YYYY-MM`), `RentAmount`, `WaterAmount`, `ElectricityAmount`, `TotalAmount`; unique `(RoomId, BillingPeriod)`
-3. `dbo.Tenants` — `Id`, `FirstName`, `LastName`, `PhoneNumber`, `RoomId` (FK, unique เมื่อไม่เป็น NULL)
-
-ยังไม่มีตารางสำหรับ billing settings, monthly meter readings, ค่าเช่า/สถานะ Cable TV ของห้อง และยอดจอดรถ/Cable TV/เลขใบแจ้งหนี้ของบิล
+โค้ด สคริปต์ package และเทสต์ของ SQL Server ถูกลบแล้วในระยะ 7 ของแผน
 
 ## 5. การทดสอบและ Build
 
-- `dotnet test` ผ่าน 444 รายการ (ล้มเหลว 0, ข้าม 0) เมื่อ 2026-11-07
+- `dotnet test` ผ่าน 427 รายการ (ล้มเหลว 0, ข้าม 0) เมื่อ 2026-11-07
 - มี unit tests สำหรับ Domain, Application และ In-Memory repository
 - มี integration tests สำหรับ SQLite ซึ่งใช้ไฟล์จริงในโฟลเดอร์ชั่วคราว รวมถึงการกดหน้าจอแล้วเปิดแอปใหม่
 - มี UI tests ของ `RoomForm` 22 รายการ ครอบคลุมแท็บห้องพัก, ผู้เช่า และสร้างบิล (รวมการโหลดมิเตอร์อัตโนมัติ, คำเตือนเมื่อไม่มีมิเตอร์ และการเลื่อนไปห้องถัดไป)
 - มี UI tests เฉพาะของแท็บบันทึกมิเตอร์ใน `MeterTabTests` 4 รายการ
 - ยังไม่มี UI tests เฉพาะสำหรับแท็บตั้งค่าราคากลาง
-- มี integration tests สำหรับ SQL Server (Rooms, Bills, Tenants) ซึ่งต้องมี SQL Server; อ่าน connection string จาก `RENTFLOW_TEST_CONNECTION` หรือใช้ `localhost\SQLEXPRESS` แบบ Windows Authentication เมื่อไม่กำหนด
+- รันเทสต์ได้โดยไม่ต้องติดตั้งฐานข้อมูล
 
 ## 6. GitHub Actions
 
@@ -213,12 +207,9 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 
 1. Checkout repository
 2. ติดตั้ง .NET 10
-3. ติดตั้ง SQL Server 2022 บน runner
-4. สร้างฐานข้อมูล `RentFlowDb`
-5. สร้างตารางจาก `001_CreateRooms.sql`, `002_CreateBills.sql` และ `003_CreateTenants.sql`
-6. Restore, Build แบบ Release และ Run tests
+3. Restore, Build แบบ Release และ Run tests
 
-รหัสผ่าน SQL Server ของ CI อ่านจาก GitHub Actions Secret `RENTFLOWMINI_SECRET` และไม่เก็บค่าไว้ใน workflow
+CI ไม่ต้องติดตั้งฐานข้อมูลและไม่ใช้รหัสผ่าน
 
 ## 7. การเปลี่ยนแปลงล่าสุด (ตั้งแต่ 2026-10-18)
 
@@ -242,6 +233,5 @@ Workflow อยู่ที่ `.github/workflows/dotnet.yml` และทำง
 
 - **ยังไม่มีระบบสำรองข้อมูล:** ถ้าไฟล์ `rentflow.db` เสียหรือเครื่องเสีย จะกู้ข้อมูลคืนไม่ได้จนกว่าระยะ 8 จะเสร็จ
 - **กฎที่ยังไม่บังคับในระดับ service:** `CreateMonthlyBillService` ยังไม่ตรวจว่ามีผู้เช่าหรือมีมิเตอร์ที่บันทึกแล้ว (BR-02, BR-03 ใน [billing-calculation-implementation-plan.md](billing-calculation-implementation-plan.md)); UI แสดงคำเตือนแต่ผู้ใช้ยังพิมพ์ค่ามิเตอร์เองแล้วสร้างบิลได้ และห้องว่างยังปรากฏให้เลือก
-- Integration tests ต้องใช้ SQL Server และฐานข้อมูลที่เตรียมไว้; CI ใช้เวลานานเพราะติดตั้ง SQL Server ใหม่ทุกครั้ง
-- Credential เดิมเคยอยู่ใน Git history และถูกเปลี่ยนแล้ว; workflow ปัจจุบันใช้ GitHub Secret
+- Credential เดิมเคยอยู่ใน Git history และถูกเปลี่ยนแล้ว; workflow ปัจจุบันไม่ใช้รหัสผ่านแล้ว
 - ยังไม่มี license อย่างเป็นทางการ
