@@ -73,7 +73,7 @@ public class BillPaymentTabTests
             var meter = MeterReading.Create(100m);
             var room = _createRoomService.Create(roomNumber, 3000m, true);
             _createBillService.Create(new CreateMonthlyBillRequest(
-                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
         }
 
         public IEnumerable<string?> GridColumn(string columnName) =>

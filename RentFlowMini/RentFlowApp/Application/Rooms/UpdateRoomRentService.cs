@@ -12,7 +12,7 @@ public sealed class UpdateRoomRentService
         _repository = repository;
     }
 
-    public Room Update(RoomId roomId, decimal monthlyRent)
+    public Room Update(RoomId roomId, decimal monthlyRent, bool isCableTvExempt)
     {
         ArgumentNullException.ThrowIfNull(roomId);
 
@@ -20,6 +20,7 @@ public sealed class UpdateRoomRentService
             ?? throw new InvalidOperationException("ไม่พบห้องพักที่ต้องการแก้ไข");
 
         room.ChangeMonthlyRent(Money.Create(monthlyRent));
+        room.ChangeCableTvExemption(isCableTvExempt);
         _repository.Update(room);
 
         return room;

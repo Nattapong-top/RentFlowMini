@@ -18,7 +18,8 @@ public class BillPaymentServiceTests
         var meter = MeterReading.Create(100m);
 
         return new CreateMonthlyBillService(_repository).Create(new CreateMonthlyBillRequest(
-            RoomId.New(), BillingPeriod.Create("2026-09"), 3000m, meter, meter, meter, meter, 19m, 8m));
+            RoomId.New(), BillingPeriod.Create("2026-09"), 3000m, meter, meter, meter, meter, 19m, 8m,
+            Tenant: TestTenants.Snapshot()));
     }
 
     [Fact]

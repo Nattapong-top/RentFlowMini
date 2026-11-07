@@ -227,7 +227,7 @@ public class RoomFormTests
             Assert.Equal("5,000.00", rentBox.Text);
             Assert.True(exemptCheckBox.Checked);
             Assert.True(roomNumberBox.ReadOnly);
-            Assert.False(exemptCheckBox.Enabled);
+            Assert.True(exemptCheckBox.Enabled);
             Assert.False(addButton.Enabled);
             Assert.True(editButton.Enabled);
             Assert.Equal("บันทึกค่าเช่า", editButton.Text);
@@ -292,11 +292,12 @@ public class RoomFormTests
             var createRoomService = new CreateRoomService(roomRepo);
             var createBillService = new CreateMonthlyBillService(billRepo);
 
-            createRoomService.Create("101");
-            createRoomService.Create("102");
+            var room1 = createRoomService.Create("101");
+            var room2 = createRoomService.Create("102");
+            var tenantRepo = TenantsLivingIn(room1.Id, room2.Id);
 
             // Act
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
             var billingTab = form.Controls.OfType<TabControl>().First().TabPages[2];
             var comboBox = billingTab.Controls.Find("BillRoomComboBox", true).First() as ComboBox;
             Assert.NotNull(comboBox);
@@ -319,9 +320,10 @@ public class RoomFormTests
             var createRoomService = new CreateRoomService(roomRepo);
             var createBillService = new CreateMonthlyBillService(billRepo);
 
-            createRoomService.Create("101");
+            var room = createRoomService.Create("101");
+            var tenantRepo = TenantsLivingIn(room.Id);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -371,9 +373,10 @@ public class RoomFormTests
             var createRoomService = new CreateRoomService(roomRepo);
             var createBillService = new CreateMonthlyBillService(billRepo);
 
-            createRoomService.Create("101");
+            var room = createRoomService.Create("101");
+            var tenantRepo = TenantsLivingIn(room.Id);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -574,9 +577,9 @@ public class RoomFormTests
             var roomRepo = new InMemoryRoomRepository();
             var meterRepo = new InMemoryMonthlyMeterReadingRepository();
             var createRoomService = new CreateRoomService(roomRepo);
-            createRoomService.Create("101");
+            var room = createRoomService.Create("101");
 
-            using var form = new RoomForm(createRoomService, roomRepo, null, null, null, meterRepo, null);
+            using var form = new RoomForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -611,7 +614,7 @@ public class RoomFormTests
                 MeterReading.Create(560m));
             meterRepo.Add(reading);
 
-            using var form = new RoomForm(createRoomService, roomRepo, null, null, null, meterRepo, null);
+            using var form = new RoomForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -651,7 +654,7 @@ public class RoomFormTests
             var room1 = createRoomService.Create("101");
             var room2 = createRoomService.Create("102");
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -686,6 +689,17 @@ public class RoomFormTests
         });
     }
 
+    private static InMemoryTenantRepository TenantsLivingIn(params RoomId[] roomIds)
+    {
+        var tenants = new InMemoryTenantRepository();
+        foreach (var roomId in roomIds)
+        {
+            TestTenants.MoveInto(tenants, roomId);
+        }
+
+        return tenants;
+    }
+
     private static void AddMeterReading(
         InMemoryMonthlyMeterReadingRepository meterRepo,
         RoomId roomId,
@@ -709,6 +723,126 @@ public class RoomFormTests
     }
 
     [Fact]
+    public void RoomForm_BillingTab_ListsOnlyRoomsWithTenant()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var tenantRepo = new InMemoryTenantRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var occupiedRoom = createRoomService.Create("101");
+            createRoomService.Create("102");
+            var leftRoom = createRoomService.Create("103");
+            TestTenants.MoveInto(tenantRepo, occupiedRoom.Id);
+            var leavingTenant = TestTenants.MoveInto(tenantRepo, leftRoom.Id);
+            new MoveOutTenantService(tenantRepo).MoveOut(leavingTenant.Id, DateOnly.FromDateTime(DateTime.Now));
+
+            using var form = new RoomForm(
+                createRoomService,
+                roomRepo,
+                new CreateMonthlyBillService(new InMemoryBillRepository()),
+                tenantRepository: tenantRepo);
+            var billingTab = form.Controls.OfType<TabControl>().First().TabPages[2];
+            var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
+
+            Assert.Equal(["101"], comboBox.Items.Cast<object>().Select(item => item.ToString()));
+        });
+    }
+
+    [Fact]
+    public void RoomForm_BillingTab_BillOfRoomThatBecameVacant_CanStillBeOpenedAndEdited()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var tenantRepo = new InMemoryTenantRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createBillService = new CreateMonthlyBillService(billRepo);
+            var period = BillingPeriod.Create($"{DateTime.Now.Year}-10");
+            var room = createRoomService.Create("101", 3000m, true);
+            var tenant = TestTenants.MoveInto(tenantRepo, room.Id);
+            var meter = MeterReading.Create(100m);
+            createBillService.Create(new CreateMonthlyBillRequest(
+                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m,
+                Tenant: BillTenantSnapshot.From(tenant)));
+            new MoveOutTenantService(tenantRepo).MoveOut(tenant.Id, DateOnly.FromDateTime(DateTime.Now));
+
+            using var form = new RoomForm(
+                createRoomService, roomRepo, createBillService, null, tenantRepo, billRepository: billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+            ((BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First()).SetBillingPeriod(period);
+            var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+
+            DoubleClickFirstRow((DataGridView)billingTab.Controls.Find("BillGrid", true).First());
+            Assert.Equal("101", comboBox.SelectedItem?.ToString());
+            Assert.Equal("บันทึกการแก้ไขบิล", createButton.Text);
+
+            ((CheckBox)billingTab.Controls.Find("ChargeMotorcycleCheckBox", true).First()).Checked = true;
+            createButton.PerformClick();
+
+            Assert.True(Assert.Single(billRepo.GetAll()).MotorcycleParking.Amount > 0m);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_WhenCableTvExemptionChanges_NewBillFollowsAndIssuedBillStaysTheSame()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var october = BillingPeriod.Create($"{DateTime.Now.Year}-10");
+            var november = BillingPeriod.Create($"{DateTime.Now.Year}-11");
+            var room = createRoomService.Create("101", 3000m, false);
+            AddMeterReading(meterRepo, room.Id, october);
+            AddMeterReading(meterRepo, room.Id, november);
+
+            using var form = new RoomForm(
+                createRoomService,
+                roomRepo,
+                new CreateMonthlyBillService(billRepo),
+                null,
+                TenantsLivingIn(room.Id),
+                meterRepo,
+                billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var roomTab = tabControl.TabPages[0];
+            var billingTab = tabControl.TabPages[2];
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+
+            tabControl.SelectedTab = billingTab;
+            periodSelector.SetBillingPeriod(october);
+            createButton.PerformClick();
+
+            tabControl.SelectedTab = roomTab;
+            DoubleClickFirstRow((DataGridView)roomTab.Controls.Find("RoomGrid", true).First());
+            ((CheckBox)roomTab.Controls.Find("RoomCableTvExemptCheckBox", true).First()).Checked = true;
+            ((Button)roomTab.Controls.Find("EditRoomRentButton", true).First()).PerformClick();
+
+            tabControl.SelectedTab = billingTab;
+            periodSelector.SetBillingPeriod(november);
+            Assert.True(((CheckBox)billingTab.Controls.Find("IsCableTvExemptCheckBox", true).First()).Checked);
+            createButton.PerformClick();
+
+            var octoberBill = billRepo.GetAll().Single(bill => bill.BillingPeriod == october);
+            var novemberBill = billRepo.GetAll().Single(bill => bill.BillingPeriod == november);
+            Assert.False(octoberBill.IsCableTvExempt);
+            Assert.Equal(60m, octoberBill.CableTv.Amount);
+            Assert.True(novemberBill.IsCableTvExempt);
+            Assert.Equal(0m, novemberBill.CableTv.Amount);
+        });
+    }
+
+    [Fact]
     public void RoomForm_BillingTab_WhenExistingBillIsEdited_UpdatesSameBillWithoutDuplicateError()
     {
         RunInSta(() =>
@@ -724,7 +858,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 3000m, true);
             AddMeterReading(meterRepo, room.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -779,7 +913,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 3000m, true);
             AddMeterReading(meterRepo, room.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -836,7 +970,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room1.Id, period);
             AddMeterReading(meterRepo, room2.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -887,7 +1021,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room1.Id, period);
             AddMeterReading(meterRepo, room2.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, null, meterRepo, billRepo);
+            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
             form.Show();
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];

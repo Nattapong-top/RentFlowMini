@@ -1,4 +1,5 @@
 using RentFlowApp.Application.Billing;
+using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Domain;
@@ -448,6 +449,48 @@ public class TenantTabTests
             Assert.Contains("ค้างชำระ 1 บิล รวม 3,000.00 บาท", Assert.Single(tab.ConfirmMessages));
             Assert.True(tab.Tenants.GetById(tenant.Id)!.IsMovedOut);
             Assert.False(Assert.Single(tab.Bills.GetAll()).IsPaid);
+        });
+    }
+
+    [Fact]
+    public void MoveOut_WhenRoomHasNoBillForMoveOutMonth_WarnsAndStillAllows()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new TenantTab();
+            var tenant = tab.AddTenant("ย้ายออก", "101");
+            var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            var lastMonth = thisMonth.AddMonths(-1);
+            // A bill of the month the user presses the button must not hide the missing bill of the move-out month.
+            tab.AddUnpaidBill(tenant, tenant.RoomId!, thisMonth.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            tab.Find<DateTimePicker>("TenantMoveOutDatePicker").Value = lastMonth.AddDays(27);
+            tab.SelectOnly(0);
+
+            tab.Click("MoveOutTenantButton");
+
+            var lastPeriod = BillingPeriod.Create(lastMonth.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            Assert.Contains(
+                $"ห้อง 101 ยังไม่มีบิลรอบ {ThaiCalendar.FormatPeriod(lastPeriod)}",
+                Assert.Single(tab.ConfirmMessages));
+            Assert.True(tab.Tenants.GetById(tenant.Id)!.IsMovedOut);
+        });
+    }
+
+    [Fact]
+    public void MoveOut_WhenRoomHasBillForMoveOutMonth_DoesNotWarnAboutMissingBill()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new TenantTab();
+            var tenant = tab.AddTenant("ย้ายออก", "101");
+            var lastMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1);
+            tab.AddUnpaidBill(tenant, tenant.RoomId!, lastMonth.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            tab.Find<DateTimePicker>("TenantMoveOutDatePicker").Value = lastMonth.AddDays(27);
+            tab.SelectOnly(0);
+
+            tab.Click("MoveOutTenantButton");
+
+            Assert.DoesNotContain("ยังไม่มีบิลรอบ", Assert.Single(tab.ConfirmMessages));
         });
     }
 

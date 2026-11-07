@@ -8,7 +8,7 @@ namespace RentFlowApp
         public RoomId Id { get; }
         public RoomNumber RoomNumber { get; }
         public Money MonthlyRent { get; private set; }
-        public bool IsCableTvExempt { get; }
+        public bool IsCableTvExempt { get; private set; }
 
         public Room(RoomId id, RoomNumber roomNumber)
             : this(id, roomNumber, Money.Create(0), false)
@@ -35,6 +35,12 @@ namespace RentFlowApp
         {
             ArgumentNullException.ThrowIfNull(monthlyRent);
             MonthlyRent = monthlyRent;
+        }
+
+        // บิลเก็บยอด Cable TV ที่คิดจริงไว้ในตัวเอง การเปลี่ยนตรงนี้จึงมีผลเฉพาะบิลที่ออกใหม่
+        public void ChangeCableTvExemption(bool isCableTvExempt)
+        {
+            IsCableTvExempt = isCableTvExempt;
         }
 
         public bool Equals(Room? other)

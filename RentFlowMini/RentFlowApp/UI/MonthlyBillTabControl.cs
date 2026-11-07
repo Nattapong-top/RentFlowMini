@@ -1086,6 +1086,12 @@ public class MonthlyBillTabControl : BaseTabControl
 
         foreach (var room in rooms)
         {
+            // ห้องว่างออกบิลไม่ได้ แต่ยังต้องแสดงตอนเปิดบิลเก่าของห้องนั้นมาแก้ไข
+            if (!_tenantRepository.ExistsByRoomId(room.Id) && room.Id != forceIncludeRoomId)
+            {
+                continue;
+            }
+
             bool isBilled = createdBills.Contains(room.Id);
             if (isBilled && room.Id != forceIncludeRoomId)
             {

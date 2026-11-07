@@ -71,7 +71,7 @@ public class MonthlyReportExportTests
             var room = new CreateRoomService(_rooms).Create($"{_rooms.GetAll().Count + 101}", rent, true);
             var meter = MeterReading.Create(100m);
             new CreateMonthlyBillService(_bills).Create(new CreateMonthlyBillRequest(
-                room.Id, period, rent, meter, meter, meter, meter, 19m, 8m));
+                room.Id, period, rent, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
         }
 
         public void Dispose() => _form.Dispose();

@@ -132,6 +132,26 @@ public class RoomTabTests
     }
 
     [Fact]
+    public void Editing_SavesCableTvExemptionWithRent()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new RoomTab();
+            DoubleClickRow(tab.Grid, 0);
+
+            Assert.True(tab.Exempt.Enabled);
+            tab.Exempt.Checked = true;
+            tab.Rent.Text = "3500";
+            tab.Edit.PerformClick();
+
+            var room = tab.Rooms.GetAll().Single(item => item.RoomNumber.Value == "101");
+            Assert.True(room.IsCableTvExempt);
+            Assert.Equal(3500m, room.MonthlyRent.Amount);
+            Assert.False(tab.Rooms.GetAll().Single(item => item.RoomNumber.Value == "102").IsCableTvExempt);
+        });
+    }
+
+    [Fact]
     public void CancelButton_IsAvailableOnlyWhileEditing()
     {
         RunInSta(() =>

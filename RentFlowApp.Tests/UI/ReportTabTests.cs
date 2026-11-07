@@ -84,7 +84,7 @@ public class ReportTabTests
             var meter = MeterReading.Create(100m);
             var bill = new CreateMonthlyBillService(_bills).Create(new CreateMonthlyBillRequest(
                 roomId, period, rent, meter, meter, meter, meter, 19m, 8m,
-                Tenant: tenant is null ? null : BillTenantSnapshot.From(tenant)));
+                Tenant: tenant is null ? TestTenants.Snapshot() : BillTenantSnapshot.From(tenant)));
 
             if (paidBy is { } method)
             {
@@ -426,7 +426,7 @@ public class ReportTabTests
             var room = new CreateRoomService(rooms).Create("101", 3000m, true);
             var meter = MeterReading.Create(100m);
             new CreateMonthlyBillService(bills).Create(new CreateMonthlyBillRequest(
-                room.Id, CurrentPeriod, 3000m, meter, meter, meter, meter, 19m, 8m));
+                room.Id, CurrentPeriod, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
 
             tabControl.SelectedTab = reportPage;
 

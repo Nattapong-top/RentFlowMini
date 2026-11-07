@@ -75,6 +75,20 @@ public sealed class SqliteRoomRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void Update_SavesCableTvExemption()
+    {
+        var repository = new SqliteRoomRepository(_database);
+        var room = new Room(RoomId.New(), new RoomNumber("101"), Money.Create(3000m), isCableTvExempt: false);
+        repository.Add(room);
+
+        var editableRoom = repository.GetById(room.Id)!;
+        editableRoom.ChangeCableTvExemption(true);
+        repository.Update(editableRoom);
+
+        Assert.True(new SqliteRoomRepository(_database).GetById(room.Id)!.IsCableTvExempt);
+    }
+
+    [Fact]
     public void GetById_WithUnknownRoom_ReturnsNull()
     {
         var repository = new SqliteRoomRepository(_database);

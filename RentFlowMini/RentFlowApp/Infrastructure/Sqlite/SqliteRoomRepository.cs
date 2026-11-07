@@ -95,9 +95,11 @@ public sealed class SqliteRoomRepository : IRoomEditor
 
         using var connection = _database.OpenConnection();
         using var command = connection.CreateCommand();
-        // แก้เฉพาะค่าเช่า เพราะ Room เปลี่ยนได้แค่ค่านี้
-        command.CommandText = "UPDATE Rooms SET MonthlyRent = $monthlyRent WHERE Id = $id;";
+        // แก้เฉพาะค่าเช่าและสถานะยกเว้น Cable TV เพราะ Room เปลี่ยนได้แค่สองค่านี้
+        command.CommandText =
+            "UPDATE Rooms SET MonthlyRent = $monthlyRent, IsCableTvExempt = $isCableTvExempt WHERE Id = $id;";
         command.Parameters.AddWithValue("$monthlyRent", room.MonthlyRent.Amount.ToString(CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("$isCableTvExempt", room.IsCableTvExempt ? 1 : 0);
         command.Parameters.AddWithValue("$id", room.Id.Value.ToString());
 
         if (command.ExecuteNonQuery() == 0)

@@ -2,6 +2,7 @@ using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
+using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
@@ -40,7 +41,6 @@ public class BillSummaryTests
 
     [Theory]
     [InlineData(true, "ผู้เช่า: ผู้เช่าทดสอบ นามสกุลสมมติ")]
-    [InlineData(false, "ผู้เช่า: ไม่มีข้อมูลผู้เช่า")]
     public void Summary_ShowsSameValues_WhenCreatedOpenedAndEdited(bool hasTenant, string expectedTenant)
     {
         RunInSta(() =>
@@ -102,6 +102,31 @@ public class BillSummaryTests
     }
 
     [Fact]
+    public void Summary_OfOldBillWithoutTenant_ShowsNoTenantText_WhenOpened()
+    {
+        RunInSta(() =>
+        {
+            var rooms = new InMemoryRoomRepository();
+            var room = new CreateRoomService(rooms).Create("101", 3000m, false);
+            var bills = new InMemoryBillRepository();
+            var meter = MeterReading.Create(100m);
+            // Bills saved before tenant names were kept on the bill have no tenant.
+            bills.Add(Bill.Create(
+                room.Id,
+                BillingPeriod.Create(DateTime.Now.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture)),
+                BillingCalculator.Calculate(3000m, meter, meter, meter, meter, 19m, 8m)));
+            using var form = new Form();
+            var tab = new MonthlyBillTabControl(new CreateMonthlyBillService(bills), rooms, billRepository: bills);
+            form.Controls.Add(tab);
+            form.Show();
+
+            DoubleClickRow(Find<DataGridView>(tab, "BillGrid"), 0);
+
+            Assert.Equal("ผู้เช่า: ไม่มีข้อมูลผู้เช่า", Find<Label>(tab, "ResultTenantLabel").Text);
+        });
+    }
+
+    [Fact]
     public void ZeroRateBill_StaysNotExemptAndKeepsAmount_WhenOpenedAndSavedWithoutChanges()
     {
         RunInSta(() =>
@@ -122,7 +147,8 @@ public class BillSummaryTests
                 19m,
                 8m,
                 IsCableTvExempt: false,
-                CableTvRate: 0m));
+                CableTvRate: 0m,
+                Tenant: TestTenants.Snapshot()));
             using var form = new Form();
             var tab = new MonthlyBillTabControl(
                 new CreateMonthlyBillService(bills),
@@ -160,12 +186,15 @@ public class BillSummaryTests
                 MeterReading.Create(0m),
                 MeterReading.Create(10m));
             var bills = new InMemoryBillRepository();
+            var tenants = new InMemoryTenantRepository();
+            TestTenants.MoveInto(tenants, room.Id);
             using var form = new Form();
             var tab = new MonthlyBillTabControl(
                 new CreateMonthlyBillService(bills),
                 rooms,
                 monthlyMeterReadingRepository: meters,
-                billRepository: bills);
+                billRepository: bills,
+                tenantRepository: tenants);
             form.Controls.Add(tab);
             form.Show();
             var button = Find<Button>(tab, "CreateBillButton");
@@ -197,7 +226,7 @@ public class BillSummaryTests
             {
                 var room = new CreateRoomService(rooms).Create(number, 3000m, false);
                 new CreateMonthlyBillService(bills).Create(new CreateMonthlyBillRequest(
-                    room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+                    room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
             }
 
             using var form = new Form();
@@ -228,12 +257,15 @@ public class BillSummaryTests
                 MeterReading.Create(0m),
                 MeterReading.Create(10m));
             var bills = new InMemoryBillRepository();
+            var tenants = new InMemoryTenantRepository();
+            TestTenants.MoveInto(tenants, room.Id);
             using var form = new Form();
             var tab = new MonthlyBillTabControl(
                 new CreateMonthlyBillService(bills),
                 rooms,
                 monthlyMeterReadingRepository: meters,
-                billRepository: bills);
+                billRepository: bills,
+                tenantRepository: tenants);
             form.Controls.Add(tab);
             form.Show();
             var createButton = Find<Button>(tab, "CreateBillButton");

@@ -237,7 +237,8 @@ public sealed class SqliteAppStorageTests : IDisposable
         {
             var period = BillingPeriod.Create("2026-10");
 
-            using (var firstRun = CreateForm(SqliteAppStorage.Open(_folder)))
+            var firstStorage = SqliteAppStorage.Open(_folder);
+            using (var firstRun = CreateForm(firstStorage))
             {
                 firstRun.Show();
                 var tabs = firstRun.Controls.OfType<TabControl>().First();
@@ -246,6 +247,7 @@ public sealed class SqliteAppStorageTests : IDisposable
                 ((TextBox)roomTab.Controls.Find("RoomNumberTextBox", true)[0]).Text = "101";
                 ((TextBox)roomTab.Controls.Find("RoomMonthlyRentTextBox", true)[0]).Text = "3000";
                 ((Button)roomTab.Controls.Find("AddRoomButton", true)[0]).PerformClick();
+                TestTenants.MoveInto(firstStorage.Tenants, Assert.Single(firstStorage.Rooms.GetAll()).Id);
 
                 var billTab = tabs.TabPages[2];
                 tabs.SelectedTab = billTab;

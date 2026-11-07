@@ -32,7 +32,8 @@ public class UpdateBillChargesServiceTests
             chargeCar,
             500m,
             isCableTvExempt,
-            60m));
+            60m,
+            TestTenants.Snapshot()));
     }
 
     [Fact]
