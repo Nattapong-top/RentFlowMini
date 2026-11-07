@@ -113,7 +113,8 @@ public sealed class SqliteMonthlyMeterReadingRepository : IMonthlyMeterReadingRe
     {
         using var connection = _database.OpenConnection();
         using var command = connection.CreateCommand();
-        command.CommandText = $"{SelectColumns};";
+        // ระบุลำดับเอง เพราะ SQLite ไม่รับประกันลำดับเมื่อไม่มี ORDER BY
+        command.CommandText = $"{SelectColumns} ORDER BY rowid;";
 
         var readings = new List<MonthlyMeterReading>();
         using var reader = command.ExecuteReader();

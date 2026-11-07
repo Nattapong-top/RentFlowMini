@@ -320,6 +320,20 @@ public sealed class SqliteBillRepositoryTests : IDisposable
         Assert.Equal("ไม่พบห้องพักหรือผู้เช่าของบิลนี้ กรุณาตรวจสอบข้อมูลแล้วลองอีกครั้ง", exception.Message);
     }
 
+    [Fact]
+    public void GetAll_ReturnsBillsInOrderAdded()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var added = new[] { "101", "102", "103", "104", "105" }
+            .Select((roomNumber, index) => Bill.Create(AddRoom(roomNumber), September, RentOnly(), $"N00{index + 1}"))
+            .ToList();
+        added.ForEach(repository.Add);
+
+        Assert.Equal(
+            added.Select(bill => bill.Id),
+            repository.GetAll().Select(bill => bill.Id));
+    }
+
     private static BillingCalculationResult RentOnly()
     {
         return new BillingCalculationResult(

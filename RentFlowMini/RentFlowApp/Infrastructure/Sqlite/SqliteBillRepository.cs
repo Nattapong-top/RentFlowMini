@@ -136,7 +136,8 @@ public sealed class SqliteBillRepository : IBillRepository
     {
         using var connection = _database.OpenConnection();
         using var command = connection.CreateCommand();
-        command.CommandText = $"{SelectColumns};";
+        // ระบุลำดับเอง เพราะ SQLite ไม่รับประกันลำดับเมื่อไม่มี ORDER BY และหน้าจอแสดงบิลตามลำดับที่ออก
+        command.CommandText = $"{SelectColumns} ORDER BY rowid;";
 
         var bills = new List<Bill>();
         using var reader = command.ExecuteReader();
