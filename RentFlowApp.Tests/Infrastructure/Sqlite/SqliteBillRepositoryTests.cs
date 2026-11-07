@@ -286,6 +286,17 @@ public sealed class SqliteBillRepositoryTests : IDisposable
         Assert.Equal(40m, saved.Electricity.Amount);
     }
 
+    [Fact]
+    public void Update_WithMissingBill_ThrowsThaiMessage()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var missingBill = Bill.Create(AddRoom("101"), September, RentOnly());
+
+        var exception = Assert.Throws<InvalidOperationException>(() => repository.Update(missingBill));
+
+        Assert.Equal("ไม่พบบิลที่ต้องการแก้ไข กรุณาเลือกบิลจากตารางอีกครั้ง", exception.Message);
+    }
+
     private static BillingCalculationResult RentOnly()
     {
         return new BillingCalculationResult(

@@ -101,7 +101,11 @@ public sealed class SqliteBillRepository : IBillRepository
             "$paidOn",
             ToDbValue(bill.Payment?.PaidOn.ToString(DateFormat, CultureInfo.InvariantCulture)));
         command.Parameters.AddWithValue("$paymentMethod", ToDbValue(bill.Payment?.Method.ToString()));
-        command.ExecuteNonQuery();
+
+        if (command.ExecuteNonQuery() == 0)
+        {
+            throw new InvalidOperationException("ไม่พบบิลที่ต้องการแก้ไข กรุณาเลือกบิลจากตารางอีกครั้ง");
+        }
     }
 
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)
