@@ -250,6 +250,42 @@ public sealed class SqliteBillRepositoryTests : IDisposable
         Assert.Null(saved.Payment);
     }
 
+    [Fact]
+    public void Update_AfterChangingCharges_KeepsNewAmountsForNewRepository()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var bill = Bill.Create(
+            AddRoom("101"),
+            September,
+            new BillingCalculationResult(
+                Rent: Money.Create(2800m),
+                Water: Money.Create(150m),
+                Electricity: Money.Create(40m),
+                MotorcycleParking: Money.Create(0m),
+                CarParking: Money.Create(0m),
+                CableTv: Money.Create(100m),
+                Total: Money.Create(3090m)));
+        repository.Add(bill);
+
+        bill.UpdateAdditionalCharges(
+            Money.Create(300m),
+            Money.Create(500m),
+            Money.Create(0m),
+            isCableTvExempt: true);
+        repository.Update(bill);
+
+        var saved = new SqliteBillRepository(_database).Get(bill.Id);
+        Assert.NotNull(saved);
+        Assert.Equal(300m, saved.MotorcycleParking.Amount);
+        Assert.Equal(500m, saved.CarParking.Amount);
+        Assert.Equal(0m, saved.CableTv.Amount);
+        Assert.True(saved.IsCableTvExempt);
+        Assert.Equal(3790m, saved.Total.Amount);
+        Assert.Equal(2800m, saved.Rent.Amount);
+        Assert.Equal(150m, saved.Water.Amount);
+        Assert.Equal(40m, saved.Electricity.Amount);
+    }
+
     private static BillingCalculationResult RentOnly()
     {
         return new BillingCalculationResult(

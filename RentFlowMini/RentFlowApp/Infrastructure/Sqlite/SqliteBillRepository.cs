@@ -82,11 +82,21 @@ public sealed class SqliteBillRepository : IBillRepository
         using var command = connection.CreateCommand();
         command.CommandText = """
             UPDATE Bills
-            SET PaidOn = $paidOn,
+            SET MotorcycleParkingAmount = $motorcycleParking,
+                CarParkingAmount = $carParking,
+                CableTvAmount = $cableTv,
+                TotalAmount = $total,
+                IsCableTvExempt = $isCableTvExempt,
+                PaidOn = $paidOn,
                 PaymentMethod = $paymentMethod
             WHERE Id = $id;
             """;
         command.Parameters.AddWithValue("$id", bill.Id.Value.ToString());
+        command.Parameters.AddWithValue("$motorcycleParking", FormatDecimal(bill.MotorcycleParking.Amount));
+        command.Parameters.AddWithValue("$carParking", FormatDecimal(bill.CarParking.Amount));
+        command.Parameters.AddWithValue("$cableTv", FormatDecimal(bill.CableTv.Amount));
+        command.Parameters.AddWithValue("$total", FormatDecimal(bill.Total.Amount));
+        command.Parameters.AddWithValue("$isCableTvExempt", bill.IsCableTvExempt ? 1 : 0);
         command.Parameters.AddWithValue(
             "$paidOn",
             ToDbValue(bill.Payment?.PaidOn.ToString(DateFormat, CultureInfo.InvariantCulture)));
