@@ -153,7 +153,7 @@ public class TabLayoutTests
         {
             var room = new CreateRoomService(rooms).Create($"{101 + i}", 3000m, false);
             new CreateMonthlyBillService(bills).Create(new CreateMonthlyBillRequest(
-                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
         }
 
         return bills;

@@ -70,7 +70,7 @@ public class MonthlyInvoicePrintingTests
             {
                 var room = createRoomService.Create(roomNumber, 3000m, true);
                 createBillService.Create(new CreateMonthlyBillRequest(
-                    room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+                    room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
             }
 
             var settingsRepo = new InMemoryInvoiceSettingsRepository();

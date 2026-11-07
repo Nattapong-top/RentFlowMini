@@ -21,7 +21,8 @@ public class CreateMonthlyBillServiceTests
             PreviousElectricityMeter: MeterReading.Create(1000m),
             CurrentElectricityMeter: MeterReading.Create(1010m),
             WaterRate: 30m,
-            ElectricityRate: 4m);
+            ElectricityRate: 4m,
+            Tenant: TestTenants.Snapshot());
 
         var bill = service.Create(request);
 
@@ -48,7 +49,8 @@ public class CreateMonthlyBillServiceTests
             PreviousElectricityMeter: MeterReading.Create(1000m),
             CurrentElectricityMeter: MeterReading.Create(1010m),
             WaterRate: 30m,
-            ElectricityRate: 4m));
+            ElectricityRate: 4m,
+            Tenant: TestTenants.Snapshot()));
 
         Assert.NotNull(bill.Meters);
         Assert.Equal(120m, bill.Meters.PreviousWater.Value);
@@ -79,7 +81,8 @@ public class CreateMonthlyBillServiceTests
             ChargeCarParking: true,
             CarParkingRate: 500m,
             IsCableTvExempt: false,
-            CableTvRate: 60m);
+            CableTvRate: 60m,
+            Tenant: TestTenants.Snapshot());
 
         var bill = service.Create(request);
 
@@ -106,7 +109,8 @@ public class CreateMonthlyBillServiceTests
             PreviousElectricityMeter: MeterReading.Create(1000m),
             CurrentElectricityMeter: MeterReading.Create(1010m),
             WaterRate: 30m,
-            ElectricityRate: 4m);
+            ElectricityRate: 4m,
+            Tenant: TestTenants.Snapshot());
 
         service.Create(request);
 
@@ -130,12 +134,12 @@ public class CreateMonthlyBillServiceTests
         var m1 = MeterReading.Create(110m);
 
         var bill1Sep = service.Create(new CreateMonthlyBillRequest(
-            room1, periodSep, 3000m, m0, m1, m0, m1, 19m, 8m));
+            room1, periodSep, 3000m, m0, m1, m0, m1, 19m, 8m, Tenant: TestTenants.Snapshot()));
         var bill2Sep = service.Create(new CreateMonthlyBillRequest(
-            room2, periodSep, 3000m, m0, m1, m0, m1, 19m, 8m));
+            room2, periodSep, 3000m, m0, m1, m0, m1, 19m, 8m, Tenant: TestTenants.Snapshot()));
 
         var bill1Oct = service.Create(new CreateMonthlyBillRequest(
-            room1, periodOct, 3000m, m0, m1, m0, m1, 19m, 8m));
+            room1, periodOct, 3000m, m0, m1, m0, m1, 19m, 8m, Tenant: TestTenants.Snapshot()));
 
         Assert.Equal("N001", bill1Sep.InvoiceNumber);
         Assert.Equal("N002", bill2Sep.InvoiceNumber);

@@ -71,6 +71,7 @@ public class MonthlyInvoiceBuilderTests
     public void Build_ListsParkingAndCableTvOnSeparateLines()
     {
         var room = new CreateRoomService(_rooms).Create("303", 3000m, false);
+        TestTenants.MoveInto(_tenants, room.Id);
         var bill = CreateBill(room.Id);
         bill.UpdateAdditionalCharges(Money.Create(100m), Money.Create(0m), Money.Create(60m));
 
@@ -88,6 +89,7 @@ public class MonthlyInvoiceBuilderTests
     public void Build_ShowsSatangWhenAmountIsNotWholeNumber()
     {
         var room = new CreateRoomService(_rooms).Create("303", 3000m, false);
+        TestTenants.MoveInto(_tenants, room.Id);
         var bill = CreateBill(room.Id, waterRate: 19.5m);
 
         var invoice = CreateBuilder().Build([bill])[0];
@@ -99,6 +101,7 @@ public class MonthlyInvoiceBuilderTests
     public void Build_ShowsPaymentStatusOnlyWhenBillIsPaid()
     {
         var room = new CreateRoomService(_rooms).Create("303", 3000m, false);
+        TestTenants.MoveInto(_tenants, room.Id);
         var bill = CreateBill(room.Id);
 
         Assert.Equal(string.Empty, CreateBuilder().Build([bill])[0].PaymentStatus);
@@ -125,7 +128,12 @@ public class MonthlyInvoiceBuilderTests
     public void Build_WhenRoomHasNoTenant_ShowsPlaceholderName()
     {
         var room = new CreateRoomService(_rooms).Create("303", 3000m, false);
-        var bill = CreateBill(room.Id);
+        // Bills saved before tenant names were kept on the bill have no tenant.
+        var meter = MeterReading.Create(100m);
+        var bill = Bill.Create(
+            room.Id,
+            BillingPeriod.Create("2026-10"),
+            BillingCalculator.Calculate(3000m, meter, meter, meter, meter, 19m, 8m));
 
         Assert.Equal("-", CreateBuilder().Build([bill])[0].TenantName);
     }
@@ -134,6 +142,7 @@ public class MonthlyInvoiceBuilderTests
     public void Build_UsesPropertyDetailsAndPaymentChannelsFromSettings()
     {
         var room = new CreateRoomService(_rooms).Create("303", 3000m, false);
+        TestTenants.MoveInto(_tenants, room.Id);
         var bill = CreateBill(room.Id);
         _settings.Save(InvoiceSettings.Create("หอทดสอบ", "ที่อยู่ทดสอบ", "ธนาคารทดสอบ 000-0-00000-0"));
 

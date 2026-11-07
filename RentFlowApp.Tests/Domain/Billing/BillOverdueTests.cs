@@ -12,7 +12,8 @@ public class BillOverdueTests
         var meter = MeterReading.Create(100m);
 
         return new CreateMonthlyBillService(new InMemoryBillRepository()).Create(new CreateMonthlyBillRequest(
-            RoomId.New(), BillingPeriod.Create("2026-10"), 3000m, meter, meter, meter, meter, 19m, 8m));
+            RoomId.New(), BillingPeriod.Create("2026-10"), 3000m, meter, meter, meter, meter, 19m, 8m,
+            Tenant: TestTenants.Snapshot()));
     }
 
     [Theory]

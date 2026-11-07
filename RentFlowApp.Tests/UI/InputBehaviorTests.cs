@@ -147,7 +147,7 @@ public class InputBehaviorTests
             var period = BillingPeriod.Create($"{DateTime.Now.Year}-10");
             var meter = MeterReading.Create(100m);
             var bill = createBill.Create(new CreateMonthlyBillRequest(
-                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m));
+                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
 
             using var form = new Form();
             var tab = new MonthlyBillTabControl(createBill, rooms, billRepository: bills) { Dock = DockStyle.Fill };

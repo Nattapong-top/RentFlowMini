@@ -5,6 +5,7 @@ using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Rooms;
+using RentFlowApp.Infrastructure.Tenants;
 using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.UI;
@@ -125,12 +126,15 @@ public class ErrorMessageTests
                 MeterReading.Create(0m),
                 MeterReading.Create(10m));
             var bills = new FailingBillRepository();
+            var tenants = new InMemoryTenantRepository();
+            TestTenants.MoveInto(tenants, room.Id);
             using var form = new Form();
             var tab = new MonthlyBillTabControl(
                 new CreateMonthlyBillService(bills),
                 rooms,
                 monthlyMeterReadingRepository: meters,
-                billRepository: bills);
+                billRepository: bills,
+                tenantRepository: tenants);
             form.Controls.Add(tab);
             form.Show();
 
@@ -158,12 +162,15 @@ public class ErrorMessageTests
                 MeterReading.Create(0m),
                 MeterReading.Create(10m));
             var bills = new InMemoryBillRepository();
+            var tenants = new InMemoryTenantRepository();
+            TestTenants.MoveInto(tenants, room.Id);
             using var form = new Form();
             var tab = new MonthlyBillTabControl(
                 new CreateMonthlyBillService(bills),
                 rooms,
                 monthlyMeterReadingRepository: meters,
                 billRepository: bills,
+                tenantRepository: tenants,
                 billingSettingsRepository: new FailingSettingsRepository(new IOException(InternalDetail), null));
             form.Controls.Add(tab);
             form.Show();
