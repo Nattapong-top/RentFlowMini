@@ -82,12 +82,6 @@ public sealed class RoomTabControl : BaseTabControl
         _editRoomRentButton.Enabled = _editingRoomId is not null || _roomGrid.SelectedRows.Count > 0;
     }
 
-    public void ShowError(string message)
-    {
-        _roomMessageLabel.ForeColor = Color.DarkRed;
-        _roomMessageLabel.Text = message;
-    }
-
     private void BuildLayout()
     {
         var layout = CreateStandardLayout(3, [50f, 190f, -1f]);

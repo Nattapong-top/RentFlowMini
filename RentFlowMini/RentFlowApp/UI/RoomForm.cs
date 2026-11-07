@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
@@ -76,20 +75,12 @@ public class RoomForm : Form
 
         InitializeForm();
 
-        try
-        {
-            _roomTabControl.RefreshRoomList();
-            _meterReadingTabControl.RefreshRoomList();
-            _monthlyBillTabControl.RefreshRoomList();
-            _tenantTabControl.RefreshTab();
-            _billingSettingsTabControl.LoadSettings();
-            _reportTabControl.RefreshReport();
-        }
-        catch (SqlException)
-        {
-            _roomTabControl.ShowError(
-                "ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาตรวจสอบ SQL Server และลองใหม่อีกครั้ง");
-        }
+        _roomTabControl.RefreshRoomList();
+        _meterReadingTabControl.RefreshRoomList();
+        _monthlyBillTabControl.RefreshRoomList();
+        _tenantTabControl.RefreshTab();
+        _billingSettingsTabControl.LoadSettings();
+        _reportTabControl.RefreshReport();
     }
 
     private void InitializeForm()
