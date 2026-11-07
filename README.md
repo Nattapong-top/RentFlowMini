@@ -1,6 +1,6 @@
 # RentFlowMini
 
-โปรแกรมจัดการห้องพักขนาดเล็ก พัฒนาด้วย C# WinForms, .NET 10 และ SQL Server
+โปรแกรมจัดการห้องพักขนาดเล็ก พัฒนาด้วย C# WinForms, .NET 10 และ SQLite
 
 ## ภาพรวมโปรเจกต์
 
@@ -13,8 +13,7 @@ RentFlowMini เป็นโปรเจกต์สำหรับฝึกพ�
 - C#
 - .NET 10
 - Windows Forms (WinForms)
-- SQL Server 2025 Express
-- ADO.NET (`Microsoft.Data.SqlClient`)
+- SQLite (`Microsoft.Data.Sqlite`)
 - xUnit สำหรับทดสอบโปรแกรม
 
 ## สถาปัตยกรรมระบบ
@@ -36,16 +35,16 @@ Domain (Room, Tenant, Bill, BillingCalculator, MonthlyMeterReading,
 Repository Interfaces
     |
     v
-Infrastructure (In-Memory / SQL Server)
+Infrastructure (SQLite / In-Memory)
 ```
 
 ### ส่วนประกอบหลัก
 
 - **Domain** — โมเดล `Room`, `Tenant`, `Bill`, `MonthlyMeterReading`, `BillingSettings`, `BillingCalculator` และ Value Objects เช่น `RoomNumber`, `Money`, `MeterReading`, `BillingPeriod`
 - **Application** — Use Case ของห้องพัก ผู้เช่า มิเตอร์ ตั้งค่าราคา และสร้างบิล พร้อมสัญญา repository
-- **Infrastructure** — In-Memory Repository สำหรับทุกส่วน และ SQL Server Repository สำหรับห้องพัก ผู้เช่า และบิล
+- **Infrastructure** — SQLite Repository ที่แอปใช้จริงสำหรับทุกส่วน และ In-Memory Repository ที่ใช้ในเทสต์
 - **UI** — WinForms แบ่งเป็นแท็บ: ห้องพัก, บันทึกมิเตอร์, สร้างบิลประจำเดือน, ผู้เช่า และตั้งค่าพื้นฐาน
-- **Tests** — Unit Tests, UI Tests และ Integration Tests สำหรับ SQL Server
+- **Tests** — Unit Tests, UI Tests และ Integration Tests สำหรับ SQLite ซึ่งใช้ไฟล์ในโฟลเดอร์ชั่วคราว ไม่ต้องติดตั้งฐานข้อมูล
 
 ## ความสามารถในปัจจุบัน
 
@@ -55,37 +54,18 @@ Infrastructure (In-Memory / SQL Server)
 - บันทึกมิเตอร์น้ำ-ไฟรายเดือน โดยดึงค่าก่อนหน้าจากรอบก่อนอัตโนมัติ และแก้ไขย้อนได้
 - สร้างบิลประจำเดือน 6 รายการ (ค่าเช่า, น้ำ, ไฟ, จอดมอเตอร์ไซค์, จอดรถยนต์, Cable TV) พร้อมเลขใบแจ้งหนี้และป้องกันบิลซ้ำ
 - เลือกรอบบิลเป็นเดือนภาษาไทยและปี พ.ศ.
-- มีข้อมูลตัวอย่าง (10 ห้อง พร้อมผู้เช่าและมิเตอร์) เมื่อเปิดโปรแกรมครั้งแรก
-
-> หมายเหตุ: แอปปัจจุบันใช้ In-Memory Repository ทั้งหมด ข้อมูลจะหายเมื่อปิดโปรแกรม SQL Server Repository มีอยู่และผ่าน integration tests แต่ยังไม่ได้เชื่อมเข้ากับแอป
+- เก็บข้อมูลถาวรใน SQLite ปิดแล้วเปิดใหม่ข้อมูลอยู่ครบ
 
 ## สิ่งที่ต้องเตรียมก่อนใช้งาน
 
 - ระบบปฏิบัติการ Windows
 - .NET 10 SDK
-- SQL Server
-- SQL Server Management Studio (SSMS)
 
-## การตั้งค่าฐานข้อมูล
+## ฐานข้อมูล
 
-ขั้นตอนนี้จำเป็นเฉพาะการรัน SQL Server Integration Tests เพราะแอปปัจจุบันยังใช้ In-Memory Repository
+ไม่ต้องติดตั้งฐานข้อมูลเพิ่ม เมื่อเปิดโปรแกรมครั้งแรก ระบบจะสร้างไฟล์ `%LocalAppData%\RentFlow\rentflow.db` และสร้างตารางให้เอง ถ้าเคยมีไฟล์ `settings.json` ในโฟลเดอร์เดียวกัน ระบบจะนำการตั้งค่าเข้าฐานข้อมูลครั้งเดียวโดยไม่แก้ไฟล์เดิม แบบตารางอยู่ใน [แผนเปลี่ยนเป็น SQLite](docs/sqlite-migration-plan.md)
 
-สร้างฐานข้อมูลชื่อ `RentFlowDb` แล้วรัน script ใน `RentFlowMini/RentFlowApp/Database/` ตามลำดับ:
-
-1. `001_CreateRooms.sql` — ตาราง `dbo.Rooms`
-2. `002_CreateBills.sql` — ตาราง `dbo.Bills`
-3. `003_CreateTenants.sql` — ตาราง `dbo.Tenants`
-
-ตัวอย่างด้วย `sqlcmd` (ปรับชื่อ server ให้ตรงกับเครื่องของคุณ):
-
-```powershell
-sqlcmd -S .\SQLEXPRESS -E -C -Q "IF DB_ID('RentFlowDb') IS NULL CREATE DATABASE RentFlowDb;"
-sqlcmd -S .\SQLEXPRESS -E -C -d RentFlowDb -i .\RentFlowMini\RentFlowApp\Database\001_CreateRooms.sql
-sqlcmd -S .\SQLEXPRESS -E -C -d RentFlowDb -i .\RentFlowMini\RentFlowApp\Database\002_CreateBills.sql
-sqlcmd -S .\SQLEXPRESS -E -C -d RentFlowDb -i .\RentFlowMini\RentFlowApp\Database\003_CreateTenants.sql
-```
-
-Integration Tests อ่าน Connection String จาก environment variable ชื่อ `RENTFLOW_TEST_CONNECTION` หากไม่กำหนดจะใช้ `localhost\SQLEXPRESS` ฐานข้อมูล `RentFlowDb` แบบ Windows Authentication ห้ามใส่รหัสผ่านลงในโค้ดหรือเอกสาร
+> ยังไม่มีระบบสำรองข้อมูล จึงยังไม่ควรใส่ข้อมูลจริง ห้ามวางไฟล์ฐานข้อมูลในโฟลเดอร์ซิงก์คลาวด์หรือโฟลเดอร์แชร์ระหว่างใช้งาน และไฟล์นี้ไม่ได้เข้ารหัส
 
 ## วิธีเปิดใช้งานโปรแกรม
 
@@ -105,15 +85,15 @@ dotnet run --project .\RentFlowMini\RentFlowApp\RentFlowApp.csproj
 dotnet test
 ```
 
-สำหรับ SQL Server Integration Tests ต้องมี SQL Server ที่เชื่อมต่อได้ และต้องตั้งค่าฐานข้อมูลสำหรับการทดสอบให้ถูกต้อง
+ไม่ต้องตั้งค่าฐานข้อมูลก่อนรันทดสอบ
 
 ## สถานะของโปรเจกต์
 
-ฟีเจอร์หลักของรอบบิลรายเดือนทำงานได้ครบใน In-Memory (ผ่าน automated tests 144 รายการ) ดูลำดับงานถัดไปที่ [docs/roadmap.md](docs/roadmap.md)
+ฟีเจอร์หลักของรอบบิลรายเดือนทำงานได้ครบและเก็บข้อมูลใน SQLite (ผ่าน automated tests 427 รายการ) ดูลำดับงานถัดไปที่ [docs/roadmap.md](docs/roadmap.md)
 
 ฟีเจอร์ที่วางแผนจะพัฒนาเพิ่มเติม ได้แก่
 
-- เชื่อม SQL Server เข้ากับแอป (รวม schema ของบิล 6 รายการ, มิเตอร์ และตั้งค่าราคา)
+- ระบบสำรองและกู้คืนข้อมูล
 - การแก้ไขและลบข้อมูลห้องพักและผู้เช่า
 - ค่าตั้งต้นการจอดรถรายห้อง
 - การแก้ไข ยกเลิก และพิมพ์ใบแจ้งหนี้
