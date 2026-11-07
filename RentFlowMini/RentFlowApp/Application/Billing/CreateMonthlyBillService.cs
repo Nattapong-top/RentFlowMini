@@ -16,6 +16,12 @@ public sealed class CreateMonthlyBillService
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        // บิลต้องมีผู้รับผิดชอบเสมอ หน้าจอซ่อนห้องว่างไว้แล้ว แต่ตรวจซ้ำที่นี่เผื่อมีทางออกบิลทางอื่น
+        if (request.Tenant is null)
+        {
+            throw new InvalidOperationException("ห้องนี้ไม่มีผู้เช่า จึงออกบิลไม่ได้ กรุณาเพิ่มผู้เช่าให้ห้องนี้ก่อน");
+        }
+
         var calculation = BillingCalculator.Calculate(
             monthlyRent: request.MonthlyRent,
             previousWaterMeter: request.PreviousWaterMeter,

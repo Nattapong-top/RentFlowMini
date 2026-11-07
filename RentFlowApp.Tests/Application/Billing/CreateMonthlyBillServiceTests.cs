@@ -119,6 +119,20 @@ public class CreateMonthlyBillServiceTests
     }
 
     [Fact]
+    public void Create_WhenRoomHasNoTenant_IsRejectedAndSavesNothing()
+    {
+        var repository = new InMemoryBillRepository();
+        var service = new CreateMonthlyBillService(repository);
+        var meter = MeterReading.Create(100m);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => service.Create(new CreateMonthlyBillRequest(
+            RoomId.New(), BillingPeriod.Create("2026-10"), 3000m, meter, meter, meter, meter, 19m, 8m)));
+
+        Assert.Equal("ห้องนี้ไม่มีผู้เช่า จึงออกบิลไม่ได้ กรุณาเพิ่มผู้เช่าให้ห้องนี้ก่อน", exception.Message);
+        Assert.Empty(repository.GetAll());
+    }
+
+    [Fact]
     public void Create_AssignsSequentialInvoiceNumbers_AndResetsEachMonth()
     {
         var repository = new InMemoryBillRepository();

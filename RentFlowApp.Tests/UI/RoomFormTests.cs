@@ -723,6 +723,73 @@ public class RoomFormTests
     }
 
     [Fact]
+    public void RoomForm_BillingTab_ListsOnlyRoomsWithTenant()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var tenantRepo = new InMemoryTenantRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var occupiedRoom = createRoomService.Create("101");
+            createRoomService.Create("102");
+            var leftRoom = createRoomService.Create("103");
+            TestTenants.MoveInto(tenantRepo, occupiedRoom.Id);
+            var leavingTenant = TestTenants.MoveInto(tenantRepo, leftRoom.Id);
+            new MoveOutTenantService(tenantRepo).MoveOut(leavingTenant.Id, DateOnly.FromDateTime(DateTime.Now));
+
+            using var form = new RoomForm(
+                createRoomService,
+                roomRepo,
+                new CreateMonthlyBillService(new InMemoryBillRepository()),
+                tenantRepository: tenantRepo);
+            var billingTab = form.Controls.OfType<TabControl>().First().TabPages[2];
+            var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
+
+            Assert.Equal(["101"], comboBox.Items.Cast<object>().Select(item => item.ToString()));
+        });
+    }
+
+    [Fact]
+    public void RoomForm_BillingTab_BillOfRoomThatBecameVacant_CanStillBeOpenedAndEdited()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var tenantRepo = new InMemoryTenantRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var createBillService = new CreateMonthlyBillService(billRepo);
+            var period = BillingPeriod.Create($"{DateTime.Now.Year}-10");
+            var room = createRoomService.Create("101", 3000m, true);
+            var tenant = TestTenants.MoveInto(tenantRepo, room.Id);
+            var meter = MeterReading.Create(100m);
+            createBillService.Create(new CreateMonthlyBillRequest(
+                room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m,
+                Tenant: BillTenantSnapshot.From(tenant)));
+            new MoveOutTenantService(tenantRepo).MoveOut(tenant.Id, DateOnly.FromDateTime(DateTime.Now));
+
+            using var form = new RoomForm(
+                createRoomService, roomRepo, createBillService, null, tenantRepo, billRepository: billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var billingTab = tabControl.TabPages[2];
+            tabControl.SelectedTab = billingTab;
+            ((BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First()).SetBillingPeriod(period);
+            var comboBox = (ComboBox)billingTab.Controls.Find("BillRoomComboBox", true).First();
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+
+            DoubleClickFirstRow((DataGridView)billingTab.Controls.Find("BillGrid", true).First());
+            Assert.Equal("101", comboBox.SelectedItem?.ToString());
+            Assert.Equal("บันทึกการแก้ไขบิล", createButton.Text);
+
+            ((CheckBox)billingTab.Controls.Find("ChargeMotorcycleCheckBox", true).First()).Checked = true;
+            createButton.PerformClick();
+
+            Assert.True(Assert.Single(billRepo.GetAll()).MotorcycleParking.Amount > 0m);
+        });
+    }
+
+    [Fact]
     public void RoomForm_BillingTab_WhenExistingBillIsEdited_UpdatesSameBillWithoutDuplicateError()
     {
         RunInSta(() =>
