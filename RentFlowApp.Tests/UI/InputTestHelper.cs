@@ -13,6 +13,7 @@ internal static class InputTestHelper
         {
             try
             {
+                using var activationBlock = HiddenTestWindows.BlockActivation();
                 action();
             }
             catch (Exception ex)

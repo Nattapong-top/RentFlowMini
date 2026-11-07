@@ -44,7 +44,7 @@ public class MonthlyReportExportTests
                     MonthlyPdfPath = path;
                 });
             _form.Controls.Add(_tab);
-            _form.Show();
+            HiddenTestWindows.ShowHidden(_form);
             Find<BillingPeriodSelector>("ReportPeriodSelector").SetBillingPeriod(CurrentPeriod);
         }
 

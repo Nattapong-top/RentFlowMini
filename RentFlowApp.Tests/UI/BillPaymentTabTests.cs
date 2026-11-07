@@ -50,7 +50,7 @@ public class BillPaymentTabTests
                 Dock = DockStyle.Fill
             };
             _form.Controls.Add(_tab);
-            _form.Show();
+            HiddenTestWindows.ShowHidden(_form);
             Find<BillingPeriodSelector>("BillingPeriodSelector").SetBillingPeriod(period);
         }
 

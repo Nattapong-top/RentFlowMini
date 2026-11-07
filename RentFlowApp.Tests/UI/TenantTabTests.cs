@@ -37,7 +37,7 @@ public class TenantTabTests
                 Dock = DockStyle.Fill
             };
             _form.Controls.Add(_tab);
-            _form.Show();
+            HiddenTestWindows.ShowHidden(_form);
         }
 
         public InMemoryTenantRepository Tenants { get; } = new();
@@ -124,7 +124,7 @@ public class TenantTabTests
                 createTenantService,
                 tenantRepo,
                 billRepository: billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabs = form.Controls.OfType<TabControl>().First();
             var billingTab = tabs.TabPages[2];
             var tenantTab = tabs.TabPages[3];

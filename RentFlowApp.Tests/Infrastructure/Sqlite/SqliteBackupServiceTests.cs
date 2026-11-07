@@ -4,6 +4,7 @@ using RentFlowApp.Application.Rooms;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Sqlite;
+using RentFlowApp.Tests.UI;
 using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.Infrastructure.Sqlite;
@@ -244,7 +245,7 @@ public sealed class SqliteBackupServiceTests : IDisposable
         {
             var storage = SqliteAppStorage.Open(_folder);
             using var form = CreateForm(storage, CreateService());
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabs = form.Controls.OfType<TabControl>().First();
             var settingsTab = tabs.TabPages[5];
             tabs.SelectedTab = settingsTab;

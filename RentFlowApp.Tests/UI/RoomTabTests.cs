@@ -18,7 +18,7 @@ public class RoomTabTests
             var rooms = new InMemoryRoomRepository();
             new CreateRoomService(rooms).Create("101", 3000m, true);
             using var form = new RoomForm(new CreateRoomService(rooms), rooms);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             DoubleClickRow(Find<DataGridView>(form, "RoomGrid"), 0);
             Find<TextBox>(form, "RoomMonthlyRentTextBox").Text = "3500";
@@ -45,7 +45,7 @@ public class RoomTabTests
             createRoom.Create("101", 3000m, false);
             createRoom.Create("102", 3200m, false);
             _form = new RoomForm(createRoom, Rooms);
-            _form.Show();
+            HiddenTestWindows.ShowHidden(_form);
         }
 
         public InMemoryRoomRepository Rooms { get; }

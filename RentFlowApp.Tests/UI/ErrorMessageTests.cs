@@ -58,7 +58,7 @@ public class ErrorMessageTests
     private static string AddRoomAndReadMessage(InMemoryRoomRepository rooms, string roomNumber)
     {
         using var form = new RoomForm(new CreateRoomService(rooms), rooms);
-        form.Show();
+        HiddenTestWindows.ShowHidden(form);
         Find<TextBox>(form, "RoomNumberTextBox").Text = roomNumber;
         Find<TextBox>(form, "RoomMonthlyRentTextBox").Text = "3000";
         Find<Button>(form, "AddRoomButton").PerformClick();
@@ -98,7 +98,7 @@ public class ErrorMessageTests
             using var form = new Form();
             var tab = new MeterReadingTabControl(rooms, meters, new SaveMonthlyMeterReadingService(meters));
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             Find<TextBox>(tab, "CurrWaterTextBox").Text = "10";
             Find<TextBox>(tab, "CurrElecTextBox").Text = "10";
 
@@ -136,7 +136,7 @@ public class ErrorMessageTests
                 billRepository: bills,
                 tenantRepository: tenants);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             Find<Button>(tab, "CreateBillButton").PerformClick();
 
@@ -173,7 +173,7 @@ public class ErrorMessageTests
                 tenantRepository: tenants,
                 billingSettingsRepository: new FailingSettingsRepository(new IOException(InternalDetail), null));
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             Find<Button>(tab, "CreateBillButton").PerformClick();
 
@@ -191,7 +191,7 @@ public class ErrorMessageTests
             new UpdateBillingSettingsService(repository),
             new InMemoryInvoiceSettingsRepository());
         form.Controls.Add(tab);
-        form.Show();
+        HiddenTestWindows.ShowHidden(form);
         return tab;
     }
 

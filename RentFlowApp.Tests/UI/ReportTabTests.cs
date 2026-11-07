@@ -44,7 +44,7 @@ public class ReportTabTests
                     PdfExportPath = path;
                 });
             _form.Controls.Add(_tab);
-            _form.Show();
+            HiddenTestWindows.ShowHidden(_form);
             Selector.SetBillingPeriod(CurrentPeriod);
         }
 
@@ -418,7 +418,7 @@ public class ReportTabTests
             var rooms = new InMemoryRoomRepository();
             var bills = new InMemoryBillRepository();
             using var form = new RoomForm(new CreateRoomService(rooms), rooms, billRepository: bills);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var reportPage = tabControl.TabPages[4];
             Assert.Equal("รายงาน", reportPage.Text);
