@@ -364,7 +364,7 @@ public sealed class RoomTabControl : BaseTabControl
 
         try
         {
-            var room = _updateRoomRentService.Update(_editingRoomId, monthlyRent);
+            var room = _updateRoomRentService.Update(_editingRoomId, monthlyRent, _roomCableTvExemptCheckBox.Checked);
             RefreshRoomList();
             ResetRoomRentEditing();
             ShowRoomSuccess($"แก้ไขค่าเช่าห้อง {room.RoomNumber.Value} สำเร็จแล้ว");
@@ -410,7 +410,6 @@ public sealed class RoomTabControl : BaseTabControl
         _roomMonthlyRentTextBox.Text = selectedRoom.MonthlyRent;
         _roomCableTvExemptCheckBox.Checked = selectedRoom.CableTvExempt == "ใช่";
         _roomNumberTextBox.ReadOnly = true;
-        _roomCableTvExemptCheckBox.Enabled = false;
         _editRoomRentButton.Text = "บันทึกค่าเช่า";
         _editRoomRentButton.Enabled = true;
         _cancelEditButton.Enabled = true;

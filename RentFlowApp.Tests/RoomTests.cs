@@ -88,6 +88,20 @@ public class RoomTests
         Assert.True(room.IsCableTvExempt);
     }
 
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void ChangeCableTvExemption_UpdatesExemptionOnly(bool before, bool after)
+    {
+        var room = new Room(RoomId.New(), new RoomNumber("101"), Money.Create(5000), before);
+
+        room.ChangeCableTvExemption(after);
+
+        Assert.Equal(after, room.IsCableTvExempt);
+        Assert.Equal(5000, room.MonthlyRent.Amount);
+        Assert.Equal("101", room.RoomNumber.Value);
+    }
+
     [Fact]
     public void ChangeMonthlyRent_WithNull_ThrowsArgumentNullException()
     {

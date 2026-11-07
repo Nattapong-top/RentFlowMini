@@ -227,7 +227,7 @@ public class RoomFormTests
             Assert.Equal("5,000.00", rentBox.Text);
             Assert.True(exemptCheckBox.Checked);
             Assert.True(roomNumberBox.ReadOnly);
-            Assert.False(exemptCheckBox.Enabled);
+            Assert.True(exemptCheckBox.Enabled);
             Assert.False(addButton.Enabled);
             Assert.True(editButton.Enabled);
             Assert.Equal("บันทึกค่าเช่า", editButton.Text);
@@ -786,6 +786,59 @@ public class RoomFormTests
             createButton.PerformClick();
 
             Assert.True(Assert.Single(billRepo.GetAll()).MotorcycleParking.Amount > 0m);
+        });
+    }
+
+    [Fact]
+    public void RoomForm_WhenCableTvExemptionChanges_NewBillFollowsAndIssuedBillStaysTheSame()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var october = BillingPeriod.Create($"{DateTime.Now.Year}-10");
+            var november = BillingPeriod.Create($"{DateTime.Now.Year}-11");
+            var room = createRoomService.Create("101", 3000m, false);
+            AddMeterReading(meterRepo, room.Id, october);
+            AddMeterReading(meterRepo, room.Id, november);
+
+            using var form = new RoomForm(
+                createRoomService,
+                roomRepo,
+                new CreateMonthlyBillService(billRepo),
+                null,
+                TenantsLivingIn(room.Id),
+                meterRepo,
+                billRepo);
+            form.Show();
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var roomTab = tabControl.TabPages[0];
+            var billingTab = tabControl.TabPages[2];
+            var periodSelector = (BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true).First();
+            var createButton = (Button)billingTab.Controls.Find("CreateBillButton", true).First();
+
+            tabControl.SelectedTab = billingTab;
+            periodSelector.SetBillingPeriod(october);
+            createButton.PerformClick();
+
+            tabControl.SelectedTab = roomTab;
+            DoubleClickFirstRow((DataGridView)roomTab.Controls.Find("RoomGrid", true).First());
+            ((CheckBox)roomTab.Controls.Find("RoomCableTvExemptCheckBox", true).First()).Checked = true;
+            ((Button)roomTab.Controls.Find("EditRoomRentButton", true).First()).PerformClick();
+
+            tabControl.SelectedTab = billingTab;
+            periodSelector.SetBillingPeriod(november);
+            Assert.True(((CheckBox)billingTab.Controls.Find("IsCableTvExemptCheckBox", true).First()).Checked);
+            createButton.PerformClick();
+
+            var octoberBill = billRepo.GetAll().Single(bill => bill.BillingPeriod == october);
+            var novemberBill = billRepo.GetAll().Single(bill => bill.BillingPeriod == november);
+            Assert.False(octoberBill.IsCableTvExempt);
+            Assert.Equal(60m, octoberBill.CableTv.Amount);
+            Assert.True(novemberBill.IsCableTvExempt);
+            Assert.Equal(0m, novemberBill.CableTv.Amount);
         });
     }
 

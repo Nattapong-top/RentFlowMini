@@ -17,11 +17,25 @@ public class UpdateRoomRentServiceTests
         repository.Add(room);
         var service = new UpdateRoomRentService(repository);
 
-        var updatedRoom = service.Update(room.Id, 0);
+        var updatedRoom = service.Update(room.Id, 0, isCableTvExempt: true);
 
         Assert.Equal(0, updatedRoom.MonthlyRent.Amount);
         Assert.Equal("101", updatedRoom.RoomNumber.Value);
         Assert.True(updatedRoom.IsCableTvExempt);
+    }
+
+    [Fact]
+    public void Update_SavesCableTvExemptionWithRent()
+    {
+        var repository = new InMemoryRoomEditor();
+        var room = new Room(RoomId.New(), new RoomNumber("101"), Money.Create(3000), false);
+        repository.Add(room);
+
+        new UpdateRoomRentService(repository).Update(room.Id, 3200, isCableTvExempt: true);
+
+        var savedRoom = repository.GetById(room.Id)!;
+        Assert.True(savedRoom.IsCableTvExempt);
+        Assert.Equal(3200, savedRoom.MonthlyRent.Amount);
     }
 
     [Fact]
@@ -30,7 +44,7 @@ public class UpdateRoomRentServiceTests
         var service = new UpdateRoomRentService(new InMemoryRoomEditor());
 
         Assert.Throws<InvalidOperationException>(
-            () => service.Update(RoomId.New(), 1000));
+            () => service.Update(RoomId.New(), 1000, isCableTvExempt: false));
     }
 
     private sealed class InMemoryRoomEditor : IRoomEditor
