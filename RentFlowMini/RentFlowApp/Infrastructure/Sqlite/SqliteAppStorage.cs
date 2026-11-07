@@ -6,6 +6,7 @@ public sealed class SqliteAppStorage
 {
     private const string DatabaseFileName = "rentflow.db";
     private const string SettingsFileName = "settings.json";
+    private const string BackupFolderName = "Backups";
 
     private const int SqliteBusy = 5;
     private const int SqliteLocked = 6;
@@ -21,7 +22,11 @@ public sealed class SqliteAppStorage
     private const string CannotOpenMessage =
         "ไม่สามารถเปิดไฟล์ข้อมูลได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงโฟลเดอร์และพื้นที่ว่างในเครื่อง แล้วลองใหม่อีกครั้ง";
 
-    private SqliteAppStorage(SqliteDatabase database, SqliteSettingsRepository settings, bool settingsImportFailed)
+    private SqliteAppStorage(
+        SqliteDatabase database,
+        SqliteSettingsRepository settings,
+        bool settingsImportFailed,
+        string folder)
     {
         Rooms = new SqliteRoomRepository(database);
         Tenants = new SqliteTenantRepository(database);
@@ -29,6 +34,7 @@ public sealed class SqliteAppStorage
         Bills = new SqliteBillRepository(database);
         Settings = settings;
         SettingsImportFailed = settingsImportFailed;
+        Backups = new SqliteBackupService(database, Path.Combine(folder, BackupFolderName), () => DateTime.Now);
     }
 
     public SqliteRoomRepository Rooms { get; }
@@ -43,6 +49,8 @@ public sealed class SqliteAppStorage
 
     public bool SettingsImportFailed { get; }
 
+    public SqliteBackupService Backups { get; }
+
     public static SqliteAppStorage Open(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);
@@ -55,7 +63,7 @@ public sealed class SqliteAppStorage
             var settings = new SqliteSettingsRepository(database);
             bool imported = settings.TryImportOnce(Path.Combine(folder, SettingsFileName));
 
-            return new SqliteAppStorage(database, settings, settingsImportFailed: !imported);
+            return new SqliteAppStorage(database, settings, settingsImportFailed: !imported, folder);
         }
         catch (SqliteException ex)
         {

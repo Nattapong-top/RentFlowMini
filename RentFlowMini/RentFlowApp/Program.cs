@@ -40,6 +40,8 @@ internal static class Program
                     MessageBoxIcon.Warning);
             }
 
+            BackUpIfNoneToday(storage.Backups);
+
             mainForm = new RoomForm(
                 new CreateRoomService(storage.Rooms),
                 storage.Rooms,
@@ -49,7 +51,8 @@ internal static class Program
                 storage.MeterReadings,
                 storage.Bills,
                 billingSettingsRepository: storage.Settings,
-                invoiceSettingsRepository: storage.Settings);
+                invoiceSettingsRepository: storage.Settings,
+                backupService: storage.Backups);
         }
         catch (InvalidOperationException ex)
         {
@@ -64,6 +67,24 @@ internal static class Program
         }
 
         System.Windows.Forms.Application.Run(mainForm);
+    }
+
+    // สำรองไม่สำเร็จไม่ควรกันไม่ให้ใช้งาน จึงแค่เตือนแล้วเปิดแอปต่อ
+    private static void BackUpIfNoneToday(SqliteBackupService backups)
+    {
+        try
+        {
+            backups.BackUpIfNoneToday();
+        }
+        catch (InvalidOperationException ex)
+        {
+            System.Diagnostics.Trace.TraceError(ex.ToString());
+            MessageBox.Show(
+                $"{ex.Message}\n\nยังใช้งานโปรแกรมต่อได้ และกดสำรองเองได้ที่แท็บตั้งค่าพื้นฐาน",
+                "RentFlow",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 
     private static void ShowStartupError(Exception exception, string message)
