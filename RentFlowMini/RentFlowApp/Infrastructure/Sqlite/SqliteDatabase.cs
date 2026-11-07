@@ -24,6 +24,10 @@ public sealed class SqliteDatabase
         _updates = updates;
     }
 
+    public string FilePath => _filePath;
+
+    public long LatestSchemaVersion => _updates.Max(update => update.Version);
+
     public void Initialize()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(_filePath))!);
@@ -32,7 +36,7 @@ public sealed class SqliteDatabase
 
         long schemaVersion = ReadSchemaVersion(connection);
 
-        if (schemaVersion > _updates.Max(update => update.Version))
+        if (schemaVersion > LatestSchemaVersion)
         {
             throw new InvalidOperationException(NewerSchemaMessage);
         }
