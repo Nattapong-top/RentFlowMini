@@ -272,6 +272,30 @@ public sealed class SqliteTenantRepositoryTests : IDisposable
         Assert.Equal(currentRoomId, repository.GetById(tenant.Id)!.RoomId);
     }
 
+    [Fact]
+    public void Add_WithMissingRoom_ThrowsThaiMessage()
+    {
+        var repository = new SqliteTenantRepository(_database);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(new Tenant(TenantId.New(), "Anna", "Example", roomId: RoomId.New())));
+
+        Assert.Equal("ไม่พบห้องพักที่เลือก กรุณาเลือกห้องจากรายการอีกครั้ง", exception.Message);
+    }
+
+    [Fact]
+    public void Update_WithMissingRoom_ThrowsThaiMessage()
+    {
+        var repository = new SqliteTenantRepository(_database);
+        var tenantId = TenantId.New();
+        repository.Add(new Tenant(tenantId, "Anna", "Example"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Update(new Tenant(tenantId, "Anna", "Example", roomId: RoomId.New())));
+
+        Assert.Equal("ไม่พบห้องพักที่เลือก กรุณาเลือกห้องจากรายการอีกครั้ง", exception.Message);
+    }
+
     private RoomId AddRoom(string roomNumber)
     {
         var room = new Room(RoomId.New(), new RoomNumber(roomNumber));

@@ -10,6 +10,8 @@ public sealed class SqliteTenantRepository : ITenantRepository
 {
     private const int SqliteUniqueViolation = 2067;
     private const int SqlitePrimaryKeyViolation = 1555;
+    private const int SqliteForeignKeyViolation = 787;
+    private const string RoomNotFoundMessage = "ไม่พบห้องพักที่เลือก กรุณาเลือกห้องจากรายการอีกครั้ง";
     private const string DateFormat = "yyyy-MM-dd";
     private const string RoomOccupiedMessage = "ห้องพักนี้มีผู้เช่าอยู่แล้ว ไม่สามารถผูกผู้เช่าซ้ำได้";
 
@@ -55,6 +57,10 @@ public sealed class SqliteTenantRepository : ITenantRepository
         {
             throw new InvalidOperationException(RoomOccupiedMessage, ex);
         }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteForeignKeyViolation)
+        {
+            throw new InvalidOperationException(RoomNotFoundMessage, ex);
+        }
     }
 
     public void Update(Tenant tenant)
@@ -87,6 +93,10 @@ public sealed class SqliteTenantRepository : ITenantRepository
         catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteUniqueViolation)
         {
             throw new InvalidOperationException(RoomOccupiedMessage, ex);
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteForeignKeyViolation)
+        {
+            throw new InvalidOperationException(RoomNotFoundMessage, ex);
         }
     }
 

@@ -9,6 +9,7 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 public sealed class SqliteBillRepository : IBillRepository
 {
     private const int SqliteUniqueViolation = 2067;
+    private const int SqliteForeignKeyViolation = 787;
     private const string DateFormat = "yyyy-MM-dd";
 
     private const string SelectColumns = """
@@ -71,6 +72,14 @@ public sealed class SqliteBillRepository : IBillRepository
             ex.SqliteExtendedErrorCode == SqliteUniqueViolation && ex.Message.Contains("Bills.RoomId"))
         {
             throw new InvalidOperationException("มีบิลของห้องและรอบบิลนี้อยู่แล้ว", ex);
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteUniqueViolation)
+        {
+            throw new InvalidOperationException("เลขที่ใบแจ้งหนี้นี้ถูกใช้แล้ว กรุณาออกบิลใหม่อีกครั้ง", ex);
+        }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == SqliteForeignKeyViolation)
+        {
+            throw new InvalidOperationException("ไม่พบห้องพักหรือผู้เช่าของบิลนี้ กรุณาตรวจสอบข้อมูลแล้วลองอีกครั้ง", ex);
         }
     }
 
