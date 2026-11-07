@@ -86,7 +86,7 @@ public class MonthlyInvoicePrintingTests
                 Dock = DockStyle.Fill
             };
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             var periodSelector = (BillingPeriodSelector)tab.Controls.Find("BillingPeriodSelector", true).First();
             periodSelector.SetBillingPeriod(period);
@@ -128,7 +128,7 @@ public class MonthlyInvoicePrintingTests
                 roomRepo,
                 showInvoicePreview: _ => previewShown = true);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             ((Button)tab.Controls.Find("PrintSelectedInvoicesButton", true).First()).PerformClick();
 
@@ -149,7 +149,7 @@ public class MonthlyInvoicePrintingTests
                 new CreateRoomService(roomRepo),
                 roomRepo,
                 invoiceSettingsRepository: settingsRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var settingsTab = tabControl.TabPages[5];
             tabControl.SelectedTab = settingsTab;

@@ -47,7 +47,7 @@ public class MeterTabTests
         {
             Control = new MeterReadingTabControl(Rooms, Readings, new SaveMonthlyMeterReadingService(Readings));
             _form.Controls.Add(Control);
-            _form.Show();
+            HiddenTestWindows.ShowHidden(_form);
         }
 
         public T Find<T>(string name) where T : Control => (T)Control.Controls.Find(name, true)[0];

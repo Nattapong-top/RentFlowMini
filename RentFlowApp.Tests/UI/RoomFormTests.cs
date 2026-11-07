@@ -145,7 +145,7 @@ public class RoomFormTests
             var createRoomService = new CreateRoomService(roomRepo);
 
             using var form = new RoomForm(createRoomService, roomRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
 
             var roomNumberBox = (TextBox)roomTab.Controls
@@ -179,7 +179,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 5000, true);
 
             using var form = new RoomForm(createRoomService, roomRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
             var grid = (DataGridView)roomTab.Controls
                 .Find("RoomGrid", true).First();
@@ -209,7 +209,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 5000, true);
 
             using var form = new RoomForm(createRoomService, roomRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
             var grid = (DataGridView)roomTab.Controls.Find("RoomGrid", true).First();
             var roomNumberBox = (TextBox)roomTab.Controls.Find("RoomNumberTextBox", true).First();
@@ -324,7 +324,7 @@ public class RoomFormTests
             var tenantRepo = TenantsLivingIn(room.Id);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -377,7 +377,7 @@ public class RoomFormTests
             var tenantRepo = TenantsLivingIn(room.Id);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -430,7 +430,7 @@ public class RoomFormTests
 
             // Act
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
@@ -460,7 +460,7 @@ public class RoomFormTests
             createRoomService.Create("101");
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
@@ -506,7 +506,7 @@ public class RoomFormTests
             var createTenantService = new CreateTenantService(tenantRepo);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
@@ -542,7 +542,7 @@ public class RoomFormTests
             var createTenantService = new CreateTenantService(tenantRepo);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages[3];
             tabControl.SelectedTab = tenantTab;
@@ -580,7 +580,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101");
 
             using var form = new RoomForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -615,7 +615,7 @@ public class RoomFormTests
             meterRepo.Add(reading);
 
             using var form = new RoomForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -655,7 +655,7 @@ public class RoomFormTests
             var room2 = createRoomService.Create("102");
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -770,7 +770,7 @@ public class RoomFormTests
 
             using var form = new RoomForm(
                 createRoomService, roomRepo, createBillService, null, tenantRepo, billRepository: billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -812,7 +812,7 @@ public class RoomFormTests
                 TenantsLivingIn(room.Id),
                 meterRepo,
                 billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var roomTab = tabControl.TabPages[0];
             var billingTab = tabControl.TabPages[2];
@@ -859,7 +859,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room.Id, period);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -914,7 +914,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room.Id, period);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;
@@ -971,7 +971,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room2.Id, period);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             var settingsTab = tabControl.TabPages[5];
@@ -1022,7 +1022,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room2.Id, period);
 
             using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
             tabControl.SelectedTab = billingTab;

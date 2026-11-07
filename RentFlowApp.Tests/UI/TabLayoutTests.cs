@@ -65,7 +65,7 @@ public class TabLayoutTests
                 billRepository: bills,
                 tenantRepository: tenants);
             _form.Controls.Add(Tab);
-            _form.Show();
+            HiddenTestWindows.ShowHidden(_form);
             Tab.RefreshBillGrid();
             Grid = (DataGridView)Tab.Controls.Find("BillGrid", true)[0];
         }
@@ -121,7 +121,7 @@ public class TabLayoutTests
         InMemoryBillRepository? bills = null)
     {
         var form = new RoomForm(new CreateRoomService(rooms), rooms, billRepository: bills);
-        form.Show();
+        HiddenTestWindows.ShowHidden(form);
         // ฟอร์มเปิดแบบขยายเต็มจอ จึงต้องคืนสถานะก่อนกำหนดขนาด
         form.WindowState = FormWindowState.Normal;
         form.Size = new Size(width, height);
@@ -193,7 +193,7 @@ public class TabLayoutTests
                 tenantRepository: new InMemoryTenantRepository());
             host.Controls.Add(tab);
             form.Controls.Add(host);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var split = (SplitContainer)tab.Controls.Find("BillSplitContainer", true)[0];
 
             Assert.Equal(440, split.SplitterDistance);

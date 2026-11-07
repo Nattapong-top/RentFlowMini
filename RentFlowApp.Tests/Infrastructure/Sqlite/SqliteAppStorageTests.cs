@@ -6,6 +6,7 @@ using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Sqlite;
+using RentFlowApp.Tests.UI;
 using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.Infrastructure.Sqlite;
@@ -240,7 +241,7 @@ public sealed class SqliteAppStorageTests : IDisposable
             var firstStorage = SqliteAppStorage.Open(_folder);
             using (var firstRun = CreateForm(firstStorage))
             {
-                firstRun.Show();
+                HiddenTestWindows.ShowHidden(firstRun);
                 var tabs = firstRun.Controls.OfType<TabControl>().First();
 
                 var roomTab = tabs.TabPages[0];
@@ -265,7 +266,7 @@ public sealed class SqliteAppStorageTests : IDisposable
             var storage = SqliteAppStorage.Open(_folder);
 
             using var secondRun = CreateForm(storage);
-            secondRun.Show();
+            HiddenTestWindows.ShowHidden(secondRun);
             var reopenedTabs = secondRun.Controls.OfType<TabControl>().First();
             var roomGrid = (DataGridView)reopenedTabs.TabPages[0].Controls.Find("RoomGrid", true)[0];
             var reopenedBillTab = reopenedTabs.TabPages[2];

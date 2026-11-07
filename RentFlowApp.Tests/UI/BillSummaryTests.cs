@@ -70,7 +70,7 @@ public class BillSummaryTests
                 billRepository: bills,
                 tenantRepository: tenants);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             Find<CheckBox>(tab, "ChargeMotorcycleCheckBox").Checked = true;
             var createButton = Find<Button>(tab, "CreateBillButton");
 
@@ -118,7 +118,7 @@ public class BillSummaryTests
             using var form = new Form();
             var tab = new MonthlyBillTabControl(new CreateMonthlyBillService(bills), rooms, billRepository: bills);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             DoubleClickRow(Find<DataGridView>(tab, "BillGrid"), 0);
 
@@ -155,7 +155,7 @@ public class BillSummaryTests
                 rooms,
                 billRepository: bills);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             DoubleClickRow(Find<DataGridView>(tab, "BillGrid"), 0);
 
@@ -196,7 +196,7 @@ public class BillSummaryTests
                 billRepository: bills,
                 tenantRepository: tenants);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var button = Find<Button>(tab, "CreateBillButton");
             var message = Find<Label>(tab, "BillMessageLabel");
 
@@ -232,7 +232,7 @@ public class BillSummaryTests
             using var form = new Form();
             var tab = new MonthlyBillTabControl(new CreateMonthlyBillService(bills), rooms, billRepository: bills);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             var shownRooms = Find<DataGridView>(tab, "BillGrid").Rows.Cast<DataGridViewRow>()
                 .Select(row => row.Cells["RoomNumber"].Value?.ToString());
@@ -267,7 +267,7 @@ public class BillSummaryTests
                 billRepository: bills,
                 tenantRepository: tenants);
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var createButton = Find<Button>(tab, "CreateBillButton");
             var cableTvLabel = Find<Label>(tab, "ResultCableTvLabel");
 

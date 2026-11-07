@@ -31,7 +31,7 @@ public class InputBehaviorTests
         RunInSta(() =>
         {
             using var form = CreateForm(new InMemoryRoomRepository());
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
 
             var grids = FindGrids(form).ToList();
 
@@ -47,7 +47,7 @@ public class InputBehaviorTests
         RunInSta(() =>
         {
             using var form = CreateForm(new InMemoryRoomRepository());
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var rent = (TextBox)form.Controls.Find("RoomMonthlyRentTextBox", true)[0];
 
             rent.Text = "3,500บาท";
@@ -70,7 +70,7 @@ public class InputBehaviorTests
         RunInSta(() =>
         {
             using var form = CreateForm(new InMemoryRoomRepository());
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var rent = (TextBox)form.Controls.Find("RoomMonthlyRentTextBox", true)[0];
             rent.Text = "12.5";
 
@@ -88,7 +88,7 @@ public class InputBehaviorTests
         RunInSta(() =>
         {
             using var form = CreateForm(new InMemoryRoomRepository());
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var tabs = form.Controls.OfType<TabControl>().First();
             var meterBox = tabs.TabPages[1].Controls.OfType<Control>()
                 .SelectMany(control => FindTextBoxes(control))
@@ -115,7 +115,7 @@ public class InputBehaviorTests
             var rooms = new InMemoryRoomRepository();
             new CreateRoomService(rooms).Create("101", 3000m, false);
             using var form = CreateForm(rooms);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             var grid = FindGrids(form).First(item => item.Name == "RoomGrid");
             var rent = (TextBox)form.Controls.Find("RoomMonthlyRentTextBox", true)[0];
             var editButton = (Button)form.Controls.Find("EditRoomRentButton", true)[0];
@@ -152,7 +152,7 @@ public class InputBehaviorTests
             using var form = new Form();
             var tab = new MonthlyBillTabControl(createBill, rooms, billRepository: bills) { Dock = DockStyle.Fill };
             form.Controls.Add(tab);
-            form.Show();
+            HiddenTestWindows.ShowHidden(form);
             ((BillingPeriodSelector)tab.Controls.Find("BillingPeriodSelector", true)[0]).SetBillingPeriod(period);
             var motorcycle = (CheckBox)tab.Controls.Find("ChargeMotorcycleCheckBox", true)[0];
             var grid = (DataGridView)tab.Controls.Find("BillGrid", true)[0];
