@@ -8,6 +8,7 @@ namespace RentFlowApp.Infrastructure.Sqlite;
 
 public sealed class SqliteBillRepository : IBillRepository
 {
+    private const int SqliteUniqueViolation = 2067;
     private const string DateFormat = "yyyy-MM-dd";
 
     private const string SelectColumns = """
@@ -60,7 +61,17 @@ public sealed class SqliteBillRepository : IBillRepository
                 $paidOn, $paymentMethod);
             """;
         AddBillParameters(command, bill);
-        command.ExecuteNonQuery();
+
+        try
+        {
+            command.ExecuteNonQuery();
+        }
+        // ตารางนี้มีกฎห้ามซ้ำ 2 ข้อที่ใช้รหัสเดียวกัน จึงต้องดูชื่อคอลัมน์เพื่อไม่ให้แจ้งผิดเรื่อง
+        catch (SqliteException ex) when (
+            ex.SqliteExtendedErrorCode == SqliteUniqueViolation && ex.Message.Contains("Bills.RoomId"))
+        {
+            throw new InvalidOperationException("มีบิลของห้องและรอบบิลนี้อยู่แล้ว", ex);
+        }
     }
 
     public void Update(Bill bill)

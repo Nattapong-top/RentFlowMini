@@ -177,6 +177,19 @@ public sealed class SqliteBillRepositoryTests : IDisposable
         Assert.False(saved.IsPaid);
     }
 
+    [Fact]
+    public void Add_WithSameRoomAndPeriod_ThrowsThaiMessage()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var roomId = AddRoom("101");
+        repository.Add(Bill.Create(roomId, September, RentOnly(), "N001"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            repository.Add(Bill.Create(roomId, September, RentOnly(), "N002")));
+
+        Assert.Equal("มีบิลของห้องและรอบบิลนี้อยู่แล้ว", exception.Message);
+    }
+
     private static BillingCalculationResult RentOnly()
     {
         return new BillingCalculationResult(
