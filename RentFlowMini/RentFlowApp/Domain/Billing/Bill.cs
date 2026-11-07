@@ -5,20 +5,24 @@ namespace RentFlowApp.Domain.Billing;
 public sealed class Bill
 {
     private Bill(
+        BillId id,
         RoomId roomId,
         BillingPeriod billingPeriod,
         BillingCalculationResult calculation,
         string invoiceNumber,
         DateTime createdAt,
+        DateOnly dueDate,
         BillMeterSnapshot? meters,
         BillTenantSnapshot? tenant,
-        bool isCableTvExempt)
+        bool isCableTvExempt,
+        BillPayment? payment)
     {
-        Id = BillId.New();
+        Id = id;
         IsCableTvExempt = isCableTvExempt;
         Meters = meters;
         Tenant = tenant;
-        DueDate = billingPeriod.GetPaymentDueDate();
+        Payment = payment;
+        DueDate = dueDate;
         RoomId = roomId;
         BillingPeriod = billingPeriod;
         InvoiceNumber = invoiceNumber;
@@ -134,6 +138,45 @@ public sealed class Bill
         BillTenantSnapshot? tenant = null,
         bool isCableTvExempt = false)
     {
-        return new Bill(roomId, billingPeriod, calculation, invoiceNumber, createdAt ?? DateTime.Now, meters, tenant, isCableTvExempt);
+        return new Bill(
+            BillId.New(),
+            roomId,
+            billingPeriod,
+            calculation,
+            invoiceNumber,
+            createdAt ?? DateTime.Now,
+            billingPeriod.GetPaymentDueDate(),
+            meters,
+            tenant,
+            isCableTvExempt,
+            payment: null);
+    }
+
+    // ใช้ค่าที่บันทึกไว้ ไม่คำนวณใหม่ เพื่อให้บิลเก่าไม่เปลี่ยนแม้กติกาการคำนวณจะเปลี่ยนภายหลัง
+    public static Bill Restore(
+        BillId id,
+        RoomId roomId,
+        BillingPeriod billingPeriod,
+        BillingCalculationResult calculation,
+        string invoiceNumber,
+        DateTime createdAt,
+        DateOnly dueDate,
+        BillMeterSnapshot? meters,
+        BillTenantSnapshot? tenant,
+        bool isCableTvExempt,
+        BillPayment? payment)
+    {
+        return new Bill(
+            id,
+            roomId,
+            billingPeriod,
+            calculation,
+            invoiceNumber,
+            createdAt,
+            dueDate,
+            meters,
+            tenant,
+            isCableTvExempt,
+            payment);
     }
 }
