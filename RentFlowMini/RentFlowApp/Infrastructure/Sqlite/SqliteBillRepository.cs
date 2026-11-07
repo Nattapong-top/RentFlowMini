@@ -76,7 +76,22 @@ public sealed class SqliteBillRepository : IBillRepository
 
     public void Update(Bill bill)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(bill);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE Bills
+            SET PaidOn = $paidOn,
+                PaymentMethod = $paymentMethod
+            WHERE Id = $id;
+            """;
+        command.Parameters.AddWithValue("$id", bill.Id.Value.ToString());
+        command.Parameters.AddWithValue(
+            "$paidOn",
+            ToDbValue(bill.Payment?.PaidOn.ToString(DateFormat, CultureInfo.InvariantCulture)));
+        command.Parameters.AddWithValue("$paymentMethod", ToDbValue(bill.Payment?.Method.ToString()));
+        command.ExecuteNonQuery();
     }
 
     public bool Exists(RoomId roomId, BillingPeriod billingPeriod)

@@ -216,6 +216,40 @@ public sealed class SqliteBillRepositoryTests : IDisposable
         Assert.Null(repository.Get(BillId.New()));
     }
 
+    [Fact]
+    public void Update_AfterRecordingPayment_KeepsPaymentForNewRepository()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var bill = Bill.Create(AddRoom("101"), September, RentOnly());
+        repository.Add(bill);
+        var paidOn = new DateOnly(2026, 10, 3);
+
+        bill.RecordPayment(paidOn, PaymentMethod.BankTransfer);
+        repository.Update(bill);
+
+        var saved = new SqliteBillRepository(_database).Get(bill.Id);
+        Assert.NotNull(saved);
+        Assert.True(saved.IsPaid);
+        Assert.Equal(new BillPayment(paidOn, PaymentMethod.BankTransfer), saved.Payment);
+    }
+
+    [Fact]
+    public void Update_AfterCancellingPayment_ClearsPaymentForNewRepository()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var bill = Bill.Create(AddRoom("101"), September, RentOnly());
+        bill.RecordPayment(new DateOnly(2026, 10, 3), PaymentMethod.Cash);
+        repository.Add(bill);
+
+        bill.CancelPayment();
+        repository.Update(bill);
+
+        var saved = new SqliteBillRepository(_database).Get(bill.Id);
+        Assert.NotNull(saved);
+        Assert.False(saved.IsPaid);
+        Assert.Null(saved.Payment);
+    }
+
     private static BillingCalculationResult RentOnly()
     {
         return new BillingCalculationResult(
