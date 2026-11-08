@@ -17,7 +17,7 @@ public sealed class SqliteAppStorageTests : IDisposable
         "ไฟล์ข้อมูลเสียหาย ระบบจึงไม่เปิดใช้งานเพื่อไม่ให้ข้อมูลเดิมถูกทับ กรุณาอย่าลบไฟล์ และกู้คืนจากไฟล์สำรองหรือติดต่อผู้ดูแลระบบ";
 
     private const string FileInUseMessage =
-        "ไฟล์ข้อมูลกำลังถูกใช้งานอยู่ กรุณาปิดโปรแกรม RentFlow ที่เปิดค้างไว้แล้วลองใหม่อีกครั้ง";
+        "ไฟล์ข้อมูลกำลังถูกใช้งานอยู่ กรุณาปิดโปรแกรม RentFlowMiniApp ที่เปิดค้างไว้แล้วลองใหม่อีกครั้ง";
 
     private const string CannotOpenMessage =
         "ไม่สามารถเปิดไฟล์ข้อมูลได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงโฟลเดอร์และพื้นที่ว่างในเครื่อง แล้วลองใหม่อีกครั้ง";
@@ -208,7 +208,7 @@ public sealed class SqliteAppStorageTests : IDisposable
             var secondRun = SqliteAppStorage.Open(_folder);
 
             using var form = CreateForm(secondRun);
-            var roomTab = form.Controls.OfType<TabControl>().First().TabPages[0];
+            var roomTab = form.Controls.OfType<TabControl>().First().TabPages["RoomTabPage"]!;
             var grid = (DataGridView)roomTab.Controls.Find("RoomGrid", true).First();
 
             Assert.Equal("ไม่ว่าง", grid.Rows[0].Cells["OccupancyStatus"].Value);
@@ -223,8 +223,8 @@ public sealed class SqliteAppStorageTests : IDisposable
         {
             using var form = CreateForm(SqliteAppStorage.Open(_folder));
             var tabs = form.Controls.OfType<TabControl>().First();
-            var grid = (DataGridView)tabs.TabPages[0].Controls.Find("RoomGrid", true)[0];
-            var waterRate = (TextBox)tabs.TabPages[5].Controls.Find("WaterRateTextBox", true)[0];
+            var grid = (DataGridView)tabs.TabPages["RoomTabPage"]!.Controls.Find("RoomGrid", true)[0];
+            var waterRate = (TextBox)tabs.TabPages["SettingsTabPage"]!.Controls.Find("WaterRateTextBox", true)[0];
 
             Assert.Equal(0, grid.Rows.Count);
             Assert.Equal("19", waterRate.Text);
@@ -244,13 +244,14 @@ public sealed class SqliteAppStorageTests : IDisposable
                 HiddenTestWindows.ShowHidden(firstRun);
                 var tabs = firstRun.Controls.OfType<TabControl>().First();
 
-                var roomTab = tabs.TabPages[0];
+                var roomTab = tabs.TabPages["RoomTabPage"]!;
+                tabs.SelectedTab = roomTab;
                 ((TextBox)roomTab.Controls.Find("RoomNumberTextBox", true)[0]).Text = "101";
                 ((TextBox)roomTab.Controls.Find("RoomMonthlyRentTextBox", true)[0]).Text = "3000";
                 ((Button)roomTab.Controls.Find("AddRoomButton", true)[0]).PerformClick();
                 TestTenants.MoveInto(firstStorage.Tenants, Assert.Single(firstStorage.Rooms.GetAll()).Id);
 
-                var billTab = tabs.TabPages[2];
+                var billTab = tabs.TabPages["BillingTabPage"]!;
                 tabs.SelectedTab = billTab;
                 ((BillingPeriodSelector)billTab.Controls.Find("BillingPeriodSelector", true)[0]).SetBillingPeriod(period);
                 ((ComboBox)billTab.Controls.Find("BillRoomComboBox", true)[0]).SelectedIndex = 0;
@@ -268,8 +269,8 @@ public sealed class SqliteAppStorageTests : IDisposable
             using var secondRun = CreateForm(storage);
             HiddenTestWindows.ShowHidden(secondRun);
             var reopenedTabs = secondRun.Controls.OfType<TabControl>().First();
-            var roomGrid = (DataGridView)reopenedTabs.TabPages[0].Controls.Find("RoomGrid", true)[0];
-            var reopenedBillTab = reopenedTabs.TabPages[2];
+            var roomGrid = (DataGridView)reopenedTabs.TabPages["RoomTabPage"]!.Controls.Find("RoomGrid", true)[0];
+            var reopenedBillTab = reopenedTabs.TabPages["BillingTabPage"]!;
             reopenedTabs.SelectedTab = reopenedBillTab;
             ((BillingPeriodSelector)reopenedBillTab.Controls.Find("BillingPeriodSelector", true)[0]).SetBillingPeriod(period);
             var billGrid = (DataGridView)reopenedBillTab.Controls.Find("BillGrid", true)[0];

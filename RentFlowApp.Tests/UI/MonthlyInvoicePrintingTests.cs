@@ -151,7 +151,7 @@ public class MonthlyInvoicePrintingTests
                 invoiceSettingsRepository: settingsRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var settingsTab = tabControl.TabPages[5];
+            var settingsTab = tabControl.TabPages["SettingsTabPage"]!;
             tabControl.SelectedTab = settingsTab;
 
             var nameBox = (TextBox)settingsTab.Controls.Find("InvoicePropertyNameTextBox", true).First();

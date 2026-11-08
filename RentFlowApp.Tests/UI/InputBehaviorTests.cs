@@ -90,10 +90,10 @@ public class InputBehaviorTests
             using var form = CreateForm(new InMemoryRoomRepository());
             HiddenTestWindows.ShowHidden(form);
             var tabs = form.Controls.OfType<TabControl>().First();
-            var meterBox = tabs.TabPages[1].Controls.OfType<Control>()
+            var meterBox = tabs.TabPages["MeterReadingTabPage"]!.Controls.OfType<Control>()
                 .SelectMany(control => FindTextBoxes(control))
                 .First(box => box.Enabled && !box.ReadOnly);
-            var settingsRate = (TextBox)tabs.TabPages[5].Controls.Find("WaterRateTextBox", true)[0];
+            var settingsRate = (TextBox)tabs.TabPages["SettingsTabPage"]!.Controls.Find("WaterRateTextBox", true)[0];
 
             meterBox.Text = "1,2a3.4.5";
             settingsRate.Text = "1,2a3.4.5";
@@ -116,6 +116,7 @@ public class InputBehaviorTests
             new CreateRoomService(rooms).Create("101", 3000m, false);
             using var form = CreateForm(rooms);
             HiddenTestWindows.ShowHidden(form);
+            InputTestHelper.SelectTab(form, "RoomTabPage");
             var grid = FindGrids(form).First(item => item.Name == "RoomGrid");
             var rent = (TextBox)form.Controls.Find("RoomMonthlyRentTextBox", true)[0];
             var editButton = (Button)form.Controls.Find("EditRoomRentButton", true)[0];

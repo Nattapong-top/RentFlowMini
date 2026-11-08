@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <!-- ชื่อไฟล์โปรแกรมที่ผู้ใช้เห็น ส่วน namespace ในโค้ดยังเป็น RentFlowApp -->
+    <AssemblyName>RentFlowMiniApp</AssemblyName>
+    <RootNamespace>RentFlowApp</RootNamespace>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>

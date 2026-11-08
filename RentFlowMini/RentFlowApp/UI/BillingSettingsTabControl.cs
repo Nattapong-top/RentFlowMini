@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Reports;
 using RentFlowApp.Domain.Billing;
@@ -411,7 +411,7 @@ public class BillingSettingsTabControl : BaseTabControl
 
         MessageBox.Show(
             "กู้คืนข้อมูลเรียบร้อยแล้ว ระบบจะเปิดโปรแกรมใหม่",
-            "RentFlow",
+            AppInfo.Name,
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
         // เปิดใหม่ เพื่อให้ทุกแท็บโหลดข้อมูลจากไฟล์ที่กู้คืน และอัปเดต schema ถ้าไฟล์สำรองเป็นรุ่นเก่า

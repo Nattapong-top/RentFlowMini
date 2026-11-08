@@ -411,7 +411,7 @@ public class ReportTabTests
     }
 
     [Fact]
-    public void RoomForm_HasReportTabInFifthPosition_AndRefreshesWhenOpened()
+    public void RoomForm_OpensOnReportTab_AndRefreshesReportWhenReopened()
     {
         RunInSta(() =>
         {
@@ -420,14 +420,16 @@ public class ReportTabTests
             using var form = new RoomForm(new CreateRoomService(rooms), rooms, billRepository: bills);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
-            var reportPage = tabControl.TabPages[4];
-            Assert.Equal("รายงาน", reportPage.Text);
+            var reportPage = tabControl.TabPages["ReportTabPage"]!;
+            Assert.Equal("รายงานข้อมูล", reportPage.Text);
+            Assert.Same(reportPage, tabControl.SelectedTab);
 
             var room = new CreateRoomService(rooms).Create("101", 3000m, true);
             var meter = MeterReading.Create(100m);
             new CreateMonthlyBillService(bills).Create(new CreateMonthlyBillRequest(
                 room.Id, CurrentPeriod, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
 
+            tabControl.SelectedTab = tabControl.TabPages["BillingTabPage"]!;
             tabControl.SelectedTab = reportPage;
 
             var billedLabel = (Label)reportPage.Controls.Find("ReportBilledValueLabel", true)[0];
