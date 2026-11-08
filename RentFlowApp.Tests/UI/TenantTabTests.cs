@@ -126,8 +126,8 @@ public class TenantTabTests
                 billRepository: billRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabs = form.Controls.OfType<TabControl>().First();
-            var billingTab = tabs.TabPages[2];
-            var tenantTab = tabs.TabPages[3];
+            var billingTab = tabs.TabPages["BillingTabPage"]!;
+            var tenantTab = tabs.TabPages["TenantTabPage"]!;
             tabs.SelectedTab = billingTab;
 
             ((BillingPeriodSelector)billingTab.Controls.Find("BillingPeriodSelector", true)[0])

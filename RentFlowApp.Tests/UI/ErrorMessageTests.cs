@@ -59,6 +59,7 @@ public class ErrorMessageTests
     {
         using var form = new RoomForm(new CreateRoomService(rooms), rooms);
         HiddenTestWindows.ShowHidden(form);
+        SelectTab(form, "RoomTabPage");
         Find<TextBox>(form, "RoomNumberTextBox").Text = roomNumber;
         Find<TextBox>(form, "RoomMonthlyRentTextBox").Text = "3000";
         Find<Button>(form, "AddRoomButton").PerformClick();

@@ -247,7 +247,7 @@ public sealed class SqliteBackupServiceTests : IDisposable
             using var form = CreateForm(storage, CreateService());
             HiddenTestWindows.ShowHidden(form);
             var tabs = form.Controls.OfType<TabControl>().First();
-            var settingsTab = tabs.TabPages[5];
+            var settingsTab = tabs.TabPages["SettingsTabPage"]!;
             tabs.SelectedTab = settingsTab;
             var lastBackupLabel = (Label)settingsTab.Controls.Find("LastBackupLabel", true)[0];
             Assert.Equal("ยังไม่มีไฟล์สำรอง", lastBackupLabel.Text);
@@ -266,7 +266,7 @@ public sealed class SqliteBackupServiceTests : IDisposable
         RunInSta(() =>
         {
             using var form = CreateForm(SqliteAppStorage.Open(_folder), backupService: null);
-            var settingsTab = form.Controls.OfType<TabControl>().First().TabPages[5];
+            var settingsTab = form.Controls.OfType<TabControl>().First().TabPages["SettingsTabPage"]!;
 
             Assert.Empty(settingsTab.Controls.Find("BackupGroup", true));
         });

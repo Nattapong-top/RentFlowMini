@@ -31,6 +31,15 @@ internal static class InputTestHelper
         }
     }
 
+    // แท็บที่ไม่ได้เลือกจะซ่อนตัวควบคุมไว้ ทำให้ grid ไม่เลือกแถวและปุ่มไม่เปลี่ยนสถานะเหมือนตอนผู้ใช้เปิดแท็บนั้น
+    public static TabPage SelectTab(Form form, string tabPageName)
+    {
+        var tabs = form.Controls.OfType<TabControl>().First();
+        var page = tabs.TabPages[tabPageName]!;
+        tabs.SelectedTab = page;
+        return page;
+    }
+
     public static void DoubleClickRow(DataGridView grid, int rowIndex)
     {
         typeof(DataGridView).GetMethod("OnCellDoubleClick", ProtectedInstance)!

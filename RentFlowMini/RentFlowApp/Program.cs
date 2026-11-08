@@ -21,7 +21,7 @@ internal static class Program
             System.Diagnostics.Trace.TraceError(e.Exception.ToString());
             MessageBox.Show(
                 BaseTabControl.UnexpectedErrorMessage,
-                "RentFlow",
+                AppInfo.Name,
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         };
@@ -35,7 +35,7 @@ internal static class Program
             {
                 MessageBox.Show(
                     "ไม่สามารถอ่านไฟล์ตั้งค่าเดิมได้ ระบบจะใช้ค่าเริ่มต้นชั่วคราว กรุณาตรวจสอบข้อมูลในแท็บตั้งค่าพื้นฐาน ไฟล์เดิมยังเก็บไว้ที่เดิมโดยไม่มีการแก้ไข",
-                    "RentFlow",
+                    AppInfo.Name,
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
             }
@@ -81,7 +81,7 @@ internal static class Program
             System.Diagnostics.Trace.TraceError(ex.ToString());
             MessageBox.Show(
                 $"{ex.Message}\n\nยังใช้งานโปรแกรมต่อได้ และกดสำรองเองได้ที่แท็บตั้งค่าพื้นฐาน",
-                "RentFlow",
+                AppInfo.Name,
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
@@ -90,12 +90,12 @@ internal static class Program
     private static void ShowStartupError(Exception exception, string message)
     {
         System.Diagnostics.Trace.TraceError(exception.ToString());
-        MessageBox.Show(message, "RentFlow", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        MessageBox.Show(message, AppInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 
     // เก็บนอกโฟลเดอร์โปรเจ็กต์ เพื่อไม่ให้ข้อมูลหอพัก ผู้เช่า และเลขบัญชีติดไปกับ git
     private static string GetDataFolder() =>
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "RentFlow");
+            AppInfo.Name);
 }

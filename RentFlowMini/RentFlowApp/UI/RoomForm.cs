@@ -90,7 +90,7 @@ public class RoomForm : Form
 
     private void InitializeForm()
     {
-        Text = "RentFlow - ระบบจัดการห้องพักและสร้างบิล";
+        Text = $"{AppInfo.Name} - ระบบจัดการห้องพักและสร้างบิล";
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
         Width = 850;
@@ -102,12 +102,13 @@ public class RoomForm : Form
             Dock = DockStyle.Fill
         };
 
-        var roomTabPage = new TabPage("ห้องพัก (Rooms)");
-        var meterReadingTabPage = new TabPage("บันทึกมิเตอร์น้ำประปา-ไฟฟ้า");
-        var billingTabPage = new TabPage("สร้างบิลประจำเดือน (Monthly Bill)");
-        var tenantTabPage = new TabPage("ผู้เช่า (Tenants)");
-        var settingsTabPage = new TabPage("ตั้งค่าพื้นฐาน");
-        var reportTabPage = new TabPage("รายงาน");
+        // Name ใช้หาแท็บโดยไม่ผูกกับลำดับ เผื่อเรียงแท็บใหม่ภายหลัง
+        var reportTabPage = new TabPage("รายงานข้อมูล") { Name = "ReportTabPage" };
+        var meterReadingTabPage = new TabPage("บันทึกมิเตอร์") { Name = "MeterReadingTabPage" };
+        var billingTabPage = new TabPage("สร้างบิลประจำเดือน") { Name = "BillingTabPage" };
+        var tenantTabPage = new TabPage("จัดการผู้เช่า") { Name = "TenantTabPage" };
+        var roomTabPage = new TabPage("จัดการห้องพัก") { Name = "RoomTabPage" };
+        var settingsTabPage = new TabPage("ตั้งค่าพื้นฐาน") { Name = "SettingsTabPage" };
 
         roomTabPage.Controls.Add(_roomTabControl);
         meterReadingTabPage.Controls.Add(_meterReadingTabControl);
@@ -116,11 +117,12 @@ public class RoomForm : Form
         settingsTabPage.Controls.Add(_billingSettingsTabControl);
         reportTabPage.Controls.Add(_reportTabControl);
 
-        tabControl.TabPages.Add(roomTabPage);
+        // เรียงตามงานที่ใช้บ่อย: ดูรายงาน → จดมิเตอร์ → ออกบิล ส่วนงานตั้งต้นอยู่ท้าย
+        tabControl.TabPages.Add(reportTabPage);
         tabControl.TabPages.Add(meterReadingTabPage);
         tabControl.TabPages.Add(billingTabPage);
         tabControl.TabPages.Add(tenantTabPage);
-        tabControl.TabPages.Add(reportTabPage);
+        tabControl.TabPages.Add(roomTabPage);
         tabControl.TabPages.Add(settingsTabPage);
 
         tabControl.SelectedIndexChanged += (s, e) =>
