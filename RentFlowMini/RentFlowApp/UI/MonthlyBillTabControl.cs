@@ -13,6 +13,10 @@ public class MonthlyBillTabControl : BaseTabControl
 {
     private const string CreateBillButtonText = "คำนวณและสร้างบิล";
     private const string SaveBillEditButtonText = "บันทึกการแก้ไขบิล";
+    private const string SummaryTitle = "สรุปรายละเอียดบิล";
+    private const string DraftSummaryTitle = "สรุปรายละเอียดบิล (ร่าง ยังไม่บันทึก)";
+    private const string PulledRoomDataMessage =
+        "ดึงข้อมูลห้องล่าสุดแล้ว ยังไม่ได้บันทึก กรุณาตรวจยอดแล้วกดบันทึกการแก้ไขบิล";
     private const int FullInputAreaHeight = 440;
     // ส่วนหัวกลุ่ม แถบปุ่ม 2 แถว หัวตาราง แถบเลื่อน และบิลอย่างน้อย 3 แถว
     private const int MinimumBillListHeight = 310;
@@ -26,6 +30,8 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly MonthlyInvoiceBuilder _invoiceBuilder;
     private readonly Action<MonthlyInvoicePrintDocument> _showInvoicePreview;
     private readonly Func<string, bool> _confirmCancelPayment;
+    private readonly Func<string, bool> _confirmBillRevision;
+    private readonly LatestRoomDataForBillService _latestRoomDataForBillService;
     private readonly Func<DateOnly> _today;
     private readonly IRoomRepository _roomRepository;
     private readonly IBillingSettingsRepository _billingSettingsRepository;
@@ -52,6 +58,7 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly TextBox _cableTvRateTextBox = new();
 
     private readonly Button _createBillButton = new();
+    private readonly Button _pullRoomDataButton = new();
     private readonly DataGridView _billGrid = new();
     private readonly DateTimePicker _paymentDatePicker = new();
     private readonly ComboBox _paymentMethodComboBox = new();
@@ -59,6 +66,7 @@ public class MonthlyBillTabControl : BaseTabControl
     private readonly Label _outstandingSummaryLabel = new();
 
     // Result Labels (Right Side Detailed Summary Box)
+    private readonly GroupBox _resultGroup = new();
     private readonly Label _resultRoomLabel = new();
     private readonly Label _resultInvoiceNumberLabel = new();
     private readonly Label _resultPeriodLabel = new();
@@ -81,6 +89,9 @@ public class MonthlyBillTabControl : BaseTabControl
     private bool _areRatesLoaded;
 
     private Bill? _editingBill;
+    // ค่าที่ดึงจากห้องล่าสุดของบิลที่กำลังแก้ ใช้ตอนบันทึกแทนตัวเลขในช่อง เพราะช่องเป็นแค่การแสดงผล
+    private LatestRoomDataForBill? _pulledRoomData;
+    private bool _isShowingDraft;
 
     private sealed record RoomItem(RoomId Id, string RoomNumber, decimal MonthlyRent, bool IsCableTvExempt)
     {
@@ -125,7 +136,8 @@ public class MonthlyBillTabControl : BaseTabControl
         IInvoiceSettingsRepository? invoiceSettingsRepository = null,
         Action<MonthlyInvoicePrintDocument>? showInvoicePreview = null,
         Func<string, bool>? confirmCancelPayment = null,
-        Func<DateOnly>? today = null)
+        Func<DateOnly>? today = null,
+        Func<string, bool>? confirmBillRevision = null)
     {
         ArgumentNullException.ThrowIfNull(roomRepository);
 
@@ -143,6 +155,11 @@ public class MonthlyBillTabControl : BaseTabControl
             _invoiceSettingsRepository);
         _showInvoicePreview = showInvoicePreview ?? ShowInvoicePreviewDialog;
         _confirmCancelPayment = confirmCancelPayment ?? ShowCancelPaymentConfirmation;
+        _confirmBillRevision = confirmBillRevision ?? ShowBillRevisionConfirmation;
+        _latestRoomDataForBillService = new LatestRoomDataForBillService(
+            _billRepository,
+            _roomRepository,
+            _monthlyMeterReadingRepository);
         _today = today ?? (() => DateOnly.FromDateTime(DateTime.Now));
 
         Name = "MonthlyBillTabControl";
@@ -241,6 +258,12 @@ public class MonthlyBillTabControl : BaseTabControl
         _monthlyRentTextBox.ReadOnly = true;
         _monthlyRentTextBox.TabStop = false;
         _monthlyRentTextBox.BackColor = SystemColors.ControlLight;
+
+        _pullRoomDataButton.Name = "PullRoomDataButton";
+        _pullRoomDataButton.Text = "ดึงข้อมูลห้องใหม่";
+        _pullRoomDataButton.SetBounds(295, 53, 160, 32);
+        _pullRoomDataButton.Enabled = false;
+        _pullRoomDataButton.Click += PullRoomDataButton_Click;
 
         // Water GroupBox (Readonly for previous, current & rate loaded from DB/Settings)
         var waterGroup = new GroupBox
@@ -353,6 +376,10 @@ public class MonthlyBillTabControl : BaseTabControl
         _isCableTvExemptCheckBox.Text = "ยกเว้น Cable";
         _isCableTvExemptCheckBox.SetBounds(345, 25, 110, 25);
 
+        _chargeMotorcycleCheckBox.CheckedChanged += ChargeCheckBox_CheckedChanged;
+        _chargeCarCheckBox.CheckedChanged += ChargeCheckBox_CheckedChanged;
+        _isCableTvExemptCheckBox.CheckedChanged += ChargeCheckBox_CheckedChanged;
+
         HandleEnterKey(
             () =>
             {
@@ -396,7 +423,7 @@ public class MonthlyBillTabControl : BaseTabControl
         [
             roomLabel, _billRoomComboBox,
             _periodSelector,
-            rentLabel, _monthlyRentTextBox,
+            rentLabel, _monthlyRentTextBox, _pullRoomDataButton,
             waterGroup,
             elecGroup,
             addGroup,
@@ -418,13 +445,11 @@ public class MonthlyBillTabControl : BaseTabControl
 
     private GroupBox BuildResultGroup()
     {
-        var resultGroup = new GroupBox
-        {
-            Name = "ResultGroup",
-            Text = "สรุปรายละเอียดบิล",
-            Padding = new Padding(10),
-            BackColor = Color.White
-        };
+        var resultGroup = _resultGroup;
+        resultGroup.Name = "ResultGroup";
+        resultGroup.Text = SummaryTitle;
+        resultGroup.Padding = new Padding(10);
+        resultGroup.BackColor = Color.White;
 
         var panel = new Panel
         {
@@ -965,6 +990,186 @@ public class MonthlyBillTabControl : BaseTabControl
             MessageBoxIcon.Warning,
             MessageBoxDefaultButton.Button2) == DialogResult.Yes;
 
+    private bool ShowBillRevisionConfirmation(string message) =>
+        MessageBox.Show(
+            FindForm(),
+            message,
+            "ยืนยันการแก้ไขบิล",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question,
+            MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+
+    private void PullRoomDataButton_Click(object? sender, EventArgs e)
+    {
+        if (_editingBill is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var latest = _latestRoomDataForBillService.Get(_editingBill.Id);
+            _pulledRoomData = latest;
+
+            _monthlyRentTextBox.Text = latest.MonthlyRent.ToString("0.##");
+            _isCableTvExemptCheckBox.Checked = latest.IsCableTvExempt;
+            if (latest.Meters is { } meters)
+            {
+                _prevWaterTextBox.Text = meters.PreviousWater.Value.ToString("0.##");
+                _currWaterTextBox.Text = meters.CurrentWater.Value.ToString("0.##");
+                _prevElecTextBox.Text = meters.PreviousElectricity.Value.ToString("0.##");
+                _currElecTextBox.Text = meters.CurrentElectricity.Value.ToString("0.##");
+            }
+
+            ShowRevisionDraft();
+
+            _billMessageLabel.ForeColor = Color.DarkBlue;
+            _billMessageLabel.Text = latest.Notice is null
+                ? PulledRoomDataMessage
+                : $"{PulledRoomDataMessage} {latest.Notice}";
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowBillError(ex.Message);
+        }
+    }
+
+    private void ChargeCheckBox_CheckedChanged(object? sender, EventArgs e)
+    {
+        if (_editingBill is not null)
+        {
+            ShowRevisionDraft();
+        }
+        else
+        {
+            ShowCreateDraft();
+        }
+    }
+
+    private void ShowCreateDraft()
+    {
+        if (_createMonthlyBillService is null)
+        {
+            return;
+        }
+
+        if (_billRoomComboBox.SelectedItem is not RoomItem room)
+        {
+            // ไม่มีห้องให้ออกบิลแล้ว จึงคงบิลที่เพิ่งออกไว้ให้ดู แต่ไม่ปล่อยร่างของห้องที่ไม่ได้เลือกค้างไว้
+            if (_isShowingDraft)
+            {
+                ClearBillSummary();
+            }
+
+            return;
+        }
+
+        if (!_areRatesLoaded ||
+            _periodSelector.GetBillingPeriod() is not { } period ||
+            !TryReadRate(_monthlyRentTextBox, out var monthlyRent) ||
+            !TryReadRate(_waterRateTextBox, out var waterRate) ||
+            !TryReadRate(_elecRateTextBox, out var elecRate) ||
+            !TryReadRate(_motorcycleRateTextBox, out var motorcycleRate) ||
+            !TryReadRate(_carRateTextBox, out var carRate) ||
+            !TryReadRate(_cableTvRateTextBox, out var cableTvRate))
+        {
+            // ข้อความของช่องที่ผิดจะแจ้งตอนกดออกบิล ส่วนราคากลางที่โหลดไม่ได้มีข้อความแจ้งอยู่แล้ว
+            ClearBillSummary();
+            return;
+        }
+
+        try
+        {
+            var draft = _createMonthlyBillService.Preview(BuildCreateRequest(
+                room, period, monthlyRent, waterRate, elecRate, motorcycleRate, carRate, cableTvRate));
+
+            if (draft.Bill is { } draftBill)
+            {
+                ShowBillSummary(draftBill, isDraft: true, isUnissued: true);
+                return;
+            }
+
+            ClearBillSummary();
+            ShowBillError(draft.Reason ?? string.Empty);
+        }
+        catch (ArgumentException ex)
+        {
+            ClearBillSummary();
+            ShowBillError(ex.Message);
+        }
+    }
+
+    private CreateMonthlyBillRequest BuildCreateRequest(
+        RoomItem room,
+        BillingPeriod billingPeriod,
+        decimal monthlyRent,
+        decimal waterRate,
+        decimal elecRate,
+        decimal motorcycleRate,
+        decimal carRate,
+        decimal cableTvRate) =>
+        new(
+            room.Id,
+            billingPeriod,
+            monthlyRent,
+            TryParseMeterReading(_prevWaterTextBox.Text.Trim()),
+            TryParseMeterReading(_currWaterTextBox.Text.Trim()),
+            TryParseMeterReading(_prevElecTextBox.Text.Trim()),
+            TryParseMeterReading(_currElecTextBox.Text.Trim()),
+            waterRate,
+            elecRate,
+            _chargeMotorcycleCheckBox.Checked,
+            motorcycleRate,
+            _chargeCarCheckBox.Checked,
+            carRate,
+            _isCableTvExemptCheckBox.Checked,
+            cableTvRate,
+            // เก็บผู้เช่าปัจจุบันไว้ในบิล เพื่อไม่ให้บิลเก่าเปลี่ยนชื่อตามผู้เช่าคนใหม่ของห้อง
+            _tenantRepository.GetAll().FirstOrDefault(t => t.RoomId == room.Id) is { } currentTenant
+                ? BillTenantSnapshot.From(currentTenant)
+                : null);
+
+    private void ShowRevisionDraft()
+    {
+        if (_editingBill is null ||
+            !TryReadRate(_motorcycleRateTextBox, out var motorcycleRate) ||
+            !TryReadRate(_carRateTextBox, out var carRate) ||
+            !TryReadRate(_cableTvRateTextBox, out var cableTvRate))
+        {
+            return;
+        }
+
+        try
+        {
+            var preview = _updateBillChargesService.Preview(
+                BuildRevisionRequest(_editingBill, motorcycleRate, carRate, cableTvRate));
+            ShowBillSummary(preview.Revised, isDraft: true);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or InvalidMeterReadingException)
+        {
+            // ร่างเป็นแค่การแสดงผล ถ้าคำนวณไม่ได้ให้คงกล่องสรุปเดิมไว้ ข้อผิดพลาดจะแจ้งตอนกดบันทึก
+        }
+    }
+
+    private static bool TryReadRate(TextBox textBox, out decimal rate) =>
+        decimal.TryParse(textBox.Text.Trim(), out rate) && rate >= 0;
+
+    private UpdateBillChargesRequest BuildRevisionRequest(
+        Bill editingBill,
+        decimal motorcycleRate,
+        decimal carRate,
+        decimal cableTvRate) =>
+        new(
+            editingBill.Id,
+            _chargeMotorcycleCheckBox.Checked,
+            motorcycleRate,
+            _chargeCarCheckBox.Checked,
+            carRate,
+            _isCableTvExemptCheckBox.Checked,
+            cableTvRate,
+            _pulledRoomData?.MonthlyRent,
+            _pulledRoomData?.Meters);
+
     private void ChangePaymentOfSelectedBill(
         Func<BillId, Bill> changePayment,
         Func<string, string> successMessage,
@@ -1122,6 +1327,8 @@ public class MonthlyBillTabControl : BaseTabControl
 
         ExitBillEditIfSelectionChanged();
         TryAutoLoadReadings();
+        // ล้างรายการห้องจนว่างไม่ได้ทำให้ ComboBox แจ้งการเปลี่ยนห้องเสมอ จึงต้องคำนวณร่างที่นี่ด้วย
+        ShowCreateDraft();
 
         // แสดงหลังโหลดมิเตอร์ เพราะขั้นตอนนั้นเขียนข้อความทับป้ายเดียวกัน
         if (!_areRatesLoaded)
@@ -1201,12 +1408,16 @@ public class MonthlyBillTabControl : BaseTabControl
 
         ExitBillEditIfSelectionChanged();
         TryAutoLoadReadings();
+        ShowCreateDraft();
     }
 
     private void SetEditingBill(Bill? bill)
     {
         _editingBill = bill;
+        _pulledRoomData = null;
         _createBillButton.Text = bill is null ? CreateBillButtonText : SaveBillEditButtonText;
+        // บิลที่ชำระแล้วไม่เข้าโหมดแก้ไข ปุ่มจึงปิดเองโดยไม่ต้องตรวจซ้ำ ส่วน service ก็ปฏิเสธบิลที่ชำระแล้วอีกชั้น
+        _pullRoomDataButton.Enabled = bill is not null;
     }
 
     private void ExitBillEditIfSelectionChanged()
@@ -1285,7 +1496,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _currElecTextBox.Clear();
 
         _billMessageLabel.ForeColor = Color.DarkRed;
-        _billMessageLabel.Text = $"ยังไม่มีข้อมูลบันทึกมิเตอร์ของรอบบิลนี้ กรุณาบันทึกมิเตอร์น้ำ-ไฟก่อนทำการสร้างบิล";
+        _billMessageLabel.Text = CreateMonthlyBillService.MissingMeterReadingMessage;
     }
 
     private void LoadDefaultSettings()
@@ -1382,46 +1593,21 @@ public class MonthlyBillTabControl : BaseTabControl
             return;
         }
 
-        MeterReading? prevWater = TryParseMeterReading(_prevWaterTextBox.Text.Trim());
-        MeterReading? currWater = TryParseMeterReading(_currWaterTextBox.Text.Trim());
-        MeterReading? prevElec = TryParseMeterReading(_prevElecTextBox.Text.Trim());
-        MeterReading? currElec = TryParseMeterReading(_currElecTextBox.Text.Trim());
-
-        bool chargeMotorcycle = _chargeMotorcycleCheckBox.Checked;
-        bool chargeCar = _chargeCarCheckBox.Checked;
-        bool isCableTvExempt = _isCableTvExemptCheckBox.Checked;
-
         try
         {
-            var request = new CreateMonthlyBillRequest(
-                selectedRoom.Id,
-                billingPeriod,
-                monthlyRent,
-                prevWater,
-                currWater,
-                prevElec,
-                currElec,
-                waterRate,
-                elecRate,
-                chargeMotorcycle,
-                motorcycleRate,
-                chargeCar,
-                carRate,
-                isCableTvExempt,
-                cableTvRate,
-                // เก็บผู้เช่าปัจจุบันไว้ในบิล เพื่อไม่ให้บิลเก่าเปลี่ยนชื่อตามผู้เช่าคนใหม่ของห้อง
-                _tenantRepository.GetAll().FirstOrDefault(t => t.RoomId == selectedRoom.Id) is { } currentTenant
-                    ? BillTenantSnapshot.From(currentTenant)
-                    : null);
+            var request = BuildCreateRequest(
+                selectedRoom, billingPeriod, monthlyRent, waterRate, elecRate, motorcycleRate, carRate, cableTvRate);
 
             var bill = _createMonthlyBillService.Create(request);
 
             ShowBillSummary(bill);
 
-            // รีเฟรชตารางและเลื่อนไปยังห้องถัดไป (Auto-advance)
+            // รีเฟรชตารางและเลื่อนไปยังห้องถัดไป (Auto-advance) ซึ่งจะแสดงร่างของห้องถัดไปให้ด้วย
+            // ถ้าไม่เหลือห้องให้ออกบิล กล่องสรุปจะยังแสดงบิลที่เพิ่งออก
             RefreshBillGrid();
             RefreshRoomList(forceIncludeRoomId: null);
 
+            // ข้อความผลการออกบิลสำคัญกว่าเหตุผลที่คำนวณร่างของห้องถัดไปไม่ได้ ซึ่งดูได้จากกล่องสรุปที่เป็น "-"
             _billMessageLabel.ForeColor = Color.DarkGreen;
             _billMessageLabel.Text =
                 $"สร้างบิลสำหรับห้อง {selectedRoom.RoomNumber} รอบ {ThaiCalendar.FormatPeriod(bill.BillingPeriod)} สำเร็จเรียบร้อย";
@@ -1451,18 +1637,25 @@ public class MonthlyBillTabControl : BaseTabControl
         decimal carRate,
         decimal cableTvRate)
     {
-        bool isCableTvExempt = _isCableTvExemptCheckBox.Checked;
+        var request = BuildRevisionRequest(editingBill, motorcycleRate, carRate, cableTvRate);
+        string period = ThaiCalendar.FormatPeriod(editingBill.BillingPeriod);
 
         try
         {
-            var bill = _updateBillChargesService.Update(new UpdateBillChargesRequest(
-                editingBill.Id,
-                _chargeMotorcycleCheckBox.Checked,
-                motorcycleRate,
-                _chargeCarCheckBox.Checked,
-                carRate,
-                isCableTvExempt,
-                cableTvRate));
+            var preview = _updateBillChargesService.Preview(request);
+            bool isTotalChanged = preview.NewTotal.Amount != preview.OldTotal.Amount;
+
+            if (isTotalChanged && !_confirmBillRevision(
+                    $"ยืนยันบันทึกการแก้ไขบิลห้อง {selectedRoom.RoomNumber} รอบ {period}\n\n" +
+                    $"ยอดเดิม {FormatBaht(preview.OldTotal)}\n" +
+                    $"ยอดใหม่ {FormatBaht(preview.NewTotal)}"))
+            {
+                _billMessageLabel.ForeColor = Color.DarkBlue;
+                _billMessageLabel.Text = "ยกเลิกการบันทึก บิลยังเป็นยอดเดิม";
+                return;
+            }
+
+            var bill = _updateBillChargesService.Update(request);
 
             ShowBillSummary(bill);
 
@@ -1472,7 +1665,13 @@ public class MonthlyBillTabControl : BaseTabControl
 
             _billMessageLabel.ForeColor = Color.DarkGreen;
             _billMessageLabel.Text =
-                $"บันทึกการแก้ไขบิลห้อง {selectedRoom.RoomNumber} รอบ {ThaiCalendar.FormatPeriod(bill.BillingPeriod)} สำเร็จเรียบร้อย";
+                $"บันทึกการแก้ไขบิลห้อง {selectedRoom.RoomNumber} รอบ {period} สำเร็จเรียบร้อย" +
+                // ยังไม่เก็บประวัติการแก้ยอด กระดาษที่ผู้เช่าถืออยู่จึงอาจเป็นยอดเก่า
+                (isTotalChanged ? " หากพิมพ์บิลนี้ให้ผู้เช่าแล้ว กรุณาพิมพ์ใหม่" : "");
+        }
+        catch (InvalidMeterReadingException ex)
+        {
+            ShowBillError(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
@@ -1546,14 +1745,17 @@ public class MonthlyBillTabControl : BaseTabControl
         _chargeMotorcycleCheckBox.Focus();
     }
 
-    private void ShowBillSummary(Bill bill)
+    // isUnissued: ร่างของบิลที่ยังไม่ได้ออก จึงยังไม่มีเลขใบแจ้งหนี้และวันที่ออกบิล
+    private void ShowBillSummary(Bill bill, bool isDraft = false, bool isUnissued = false)
     {
         string? tenantName = bill.Tenant?.FullName;
+        _isShowingDraft = isDraft;
+        _resultGroup.Text = isDraft ? DraftSummaryTitle : SummaryTitle;
 
         _resultRoomLabel.Text = $"ห้อง {GetRoomNumber(bill)}";
-        _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {bill.InvoiceNumber}";
+        _resultInvoiceNumberLabel.Text = $"ใบแจ้งหนี้ เลขที่ : {(isUnissued ? "จะได้เลขตอนออกบิล" : bill.InvoiceNumber)}";
         _resultPeriodLabel.Text = $"(รอบเดือนที่ {bill.BillingPeriod.Month}/{bill.BillingPeriod.Year + 543})";
-        _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {ThaiCalendar.FormatDate(bill.CreatedAt)}";
+        _resultCreatedAtLabel.Text = $"วันที่ออกบิล: {(isUnissued ? "-" : ThaiCalendar.FormatDate(bill.CreatedAt))}";
         _resultDueDateLabel.Text = $"ครบกำหนด: {ThaiCalendar.FormatDate(bill.DueDate)}";
         _resultTenantLabel.Text = $"ผู้เช่า: {(string.IsNullOrWhiteSpace(tenantName) ? "ไม่มีข้อมูลผู้เช่า" : tenantName)}";
         _resultRentLabel.Text = FormatBaht(bill.Rent);
@@ -1569,6 +1771,28 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultCarParkingLabel.Text = bill.CarParking.Amount > 0 ? FormatBaht(bill.CarParking) : "-";
         _resultCableTvLabel.Text = FormatBaht(bill.CableTv);
         _resultTotalLabel.Text = FormatBaht(bill.Total);
+    }
+
+    private void ClearBillSummary()
+    {
+        _isShowingDraft = false;
+        _resultGroup.Text = SummaryTitle;
+
+        _resultRoomLabel.Text = "ห้อง -";
+        _resultInvoiceNumberLabel.Text = "ใบแจ้งหนี้ เลขที่ : -";
+        _resultPeriodLabel.Text = "(รอบเดือนที่ -)";
+        _resultCreatedAtLabel.Text = "วันที่ออกบิล: -";
+        _resultDueDateLabel.Text = "ครบกำหนด: -";
+        _resultTenantLabel.Text = "ผู้เช่า: -";
+        foreach (var label in new[]
+                 {
+                     _resultRentLabel, _resultWaterDetailsLabel, _resultWaterAmountLabel,
+                     _resultElecDetailsLabel, _resultElecAmountLabel, _resultMotorcycleParkingLabel,
+                     _resultCarParkingLabel, _resultCableTvLabel, _resultTotalLabel
+                 })
+        {
+            label.Text = "-";
+        }
     }
 
     private string GetRoomNumber(Bill bill) =>

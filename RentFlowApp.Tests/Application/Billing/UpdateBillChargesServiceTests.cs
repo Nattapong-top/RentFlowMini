@@ -120,6 +120,89 @@ public class UpdateBillChargesServiceTests
         Assert.True(exemptedAgain.IsCableTvExempt);
     }
 
+    // น้ำ 100 → 120 (20 หน่วย x 19 = 380), ไฟ 100 → 115 (15 หน่วย x 8 = 120)
+    private static readonly BillMeterReadings CorrectedReadings = new(
+        MeterReading.Create(100m),
+        MeterReading.Create(120m),
+        MeterReading.Create(100m),
+        MeterReading.Create(115m));
+
+    [Fact]
+    public void Update_WithRentAndMeters_RecalculatesWithRatesOnBill()
+    {
+        var bill = CreateStoredBill();
+        var service = new UpdateBillChargesService(_repository);
+
+        var updated = service.Update(new UpdateBillChargesRequest(
+            bill.Id, false, 100m, false, 500m, true, 60m,
+            MonthlyRent: 3200m,
+            Meters: CorrectedReadings));
+
+        Assert.Equal(3200m, updated.Rent.Amount);
+        Assert.Equal(380m, updated.Water.Amount);
+        Assert.Equal(120m, updated.Electricity.Amount);
+        Assert.Equal(3700m, updated.Total.Amount);
+        Assert.Equal(3700m, _repository.Get(bill.Id)!.Total.Amount);
+    }
+
+    [Fact]
+    public void Update_WithMetersOnBillWithoutMeterSnapshot_IsRejectedAndChangesNothing()
+    {
+        var meter = MeterReading.Create(100m);
+        var bill = Bill.Create(RoomId.New(), BillingPeriod.Create("2026-09"), BillingCalculator.Calculate(3000m, meter, meter, meter, meter, 19m, 8m));
+        _repository.Add(bill);
+        var service = new UpdateBillChargesService(_repository);
+
+        Assert.Throws<InvalidOperationException>(() => service.Update(new UpdateBillChargesRequest(
+            bill.Id, true, 100m, false, 500m, true, 60m,
+            MonthlyRent: 3200m,
+            Meters: CorrectedReadings)));
+
+        var stored = _repository.Get(bill.Id)!;
+        Assert.Equal(3000m, stored.Rent.Amount);
+        Assert.Equal(0m, stored.MotorcycleParking.Amount);
+    }
+
+    [Fact]
+    public void Preview_ReturnsOldAndNewTotal_AndDoesNotChangeStoredBill()
+    {
+        var bill = CreateStoredBill();
+        var service = new UpdateBillChargesService(_repository);
+
+        var preview = service.Preview(new UpdateBillChargesRequest(
+            bill.Id, true, 100m, false, 500m, true, 60m,
+            MonthlyRent: 3200m,
+            Meters: CorrectedReadings));
+
+        Assert.Equal(3270m, preview.OldTotal.Amount);
+        Assert.Equal(3800m, preview.NewTotal.Amount);
+        Assert.Equal(3200m, preview.Revised.Rent.Amount);
+        Assert.Equal(380m, preview.Revised.Water.Amount);
+        Assert.Equal(120m, preview.Revised.Electricity.Amount);
+        Assert.Equal(100m, preview.Revised.MotorcycleParking.Amount);
+        Assert.Equal(MeterReading.Create(120m), preview.Revised.Meters!.CurrentWater);
+        Assert.Equal(bill.InvoiceNumber, preview.Revised.InvoiceNumber);
+        var stored = _repository.Get(bill.Id)!;
+        Assert.Equal(3000m, stored.Rent.Amount);
+        Assert.Equal(190m, stored.Water.Amount);
+        Assert.Equal(0m, stored.MotorcycleParking.Amount);
+        Assert.Equal(3270m, stored.Total.Amount);
+        Assert.Equal(bill.Meters, stored.Meters);
+    }
+
+    [Fact]
+    public void Preview_WhenBillIsPaid_IsRejected()
+    {
+        var bill = CreateStoredBill();
+        new BillPaymentService(_repository).RecordPayment(bill.Id, new DateOnly(2026, 10, 3), PaymentMethod.Cash);
+        var service = new UpdateBillChargesService(_repository);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => service.Preview(new UpdateBillChargesRequest(
+            bill.Id, true, 100m, false, 500m, true, 60m, MonthlyRent: 3200m)));
+
+        Assert.Equal("บิลนี้ชำระแล้วจึงแก้ไขไม่ได้ กรุณายกเลิกการรับชำระก่อนแก้ไข", exception.Message);
+    }
+
     [Fact]
     public void Update_WhenBillDoesNotExist_ThrowsInvalidOperationException()
     {

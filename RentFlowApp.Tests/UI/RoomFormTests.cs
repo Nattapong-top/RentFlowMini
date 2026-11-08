@@ -323,7 +323,8 @@ public class RoomFormTests
             var room = createRoomService.Create("101");
             var tenantRepo = TenantsLivingIn(room.Id);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
+            using var form = new RoomForm(
+                createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo, billRepository: billRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -769,7 +770,8 @@ public class RoomFormTests
             new MoveOutTenantService(tenantRepo).MoveOut(tenant.Id, DateOnly.FromDateTime(DateTime.Now));
 
             using var form = new RoomForm(
-                createRoomService, roomRepo, createBillService, null, tenantRepo, billRepository: billRepo);
+                createRoomService, roomRepo, createBillService, null, tenantRepo, billRepository: billRepo,
+                confirmBillRevision: _ => true);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];
@@ -858,7 +860,9 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 3000m, true);
             AddMeterReading(meterRepo, room.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo);
+            using var form = new RoomForm(
+                createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo,
+                confirmBillRevision: _ => true);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages[2];

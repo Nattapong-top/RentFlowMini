@@ -1,3 +1,4 @@
+using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Application.Billing;
@@ -9,4 +10,6 @@ public sealed record UpdateBillChargesRequest(
     bool ChargeCarParking,
     decimal CarParkingRate,
     bool IsCableTvExempt,
-    decimal CableTvRate);
+    decimal CableTvRate,
+    decimal? MonthlyRent = null,
+    BillMeterReadings? Meters = null);

@@ -116,4 +116,124 @@ public class BillTests
         Assert.Equal(5m, bill.Meters.ElectricityUsage);
         Assert.Equal(new DateOnly(2026, 10, 5), bill.DueDate);
     }
+
+    // ค่าเช่า 2800, น้ำ 10 หน่วย x 15 = 150, ไฟ 5 หน่วย x 8 = 40, จอดมอเตอร์ไซค์ 300, Cable TV 60
+    private static Bill CreateBillWithMeters()
+    {
+        return Bill.Create(
+            RoomId.New(),
+            BillingPeriod.Create("2026-09"),
+            new BillingCalculationResult(
+                Rent: Money.Create(2800m),
+                Water: Money.Create(150m),
+                Electricity: Money.Create(40m),
+                MotorcycleParking: Money.Create(300m),
+                CarParking: Money.Create(0m),
+                CableTv: Money.Create(60m),
+                Total: Money.Create(3350m)),
+            "N007",
+            new DateTime(2026, 9, 30, 14, 15, 16),
+            new BillMeterSnapshot(
+                MeterReading.Create(100m),
+                MeterReading.Create(110m),
+                MeterReading.Create(500m),
+                MeterReading.Create(505m),
+                WaterRate: 15m,
+                ElectricityRate: 8m),
+            new BillTenantSnapshot(TenantId.New(), "Anna Example"));
+    }
+
+    private static BillMeterReadings Readings(decimal previousWater, decimal currentWater, decimal previousElectricity, decimal currentElectricity) =>
+        new(
+            MeterReading.Create(previousWater),
+            MeterReading.Create(currentWater),
+            MeterReading.Create(previousElectricity),
+            MeterReading.Create(currentElectricity));
+
+    [Fact]
+    public void ReviseRoomCharges_RecalculatesWithRatesOnBill_AndKeepsInvoiceDatesAndOtherCharges()
+    {
+        var bill = CreateBillWithMeters();
+        var dueDate = bill.DueDate;
+
+        // น้ำ 20 หน่วย x 15 = 300, ไฟ 10 หน่วย x 8 = 80
+        bill.ReviseRoomCharges(Money.Create(3000m), Readings(100m, 120m, 500m, 510m));
+
+        Assert.Equal(3000m, bill.Rent.Amount);
+        Assert.Equal(300m, bill.Water.Amount);
+        Assert.Equal(80m, bill.Electricity.Amount);
+        Assert.Equal(300m, bill.MotorcycleParking.Amount);
+        Assert.Equal(60m, bill.CableTv.Amount);
+        Assert.Equal(3740m, bill.Total.Amount);
+        Assert.Equal(
+            new BillMeterSnapshot(
+                MeterReading.Create(100m),
+                MeterReading.Create(120m),
+                MeterReading.Create(500m),
+                MeterReading.Create(510m),
+                WaterRate: 15m,
+                ElectricityRate: 8m),
+            bill.Meters);
+        Assert.Equal("N007", bill.InvoiceNumber);
+        Assert.Equal(new DateTime(2026, 9, 30, 14, 15, 16), bill.CreatedAt);
+        Assert.Equal(dueDate, bill.DueDate);
+        Assert.Equal("Anna Example", bill.Tenant!.FullName);
+    }
+
+    [Fact]
+    public void ReviseRoomCharges_WithoutReadings_ChangesRentAndKeepsMeters()
+    {
+        var bill = CreateBillWithMeters();
+        var meters = bill.Meters;
+
+        bill.ReviseRoomCharges(Money.Create(3000m), readings: null);
+
+        Assert.Equal(3000m, bill.Rent.Amount);
+        Assert.Equal(150m, bill.Water.Amount);
+        Assert.Equal(40m, bill.Electricity.Amount);
+        Assert.Equal(meters, bill.Meters);
+        Assert.Equal(3550m, bill.Total.Amount);
+    }
+
+    [Fact]
+    public void ReviseRoomCharges_WhenPaid_IsRejectedAndChangesNothing()
+    {
+        var bill = CreateBillWithMeters();
+        bill.RecordPayment(new DateOnly(2026, 10, 3), PaymentMethod.Cash);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            bill.ReviseRoomCharges(Money.Create(3000m), Readings(100m, 120m, 500m, 510m)));
+
+        Assert.Equal("บิลนี้ชำระแล้วจึงแก้ไขไม่ได้ กรุณายกเลิกการรับชำระก่อนแก้ไข", exception.Message);
+        Assert.Equal(2800m, bill.Rent.Amount);
+        Assert.Equal(3350m, bill.Total.Amount);
+    }
+
+    [Fact]
+    public void ReviseRoomCharges_WithReadingsOnBillWithoutMeterSnapshot_IsRejectedAndChangesNothing()
+    {
+        var meter = MeterReading.Create(100m);
+        var bill = Bill.Create(
+            RoomId.New(),
+            BillingPeriod.Create("2026-09"),
+            BillingCalculator.Calculate(2800m, meter, meter, meter, meter, 15m, 8m));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            bill.ReviseRoomCharges(Money.Create(3000m), Readings(100m, 120m, 500m, 510m)));
+
+        Assert.Equal("บิลนี้ไม่ได้เก็บอัตราค่าน้ำและค่าไฟไว้ จึงคำนวณค่าน้ำค่าไฟใหม่ไม่ได้", exception.Message);
+        Assert.Equal(2800m, bill.Rent.Amount);
+    }
+
+    [Fact]
+    public void ReviseRoomCharges_WhenCurrentMeterIsLowerThanPrevious_IsRejectedAndChangesNothing()
+    {
+        var bill = CreateBillWithMeters();
+
+        Assert.Throws<InvalidMeterReadingException>(() =>
+            bill.ReviseRoomCharges(Money.Create(3000m), Readings(120m, 100m, 500m, 510m)));
+
+        Assert.Equal(2800m, bill.Rent.Amount);
+        Assert.Equal(150m, bill.Water.Amount);
+    }
 }

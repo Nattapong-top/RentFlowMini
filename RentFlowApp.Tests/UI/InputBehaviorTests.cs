@@ -150,7 +150,10 @@ public class InputBehaviorTests
                 room.Id, period, 3000m, meter, meter, meter, meter, 19m, 8m, Tenant: TestTenants.Snapshot()));
 
             using var form = new Form();
-            var tab = new MonthlyBillTabControl(createBill, rooms, billRepository: bills) { Dock = DockStyle.Fill };
+            var tab = new MonthlyBillTabControl(createBill, rooms, billRepository: bills, confirmBillRevision: _ => true)
+            {
+                Dock = DockStyle.Fill
+            };
             form.Controls.Add(tab);
             HiddenTestWindows.ShowHidden(form);
             ((BillingPeriodSelector)tab.Controls.Find("BillingPeriodSelector", true)[0]).SetBillingPeriod(period);
