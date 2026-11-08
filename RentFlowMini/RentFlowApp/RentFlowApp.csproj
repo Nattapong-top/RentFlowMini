@@ -5,6 +5,7 @@
     <!-- ชื่อไฟล์โปรแกรมที่ผู้ใช้เห็น ส่วน namespace ในโค้ดยังเป็น RentFlowApp -->
     <AssemblyName>RentFlowMiniApp</AssemblyName>
     <RootNamespace>RentFlowApp</RootNamespace>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
@@ -22,6 +23,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Database\Sqlite\001_InitialSchema.sql" LogicalName="RentFlowApp.Database.Sqlite.001_InitialSchema.sql" />
+    <EmbeddedResource Include="app.ico" LogicalName="RentFlowApp.app.ico" />
   </ItemGroup>
 
 </Project>
