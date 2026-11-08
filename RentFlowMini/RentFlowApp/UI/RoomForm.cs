@@ -91,6 +91,7 @@ public class RoomForm : Form
     private void InitializeForm()
     {
         Text = $"{AppInfo.Name} - ระบบจัดการห้องพักและสร้างบิล";
+        Icon = AppInfo.LoadIcon();
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
         Width = 850;

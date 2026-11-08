@@ -15,6 +15,25 @@ namespace RentFlowApp.Tests.UI;
 public class RoomFormTests
 {
     [Fact]
+    public void RoomForm_UsesAppIcon()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            using var form = new RoomForm(
+                new CreateRoomService(roomRepo), roomRepo, new CreateMonthlyBillService(new InMemoryBillRepository()));
+            using var appIcon = AppInfo.LoadIcon();
+
+            // ไอคอนเริ่มต้นของ WinForms ก็ขนาด 32 จึงเทียบข้อมูลรูปแทนการดูแค่ขนาด
+            using var formStream = new MemoryStream();
+            using var appStream = new MemoryStream();
+            form.Icon!.Save(formStream);
+            appIcon.Save(appStream);
+            Assert.Equal(appStream.ToArray(), formStream.ToArray());
+        });
+    }
+
+    [Fact]
     public void RoomForm_InitializesWithSixTabsAndDefaultRates()
     {
         RunInSta(() =>
