@@ -287,6 +287,35 @@ public sealed class SqliteBillRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void Update_AfterRevisingRoomCharges_KeepsRentMetersAndAmountsForNewRepository()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var meter = MeterReading.Create(100m);
+        var bill = Bill.Create(
+            AddRoom("101"),
+            September,
+            BillingCalculator.Calculate(2800m, meter, meter, meter, meter, 19m, 8m),
+            meters: new BillMeterSnapshot(meter, meter, meter, meter, 19m, 8m));
+        repository.Add(bill);
+
+        // น้ำ 100 → 120.5 (20.5 หน่วย x 19 = 389.5), ไฟ 100 → 115 (15 หน่วย x 8 = 120)
+        bill.ReviseRoomCharges(
+            Money.Create(3000m),
+            new BillMeterReadings(meter, MeterReading.Create(120.5m), meter, MeterReading.Create(115m)));
+        repository.Update(bill);
+
+        var saved = new SqliteBillRepository(_database).Get(bill.Id);
+        Assert.NotNull(saved);
+        Assert.Equal(3000m, saved.Rent.Amount);
+        Assert.Equal(389.5m, saved.Water.Amount);
+        Assert.Equal(120m, saved.Electricity.Amount);
+        Assert.Equal(3509.5m, saved.Total.Amount);
+        Assert.Equal(
+            new BillMeterSnapshot(meter, MeterReading.Create(120.5m), meter, MeterReading.Create(115m), 19m, 8m),
+            saved.Meters);
+    }
+
+    [Fact]
     public void Update_WithMissingBill_ThrowsThaiMessage()
     {
         var repository = new SqliteBillRepository(_database);

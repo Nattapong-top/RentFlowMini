@@ -27,7 +27,8 @@ public class RoomForm : Form
         IBillingSettingsRepository? billingSettingsRepository = null,
         UpdateBillingSettingsService? updateBillingSettingsService = null,
         IInvoiceSettingsRepository? invoiceSettingsRepository = null,
-        SqliteBackupService? backupService = null)
+        SqliteBackupService? backupService = null,
+        Func<string, bool>? confirmBillRevision = null)
     {
         ArgumentNullException.ThrowIfNull(createRoomService);
         ArgumentNullException.ThrowIfNull(roomRepository);
@@ -65,7 +66,8 @@ public class RoomForm : Form
             billRepository: billRepo,
             tenantRepository: tenantRepo,
             billingSettingsRepository: billingSettingsRepo,
-            invoiceSettingsRepository: invoiceSettingsRepo);
+            invoiceSettingsRepository: invoiceSettingsRepo,
+            confirmBillRevision: confirmBillRevision);
 
         _tenantTabControl = new TenantTabControl(
             tenantRepo,

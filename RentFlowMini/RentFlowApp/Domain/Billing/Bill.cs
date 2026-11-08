@@ -48,15 +48,18 @@ public sealed class Bill
 
     public DateOnly DueDate { get; }
 
-    public BillMeterSnapshot? Meters { get; }
+    public const string PaidBillCannotBeChangedMessage =
+        "บิลนี้ชำระแล้วจึงแก้ไขไม่ได้ กรุณายกเลิกการรับชำระก่อนแก้ไข";
+
+    public BillMeterSnapshot? Meters { get; private set; }
 
     public BillTenantSnapshot? Tenant { get; }
 
-    public Money Rent { get; }
+    public Money Rent { get; private set; }
 
-    public Money Water { get; }
+    public Money Water { get; private set; }
 
-    public Money Electricity { get; }
+    public Money Electricity { get; private set; }
 
     public Money MotorcycleParking { get; private set; }
 
@@ -109,23 +112,76 @@ public sealed class Bill
         ArgumentNullException.ThrowIfNull(carParking);
         ArgumentNullException.ThrowIfNull(cableTv);
 
-        if (IsPaid)
-        {
-            throw new InvalidOperationException(
-                "บิลนี้ชำระแล้วจึงแก้ไขไม่ได้ กรุณายกเลิกการรับชำระก่อนแก้ไข");
-        }
+        EnsureNotPaid();
 
         MotorcycleParking = motorcycleParking;
         CarParking = carParking;
         CableTv = cableTv;
         IsCableTvExempt = isCableTvExempt;
+        RecalculateTotal();
+    }
+
+    // ใช้แก้บิลที่ออกผิดหลังแก้ข้อมูลต้นทางแล้ว อัตราค่าน้ำค่าไฟคงตามที่บิลเก็บไว้ ไม่ใช้อัตราปัจจุบัน
+    public void ReviseRoomCharges(Money rent, BillMeterReadings? readings)
+    {
+        ArgumentNullException.ThrowIfNull(rent);
+        EnsureNotPaid();
+
+        var meters = Meters;
+        var water = Water;
+        var electricity = Electricity;
+
+        if (readings is not null)
+        {
+            if (Meters is null)
+            {
+                throw new InvalidOperationException(
+                    "บิลนี้ไม่ได้เก็บอัตราค่าน้ำและค่าไฟไว้ จึงคำนวณค่าน้ำค่าไฟใหม่ไม่ได้");
+            }
+
+            var calculation = BillingCalculator.Calculate(
+                rent.Amount,
+                readings.PreviousWater,
+                readings.CurrentWater,
+                readings.PreviousElectricity,
+                readings.CurrentElectricity,
+                Meters.WaterRate,
+                Meters.ElectricityRate);
+            water = calculation.Water;
+            electricity = calculation.Electricity;
+            meters = Meters with
+            {
+                PreviousWater = readings.PreviousWater,
+                CurrentWater = readings.CurrentWater,
+                PreviousElectricity = readings.PreviousElectricity,
+                CurrentElectricity = readings.CurrentElectricity
+            };
+        }
+
+        Rent = rent;
+        Water = water;
+        Electricity = electricity;
+        Meters = meters;
+        RecalculateTotal();
+    }
+
+    private void EnsureNotPaid()
+    {
+        if (IsPaid)
+        {
+            throw new InvalidOperationException(PaidBillCannotBeChangedMessage);
+        }
+    }
+
+    private void RecalculateTotal()
+    {
         Total = Money.Create(
             Rent.Amount +
             Water.Amount +
             Electricity.Amount +
-            motorcycleParking.Amount +
-            carParking.Amount +
-            cableTv.Amount);
+            MotorcycleParking.Amount +
+            CarParking.Amount +
+            CableTv.Amount);
     }
 
     public static Bill Create(

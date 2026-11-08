@@ -159,4 +159,85 @@ public class CreateMonthlyBillServiceTests
         Assert.Equal("N002", bill2Sep.InvoiceNumber);
         Assert.Equal("N001", bill1Oct.InvoiceNumber);
     }
+
+    // ค่าเช่า 3000 + น้ำ 10 หน่วย x 19 = 190 + ไฟ 20 หน่วย x 8 = 160 + มอเตอร์ไซค์ 100 + Cable TV 60 = 3510
+    private static CreateMonthlyBillRequest DraftRequest(
+        MeterReading? currentWater = null,
+        bool hasCurrentElectricity = true,
+        bool hasTenant = true) =>
+        new(
+            RoomId.New(),
+            BillingPeriod.Create("2026-10"),
+            3000m,
+            MeterReading.Create(100m),
+            currentWater ?? MeterReading.Create(110m),
+            MeterReading.Create(200m),
+            hasCurrentElectricity ? MeterReading.Create(220m) : null,
+            19m,
+            8m,
+            ChargeMotorcycleParking: true,
+            MotorcycleParkingRate: 100m,
+            IsCableTvExempt: false,
+            CableTvRate: 60m,
+            Tenant: hasTenant ? TestTenants.Snapshot() : null);
+
+    [Fact]
+    public void Preview_ReturnsDraftWithAllCharges_WithoutSavingOrTakingInvoiceNumber()
+    {
+        var repository = new InMemoryBillRepository();
+        var service = new CreateMonthlyBillService(repository);
+        var request = DraftRequest();
+
+        var draft = service.Preview(request);
+
+        Assert.Null(draft.Reason);
+        Assert.NotNull(draft.Bill);
+        Assert.Equal(request.RoomId, draft.Bill.RoomId);
+        Assert.Equal(3000m, draft.Bill.Rent.Amount);
+        Assert.Equal(190m, draft.Bill.Water.Amount);
+        Assert.Equal(160m, draft.Bill.Electricity.Amount);
+        Assert.Equal(100m, draft.Bill.MotorcycleParking.Amount);
+        Assert.Equal(60m, draft.Bill.CableTv.Amount);
+        Assert.Equal(3510m, draft.Bill.Total.Amount);
+        Assert.Equal(MeterReading.Create(110m), draft.Bill.Meters!.CurrentWater);
+        Assert.Equal(request.Tenant, draft.Bill.Tenant);
+        Assert.Equal(string.Empty, draft.Bill.InvoiceNumber);
+        Assert.Empty(repository.GetAll());
+
+        Assert.Equal("N001", service.Create(request).InvoiceNumber);
+    }
+
+    [Fact]
+    public void Preview_WhenMeterOfPeriodIsMissing_ReturnsReasonInsteadOfDraft()
+    {
+        var service = new CreateMonthlyBillService(new InMemoryBillRepository());
+
+        var draft = service.Preview(DraftRequest(hasCurrentElectricity: false));
+
+        Assert.Null(draft.Bill);
+        Assert.Equal("ยังไม่มีข้อมูลบันทึกมิเตอร์ของรอบบิลนี้ กรุณาบันทึกมิเตอร์น้ำ-ไฟก่อนทำการสร้างบิล", draft.Reason);
+    }
+
+    [Fact]
+    public void Preview_WhenCurrentMeterIsLowerThanPrevious_ReturnsReasonFromCalculation()
+    {
+        var service = new CreateMonthlyBillService(new InMemoryBillRepository());
+
+        var draft = service.Preview(DraftRequest(currentWater: MeterReading.Create(90m)));
+
+        Assert.Null(draft.Bill);
+        Assert.NotNull(draft.Reason);
+        Assert.Contains("ค่าปัจจุบันต้องไม่น้อยกว่าค่าก่อนหน้า", draft.Reason);
+    }
+
+    [Fact]
+    public void Preview_WhenRoomHasNoTenant_ReturnsSameReasonAsCreate()
+    {
+        var service = new CreateMonthlyBillService(new InMemoryBillRepository());
+
+        var draft = service.Preview(DraftRequest(hasTenant: false));
+
+        Assert.Null(draft.Bill);
+        Assert.Equal("ห้องนี้ไม่มีผู้เช่า จึงออกบิลไม่ได้ กรุณาเพิ่มผู้เช่าให้ห้องนี้ก่อน", draft.Reason);
+    }
 }
