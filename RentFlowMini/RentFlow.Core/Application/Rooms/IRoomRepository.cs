@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using RentFlowApp.Domain;
 
 namespace RentFlowApp.Application.Rooms;
 

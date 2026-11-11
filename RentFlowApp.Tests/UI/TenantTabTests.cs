@@ -117,7 +117,7 @@ public class TenantTabTests
             var room = createRoomService.Create("101");
             var oldTenant = createTenantService.Create("คนเก่า", "ทดสอบ", null, room.Id);
 
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 createRoomService,
                 roomRepo,
                 new CreateMonthlyBillService(billRepo),

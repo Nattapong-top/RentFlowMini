@@ -3,6 +3,7 @@ using RentFlowApp;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Infrastructure.Rooms;
 using Xunit;
+using RentFlowApp.Domain;
 
 namespace RentFlowApp.Tests.Infrastructure.Rooms;
 

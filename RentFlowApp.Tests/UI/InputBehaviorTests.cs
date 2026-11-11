@@ -22,7 +22,7 @@ public class InputBehaviorTests
         parent.Controls.Cast<Control>().SelectMany(child =>
             child is DataGridView grid ? [grid] : FindGrids(child));
 
-    private static RoomForm CreateForm(InMemoryRoomRepository rooms) =>
+    private static MainForm CreateForm(InMemoryRoomRepository rooms) =>
         new(new CreateRoomService(rooms), rooms);
 
     [Fact]

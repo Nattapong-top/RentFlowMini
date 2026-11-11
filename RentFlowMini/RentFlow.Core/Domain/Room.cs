@@ -1,7 +1,7 @@
 ﻿
 using RentFlowApp.Domain.ValueObjects;
 
-namespace RentFlowApp
+namespace RentFlowApp.Domain
 {
     public class Room : IEquatable<Room>
     {

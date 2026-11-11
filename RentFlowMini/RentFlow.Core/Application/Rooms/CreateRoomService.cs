@@ -1,5 +1,6 @@
 ﻿
 using RentFlowApp;
+using RentFlowApp.Domain;
 using RentFlowApp.Domain.ValueObjects;
 
 namespace RentFlowApp.Application.Rooms;

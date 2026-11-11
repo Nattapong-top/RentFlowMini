@@ -208,9 +208,9 @@ public class MonthlyReportExportTests
     {
         RunInSta(() =>
         {
-            const int roomFormMinimumWidth = 750;
+            const int mainFormMinimumWidth = 750;
             using var tab = new ReportTab();
-            tab.SetFormWidth(roomFormMinimumWidth);
+            tab.SetFormWidth(mainFormMinimumWidth);
             var yearlyRadio = tab.Find<RadioButton>("ReportYearlyRadioButton");
             yearlyRadio.Checked = isYearly;
 

@@ -17,7 +17,7 @@ public class RoomTabTests
         {
             var rooms = new InMemoryRoomRepository();
             new CreateRoomService(rooms).Create("101", 3000m, true);
-            using var form = new RoomForm(new CreateRoomService(rooms), rooms);
+            using var form = new MainForm(new CreateRoomService(rooms), rooms);
             HiddenTestWindows.ShowHidden(form);
             SelectTab(form, "RoomTabPage");
 
@@ -37,7 +37,7 @@ public class RoomTabTests
 
     private sealed class RoomTab : IDisposable
     {
-        private readonly RoomForm _form;
+        private readonly MainForm _form;
 
         public RoomTab()
         {
@@ -45,7 +45,7 @@ public class RoomTabTests
             var createRoom = new CreateRoomService(Rooms);
             createRoom.Create("101", 3000m, false);
             createRoom.Create("102", 3200m, false);
-            _form = new RoomForm(createRoom, Rooms);
+            _form = new MainForm(createRoom, Rooms);
             HiddenTestWindows.ShowHidden(_form);
             SelectTab(_form, "RoomTabPage");
         }

@@ -7,7 +7,7 @@ using RentFlowApp.Infrastructure.Tenants;
 
 namespace RentFlowApp.Forms;
 
-public class RoomForm : Form
+public class MainForm : Form
 {
     private readonly RoomTabControl _roomTabControl;
     private readonly BillingSettingsTabControl _billingSettingsTabControl;
@@ -16,7 +16,7 @@ public class RoomForm : Form
     private readonly TenantTabControl _tenantTabControl;
     private readonly ReportTabControl _reportTabControl;
 
-    public RoomForm(
+    public MainForm(
         CreateRoomService createRoomService,
         IRoomEditor roomRepository,
         CreateMonthlyBillService? createMonthlyBillService = null,
@@ -91,7 +91,7 @@ public class RoomForm : Form
     private void InitializeForm()
     {
         Text = $"{AppInfo.Name} - ระบบจัดการห้องพักและสร้างบิล";
-        Icon = AppInfo.LoadIcon();
+        Icon = AppIcon.Load();
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
         Width = 850;

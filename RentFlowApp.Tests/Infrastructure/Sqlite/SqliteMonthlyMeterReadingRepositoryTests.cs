@@ -3,6 +3,7 @@ using RentFlowApp.Application.Billing;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Infrastructure.Sqlite;
+using RentFlowApp.Domain;
 
 namespace RentFlowApp.Tests.Infrastructure.Sqlite;
 

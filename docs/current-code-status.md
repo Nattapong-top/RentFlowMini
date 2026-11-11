@@ -10,80 +10,30 @@
 
 ```text
 RentFlowMini/
-├── RentFlowMini/RentFlowApp/
-│   ├── Domain/
-│   │   ├── Billing/
-│   │   │   ├── Bill.cs
-│   │   │   ├── BillingCalculator.cs
-│   │   │   ├── BillingSettings.cs
-│   │   │   ├── InvalidMeterReadingException.cs
-│   │   │   └── MonthlyMeterReading.cs
-│   │   ├── ValueObjects/
-│   │   │   ├── BillId.cs
-│   │   │   ├── BillingPeriod.cs
-│   │   │   ├── MeterReading.cs
-│   │   │   ├── Money.cs
-│   │   │   ├── RoomId.cs
-│   │   │   ├── RoomNumber.cs
-│   │   │   └── TenantId.cs
-│   │   └── Tenant.cs
-│   ├── Application/
-│   │   ├── Billing/
-│   │   │   ├── CreateMonthlyBillRequest.cs
-│   │   │   ├── CreateMonthlyBillService.cs
-│   │   │   ├── IBillRepository.cs
-│   │   │   ├── IBillingSettingsRepository.cs
-│   │   │   ├── IMonthlyMeterReadingRepository.cs
-│   │   │   ├── SaveMonthlyMeterReadingService.cs
-│   │   │   └── UpdateBillingSettingsService.cs
-│   │   ├── Rooms/
-│   │   │   ├── CreateRoomService.cs
-│   │   │   ├── IRoomEditor.cs
-│   │   │   ├── IRoomRepository.cs
-│   │   │   └── UpdateRoomRentService.cs
-│   │   └── Tenants/
-│   │       ├── CreateTenantService.cs
-│   │       └── ITenantRepository.cs
-│   ├── Infrastructure/
-│   │   ├── Billing/
-│   │   │   ├── InMemoryBillRepository.cs
-│   │   │   ├── InMemoryBillingSettingsRepository.cs
-│   │   │   ├── InMemoryMonthlyMeterReadingRepository.cs
-│   │   │   └── SqlServerBillRepository.cs
-│   │   ├── Rooms/
-│   │   │   ├── InMemoryRoomRepository/InMemoryRoomRepository.cs
-│   │   │   └── SqlServerRoomRepository.cs
-│   │   └── Tenants/
-│   │       ├── InMemoryTenantRepository.cs
-│   │       └── SqlServerTenantRepository.cs
-│   ├── Database/
-│   │   ├── 001_CreateRooms.sql
-│   │   ├── 002_CreateBills.sql
-│   │   └── 003_CreateTenants.sql
-│   ├── UI/
-│   │   ├── RoomForm.cs                    (Form หลัก รวมแท็บทั้งหมด)
-│   │   ├── BaseTabControl.cs              (ฐานร่วมของแท็บ)
-│   │   ├── BillingPeriodSelector.cs       (เลือกเดือน + ปี พ.ศ.)
-│   │   ├── RoomTabControl.cs
-│   │   ├── MeterReadingTabControl.cs
-│   │   ├── MonthlyBillTabControl.cs
-│   │   ├── TenantTabControl.cs
-│   │   └── BillingSettingsTabControl.cs
-│   ├── Room.cs
-│   ├── Program.cs
-│   └── RentFlowApp.csproj
-├── RentFlowApp.Tests/
-│   ├── Domain/            (Bill, BillingCalculator, BillingPeriod, BillingSettings,
-│   │                       MonthlyMeterReading, Tenant, MeterReading, Money, TenantId)
-│   ├── Application/       (CreateMonthlyBill, SaveMonthlyMeterReading, UpdateBillingSettings,
-│   │                       CreateRoom, UpdateRoomRent, CreateTenant)
-│   ├── Infrastructure/    (Bill, BillingSettings, MonthlyMeterReading, Tenant repositories)
-│   ├── Infrastucture/     (Room In-Memory repository)
-│   ├── UI/RoomFormTests.cs
-│   ├── RoomIdTests.cs, RoomNumberTests.cs, RoomTests.cs
+├── RentFlowMini/
+│   ├── RentFlow.Core/              (net10.0 — logic ทั้งหมด อ้าง WinForms ไม่ได้ ตาม ADR-004)
+│   │   ├── Domain/                 (Entity เช่น Room, Tenant, Bill; Value Object; กติกาคำนวณบิล)
+│   │   ├── Application/            (service ของแต่ละงาน และ interface ของ repository)
+│   │   ├── Infrastructure/         (SQLite, In-Memory repository, export รายงาน, สำรองข้อมูล)
+│   │   ├── Database/Sqlite/        (schema ที่ฝังใน assembly)
+│   │   ├── AppInfo.cs              (ชื่อโปรแกรมที่ผู้ใช้เห็น)
+│   │   └── RentFlow.Core.csproj
+│   └── RentFlowApp/                (net10.0-windows — WinForms อย่างเดียว)
+│       ├── UI/
+│       │   ├── MainForm.cs         (Form หลัก รวมแท็บทั้งหมด)
+│       │   ├── BaseTabControl.cs   (ฐานร่วมของแท็บ)
+│       │   ├── *TabControl.cs      (แท็บห้องพัก มิเตอร์ บิล ผู้เช่า รายงาน ตั้งค่า)
+│       │   └── *PrintDocument.cs   (งานพิมพ์ใบแจ้งหนี้และรายงาน)
+│       ├── AppIcon.cs              (โหลดไอคอนที่ฝังใน exe)
+│       ├── Program.cs
+│       └── RentFlowApp.csproj
+├── RentFlowApp.Tests/              (อ้างทั้ง RentFlow.Core และ RentFlowApp)
+│   ├── Domain/ Application/ Infrastructure/
+│   ├── UI/                         (MainFormTests และเทสต์ของแต่ละแท็บ)
 │   └── RentFlowApp.Tests.csproj
 ├── .github/workflows/dotnet.yml
 ├── docs/
+├── RentFlowMini.slnx
 └── README.md
 ```
 
@@ -206,7 +156,7 @@ RentFlowMini/
 - `dotnet test` ผ่าน 494 รายการ (ล้มเหลว 0, ข้าม 0) เมื่อ 2026-11-08
 - มี unit tests สำหรับ Domain, Application และ In-Memory repository
 - มี integration tests สำหรับ SQLite ซึ่งใช้ไฟล์จริงในโฟลเดอร์ชั่วคราว รวมถึงการกดหน้าจอแล้วเปิดแอปใหม่
-- มี UI tests ของ `RoomForm` 22 รายการ ครอบคลุมแท็บห้องพัก, ผู้เช่า และสร้างบิล (รวมการโหลดมิเตอร์อัตโนมัติ, คำเตือนเมื่อไม่มีมิเตอร์ และการเลื่อนไปห้องถัดไป)
+- มี UI tests ของ `MainForm` (เดิมชื่อ `RoomForm`) 22 รายการ ครอบคลุมแท็บห้องพัก, ผู้เช่า และสร้างบิล (รวมการโหลดมิเตอร์อัตโนมัติ, คำเตือนเมื่อไม่มีมิเตอร์ และการเลื่อนไปห้องถัดไป)
 - มี UI tests เฉพาะของแท็บบันทึกมิเตอร์ใน `MeterTabTests` 4 รายการ
 - ยังไม่มี UI tests เฉพาะสำหรับแท็บตั้งค่าราคากลาง
 - รันเทสต์ได้โดยไม่ต้องติดตั้งฐานข้อมูล

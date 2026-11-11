@@ -57,7 +57,7 @@ public class ErrorMessageTests
 
     private static string AddRoomAndReadMessage(InMemoryRoomRepository rooms, string roomNumber)
     {
-        using var form = new RoomForm(new CreateRoomService(rooms), rooms);
+        using var form = new MainForm(new CreateRoomService(rooms), rooms);
         HiddenTestWindows.ShowHidden(form);
         SelectTab(form, "RoomTabPage");
         Find<TextBox>(form, "RoomNumberTextBox").Text = roomNumber;

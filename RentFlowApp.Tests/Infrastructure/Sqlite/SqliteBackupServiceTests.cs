@@ -311,9 +311,9 @@ public sealed class SqliteBackupServiceTests : IDisposable
         File.WriteAllBytes(path, bytes);
     }
 
-    private static RoomForm CreateForm(SqliteAppStorage storage, SqliteBackupService? backupService)
+    private static MainForm CreateForm(SqliteAppStorage storage, SqliteBackupService? backupService)
     {
-        return new RoomForm(
+        return new MainForm(
             new CreateRoomService(storage.Rooms),
             storage.Rooms,
             new CreateMonthlyBillService(storage.Bills),

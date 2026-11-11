@@ -112,7 +112,7 @@ public class TabLayoutTests
         });
     }
 
-    private static RoomForm ShowForm(
+    private static MainForm ShowForm(
         InMemoryRoomRepository rooms,
         int tabIndex,
         int width,
@@ -120,7 +120,7 @@ public class TabLayoutTests
         out TabPage page,
         InMemoryBillRepository? bills = null)
     {
-        var form = new RoomForm(new CreateRoomService(rooms), rooms, billRepository: bills);
+        var form = new MainForm(new CreateRoomService(rooms), rooms, billRepository: bills);
         HiddenTestWindows.ShowHidden(form);
         // ฟอร์มเปิดแบบขยายเต็มจอ จึงต้องคืนสถานะก่อนกำหนดขนาด
         form.WindowState = FormWindowState.Normal;
@@ -131,7 +131,7 @@ public class TabLayoutTests
         return form;
     }
 
-    private static RoomForm ShowFormOnSettingsTab(InMemoryRoomRepository rooms, int width, int height, out TabPage page) =>
+    private static MainForm ShowFormOnSettingsTab(InMemoryRoomRepository rooms, int width, int height, out TabPage page) =>
         ShowForm(rooms, 5, width, height, out page);
 
     private static List<string> FindOverflowing(Control root) =>

@@ -217,7 +217,7 @@ public sealed class SqliteAppStorageTests : IDisposable
     }
 
     [Fact]
-    public void RoomForm_OnNewDatabase_OpensEmptyWithDefaultRates()
+    public void MainForm_OnNewDatabase_OpensEmptyWithDefaultRates()
     {
         RunInSta(() =>
         {
@@ -232,7 +232,7 @@ public sealed class SqliteAppStorageTests : IDisposable
     }
 
     [Fact]
-    public void RoomForm_DataEnteredOnScreen_IsStillThereAfterReopening()
+    public void MainForm_DataEnteredOnScreen_IsStillThereAfterReopening()
     {
         RunInSta(() =>
         {
@@ -284,7 +284,7 @@ public sealed class SqliteAppStorageTests : IDisposable
     }
 
     [Fact]
-    public void RoomForm_WhenDatabaseCannotBeRead_RaisesErrorThatHasThaiMessage()
+    public void MainForm_WhenDatabaseCannotBeRead_RaisesErrorThatHasThaiMessage()
     {
         // Program ดัก error นี้ตอนสร้างฟอร์ม แล้วแสดงข้อความภาษาไทยก่อนปิดแอป
         RunInSta(() =>
@@ -304,9 +304,9 @@ public sealed class SqliteAppStorageTests : IDisposable
         });
     }
 
-    private static RoomForm CreateForm(SqliteAppStorage storage)
+    private static MainForm CreateForm(SqliteAppStorage storage)
     {
-        return new RoomForm(
+        return new MainForm(
             new CreateRoomService(storage.Rooms),
             storage.Rooms,
             new CreateMonthlyBillService(storage.Bills),

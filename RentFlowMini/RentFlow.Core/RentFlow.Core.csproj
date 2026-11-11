@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ใช้ net10.0 ไม่ใช่ net10.0-windows เพื่อให้ compiler กันไม่ให้ logic อ้าง WinForms (ADR-004) -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>RentFlow.Core</AssemblyName>
+    <!-- คง namespace เดิม เพื่อไม่ต้องแก้ using ทั้งโปรเจกต์ -->
+    <RootNamespace>RentFlowApp</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Database\Sqlite\001_InitialSchema.sql" LogicalName="RentFlowApp.Database.Sqlite.001_InitialSchema.sql" />
+  </ItemGroup>
+
+</Project>

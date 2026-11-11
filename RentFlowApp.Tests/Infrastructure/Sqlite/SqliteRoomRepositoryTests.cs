@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Infrastructure.Sqlite;
+using RentFlowApp.Domain;
 
 namespace RentFlowApp.Tests.Infrastructure.Sqlite;
 

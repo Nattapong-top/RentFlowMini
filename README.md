@@ -19,7 +19,7 @@ RentFlowMini เป็นโปรเจกต์สำหรับฝึกพ�
 ## สถาปัตยกรรมระบบ
 
 ```text
-WinForms UI (RoomForm + Tab Controls)
+WinForms UI (MainForm + Tab Controls)  — โปรเจกต์ RentFlowApp
     |
     v
 Application Services
