@@ -52,7 +52,7 @@ internal static class Program
             mainForm = new MainForm(
                 new CreateRoomService(storage.Rooms),
                 storage.Rooms,
-                new CreateMonthlyBillService(storage.Bills),
+                new CreateMonthlyBillService(storage.Bills, storage.MeterReadings),
                 new CreateTenantService(storage.Tenants),
                 storage.Tenants,
                 storage.MeterReadings,

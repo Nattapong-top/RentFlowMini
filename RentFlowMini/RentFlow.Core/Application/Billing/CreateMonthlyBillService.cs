@@ -6,11 +6,15 @@ namespace RentFlowApp.Application.Billing;
 public sealed class CreateMonthlyBillService
 {
     private readonly IBillRepository _repository;
+    private readonly IMonthlyMeterReadingRepository? _meterReadings;
 
-    public CreateMonthlyBillService(IBillRepository repository)
+    public CreateMonthlyBillService(
+        IBillRepository repository,
+        IMonthlyMeterReadingRepository? meterReadings = null)
     {
         ArgumentNullException.ThrowIfNull(repository);
         _repository = repository;
+        _meterReadings = meterReadings;
     }
 
     public const string MissingMeterReadingMessage =
@@ -28,7 +32,8 @@ public sealed class CreateMonthlyBillService
             return new MonthlyBillDraft(null, NoTenantMessage);
         }
 
-        if (request.PreviousWaterMeter is null || request.CurrentWaterMeter is null ||
+        if (!HasSavedMeterReading(request) ||
+            request.PreviousWaterMeter is null || request.CurrentWaterMeter is null ||
             request.PreviousElectricityMeter is null || request.CurrentElectricityMeter is null)
         {
             return new MonthlyBillDraft(null, MissingMeterReadingMessage);
@@ -54,11 +59,20 @@ public sealed class CreateMonthlyBillService
             throw new InvalidOperationException(NoTenantMessage);
         }
 
+        if (!HasSavedMeterReading(request))
+        {
+            throw new InvalidOperationException(MissingMeterReadingMessage);
+        }
+
         var bill = BuildBill(request, NextInvoiceNumber(request.BillingPeriod));
         _repository.Add(bill);
 
         return bill;
     }
+
+    // BR-03: บิลต้องอ้างอิงมิเตอร์ที่จดไว้ของห้องและรอบนั้น หน้าจอโหลดเลขจากที่เดียวกันอยู่แล้ว แต่ตรวจซ้ำที่นี่เผื่อมีทางออกบิลทางอื่น
+    private bool HasSavedMeterReading(CreateMonthlyBillRequest request) =>
+        _meterReadings is null || _meterReadings.Exists(request.RoomId, request.BillingPeriod);
 
     // คำนวณเลขที่ใบแจ้งหนี้แบบเริ่มใหม่ที่ 001 ในทุกรอบเดือน (N001, N002, ...)
     private string NextInvoiceNumber(BillingPeriod billingPeriod)

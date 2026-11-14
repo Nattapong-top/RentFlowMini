@@ -240,4 +240,89 @@ public class CreateMonthlyBillServiceTests
         Assert.Null(draft.Bill);
         Assert.Equal("ห้องนี้ไม่มีผู้เช่า จึงออกบิลไม่ได้ กรุณาเพิ่มผู้เช่าให้ห้องนี้ก่อน", draft.Reason);
     }
+
+    private const string MissingMeterReadingMessage =
+        "ยังไม่มีข้อมูลบันทึกมิเตอร์ของรอบบิลนี้ กรุณาบันทึกมิเตอร์น้ำ-ไฟก่อนทำการสร้างบิล";
+
+    private static void SaveReading(
+        InMemoryMonthlyMeterReadingRepository readings, RoomId roomId, BillingPeriod billingPeriod) =>
+        readings.Add(MonthlyMeterReading.Create(
+            roomId,
+            billingPeriod,
+            MeterReading.Create(100m),
+            MeterReading.Create(110m),
+            MeterReading.Create(200m),
+            MeterReading.Create(220m)));
+
+    [Fact]
+    public void Create_WhenMeterReadingIsNotSavedForPeriod_IsRejectedAndSavesNothing()
+    {
+        var bills = new InMemoryBillRepository();
+        var service = new CreateMonthlyBillService(bills, new InMemoryMonthlyMeterReadingRepository());
+
+        var exception = Assert.Throws<InvalidOperationException>(() => service.Create(DraftRequest()));
+
+        Assert.Equal(MissingMeterReadingMessage, exception.Message);
+        Assert.Empty(bills.GetAll());
+    }
+
+    [Fact]
+    public void Create_WhenMeterReadingIsSavedOnlyForAnotherPeriodOrRoom_IsRejected()
+    {
+        var bills = new InMemoryBillRepository();
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var service = new CreateMonthlyBillService(bills, readings);
+        var request = DraftRequest();
+        SaveReading(readings, request.RoomId, request.BillingPeriod.GetPrevious());
+        SaveReading(readings, RoomId.New(), request.BillingPeriod);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => service.Create(request));
+
+        Assert.Equal(MissingMeterReadingMessage, exception.Message);
+        Assert.Empty(bills.GetAll());
+    }
+
+    [Fact]
+    public void Create_WhenMeterReadingIsSavedForPeriod_CreatesBill()
+    {
+        var bills = new InMemoryBillRepository();
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var service = new CreateMonthlyBillService(bills, readings);
+        var request = DraftRequest();
+        SaveReading(readings, request.RoomId, request.BillingPeriod);
+
+        var bill = service.Create(request);
+
+        Assert.Equal(3510m, bill.Total.Amount);
+        Assert.True(bills.Exists(request.RoomId, request.BillingPeriod));
+    }
+
+    [Fact]
+    public void Preview_WhenMeterReadingIsSavedForPeriod_ReturnsDraft()
+    {
+        var bills = new InMemoryBillRepository();
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var service = new CreateMonthlyBillService(bills, readings);
+        var request = DraftRequest();
+        SaveReading(readings, request.RoomId, request.BillingPeriod);
+
+        var draft = service.Preview(request);
+
+        Assert.Null(draft.Reason);
+        Assert.NotNull(draft.Bill);
+        Assert.Equal(3510m, draft.Bill.Total.Amount);
+        Assert.Empty(bills.GetAll());
+    }
+
+    [Fact]
+    public void Preview_WhenMeterReadingIsNotSavedForPeriod_ReturnsMissingMeterReason()
+    {
+        var service = new CreateMonthlyBillService(
+            new InMemoryBillRepository(), new InMemoryMonthlyMeterReadingRepository());
+
+        var draft = service.Preview(DraftRequest());
+
+        Assert.Null(draft.Bill);
+        Assert.Equal(MissingMeterReadingMessage, draft.Reason);
+    }
 }
