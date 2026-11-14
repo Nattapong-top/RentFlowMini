@@ -46,7 +46,8 @@ public sealed class SaveMonthlyMeterReadingService
             previousElectricityMeter,
             currentElectricityMeter);
 
-        if (_repository.Exists(roomId, billingPeriod))
+        bool isUpdate = _repository.Exists(roomId, billingPeriod);
+        if (isUpdate)
         {
             _repository.Update(reading);
         }
@@ -57,9 +58,10 @@ public sealed class SaveMonthlyMeterReadingService
 
         // บิลเก็บเลขมิเตอร์ไว้ตอนออกบิล และไม่เปลี่ยนเองจนกว่าผู้ใช้สั่งดึงข้อมูลห้องใหม่ ตาม ADR-003
         return bill is null
-            ? new MeterReadingSaveResult(null)
+            ? new MeterReadingSaveResult(null, isUpdate)
             : new MeterReadingSaveResult(
                 $"บิลรอบ {ThaiCalendar.FormatPeriod(billingPeriod)} ของห้องนี้ออกแล้วและยังใช้เลขมิเตอร์เดิม " +
-                "หากต้องการใช้เลขใหม่ กรุณาเปิดบิลในแท็บสร้างบิลประจำเดือนแล้วกด \"ดึงข้อมูลห้องใหม่\"");
+                "หากต้องการใช้เลขใหม่ กรุณาเปิดบิลในแท็บสร้างบิลประจำเดือนแล้วกด \"ดึงข้อมูลห้องใหม่\"",
+                isUpdate);
     }
 }

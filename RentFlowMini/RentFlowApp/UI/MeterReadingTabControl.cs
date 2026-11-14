@@ -8,8 +8,7 @@ namespace RentFlowApp.Forms;
 
 public class MeterReadingTabControl : BaseTabControl
 {
-    private readonly IRoomRepository _roomRepository;
-    private readonly IMonthlyMeterReadingRepository _meterReadingRepository;
+    private readonly MeterReadingEntryService _entryService;
     private readonly SaveMonthlyMeterReadingService _saveReadingService;
 
     private readonly ComboBox _roomComboBox = new();
@@ -27,16 +26,17 @@ public class MeterReadingTabControl : BaseTabControl
         public override string ToString() => RoomNumber;
     }
 
-    private sealed record MeterReadingGridItem(
-        RoomId RoomId,
-        int Sequence,
-        string RoomNumber,
-        string BillingPeriodDisplay,
-        string BillingPeriodRaw,
-        string WaterReading,
-        string WaterUsed,
-        string ElecReading,
-        string ElecUsed);
+    // แถวในตารางผูกคอลัมน์ด้วยชื่อ property จึงห่อ MeterReadingListItem ไว้ และจัดรูปแบบเฉพาะส่วนที่แสดงผล
+    private sealed record MeterReadingGridItem(MeterReadingListItem Reading)
+    {
+        public int Sequence => Reading.Sequence;
+        public string RoomNumber => Reading.RoomNumber;
+        public string BillingPeriodDisplay => ThaiCalendar.FormatPeriod(Reading.BillingPeriod);
+        public string WaterReading => $"{Reading.PreviousWater:0.##} -> {Reading.CurrentWater:0.##}";
+        public string WaterUsed => Reading.WaterUsed.ToString("N2");
+        public string ElecReading => $"{Reading.PreviousElectricity:0.##} -> {Reading.CurrentElectricity:0.##}";
+        public string ElecUsed => Reading.ElectricityUsed.ToString("N2");
+    }
 
     public MeterReadingTabControl(
         IRoomRepository roomRepository,
@@ -47,8 +47,7 @@ public class MeterReadingTabControl : BaseTabControl
         ArgumentNullException.ThrowIfNull(meterReadingRepository);
         ArgumentNullException.ThrowIfNull(saveReadingService);
 
-        _roomRepository = roomRepository;
-        _meterReadingRepository = meterReadingRepository;
+        _entryService = new MeterReadingEntryService(roomRepository, meterReadingRepository);
         _saveReadingService = saveReadingService;
 
         Name = "MeterReadingTabControl";
@@ -285,25 +284,16 @@ public class MeterReadingTabControl : BaseTabControl
         var selectedItem = _roomComboBox.SelectedItem as RoomItem;
         _roomComboBox.Items.Clear();
 
-        var currentPeriod = GetSelectedBillingPeriod();
-        var rooms = _roomRepository.GetAll();
-
-        foreach (var room in rooms)
+        foreach (var option in _entryService.GetRoomsToRecord(GetSelectedBillingPeriod(), forceIncludeRoomId))
         {
-            bool isRecorded = currentPeriod != null && _meterReadingRepository.Exists(room.Id, currentPeriod);
-            if (isRecorded && room.Id != forceIncludeRoomId)
-            {
-                continue;
-            }
-
-            var item = new RoomItem(room.Id, room.RoomNumber.Value);
+            var item = new RoomItem(option.RoomId, option.RoomNumber);
             _roomComboBox.Items.Add(item);
 
             if (selectedItem != null && item.Id == selectedItem.Id)
             {
                 _roomComboBox.SelectedItem = item;
             }
-            else if (forceIncludeRoomId != null && room.Id == forceIncludeRoomId)
+            else if (forceIncludeRoomId != null && option.RoomId == forceIncludeRoomId)
             {
                 _roomComboBox.SelectedItem = item;
             }
@@ -320,34 +310,8 @@ public class MeterReadingTabControl : BaseTabControl
 
     public void RefreshReadingList()
     {
-        var currentPeriod = GetSelectedBillingPeriod();
-        var readings = _meterReadingRepository.GetAll()
-            .Where(r => currentPeriod == null || r.BillingPeriod == currentPeriod)
-            .GroupBy(r => new { r.RoomId, r.BillingPeriod })
-            .Select(g => g.Last())
-            .ToList();
-        var rooms = _roomRepository.GetAll().ToDictionary(r => r.Id, r => r.RoomNumber.Value);
-
-        _meterGrid.DataSource = readings
-            .OrderBy(r => rooms.TryGetValue(r.RoomId, out var num) ? num : "", RoomNumber.DisplayOrder)
-            .Select((reading, index) =>
-            {
-                var roomNum = rooms.TryGetValue(reading.RoomId, out var num) ? num : "-";
-
-                decimal waterUsed = reading.CurrentWaterMeter.Value - reading.PreviousWaterMeter.Value;
-                decimal elecUsed = reading.CurrentElectricityMeter.Value - reading.PreviousElectricityMeter.Value;
-
-                return new MeterReadingGridItem(
-                    RoomId: reading.RoomId,
-                    Sequence: index + 1,
-                    RoomNumber: roomNum,
-                    BillingPeriodDisplay: ThaiCalendar.FormatPeriod(reading.BillingPeriod),
-                    BillingPeriodRaw: reading.BillingPeriod.Value,
-                    WaterReading: $"{reading.PreviousWaterMeter.Value:0.##} -> {reading.CurrentWaterMeter.Value:0.##}",
-                    WaterUsed: waterUsed.ToString("N2"),
-                    ElecReading: $"{reading.PreviousElectricityMeter.Value:0.##} -> {reading.CurrentElectricityMeter.Value:0.##}",
-                    ElecUsed: elecUsed.ToString("N2"));
-            })
+        _meterGrid.DataSource = _entryService.GetReadings(GetSelectedBillingPeriod())
+            .Select(reading => new MeterReadingGridItem(reading))
             .ToList();
     }
 
@@ -368,41 +332,17 @@ public class MeterReadingTabControl : BaseTabControl
             return;
         }
 
-        // 1. ตรวจสอบว่ารอบบิลนี้เคยบันทึกไปแล้วหรือยัง
-        var existingReading = _meterReadingRepository.Get(selectedRoom.Id, currentPeriod);
-        if (existingReading != null)
-        {
-            _prevWaterTextBox.Text = existingReading.PreviousWaterMeter.Value.ToString("0.##");
-            _currWaterTextBox.Text = existingReading.CurrentWaterMeter.Value.ToString("0.##");
-            _prevElecTextBox.Text = existingReading.PreviousElectricityMeter.Value.ToString("0.##");
-            _currElecTextBox.Text = existingReading.CurrentElectricityMeter.Value.ToString("0.##");
-            
-            SetPreviousWaterReadOnly(true);
-            SetPreviousElecReadOnly(true);
-            return;
-        }
+        ApplyEntryDefaults(_entryService.GetEntryDefaults(selectedRoom.Id, currentPeriod));
+    }
 
-        // 2. ถ้ายังไม่เคยบันทึกรอบนี้ ให้ดึงค่าปัจจุบันจากรอบบิลก่อนหน้ามาเป็นค่าก่อนหน้า
-        var previousPeriod = currentPeriod.GetPrevious();
-        var prevReading = _meterReadingRepository.Get(selectedRoom.Id, previousPeriod);
-        if (prevReading != null)
-        {
-            _prevWaterTextBox.Text = prevReading.CurrentWaterMeter.Value.ToString("0.##");
-            _prevElecTextBox.Text = prevReading.CurrentElectricityMeter.Value.ToString("0.##");
-            SetPreviousWaterReadOnly(true);
-            SetPreviousElecReadOnly(true);
-        }
-        else
-        {
-            // ถ้าไม่มีประวัติรอบก่อนหน้าเลย ให้พิมพ์ค่าเริ่มต้นได้ (กรณีเริ่มต้นใช้งานครั้งแรก)
-            _prevWaterTextBox.Text = "0";
-            _prevElecTextBox.Text = "0";
-            SetPreviousWaterReadOnly(false);
-            SetPreviousElecReadOnly(false);
-        }
-
-        _currWaterTextBox.Clear();
-        _currElecTextBox.Clear();
+    private void ApplyEntryDefaults(MeterEntryDefaults defaults)
+    {
+        _prevWaterTextBox.Text = defaults.PreviousWater.ToString("0.##");
+        _prevElecTextBox.Text = defaults.PreviousElectricity.ToString("0.##");
+        _currWaterTextBox.Text = defaults.CurrentWater?.ToString("0.##") ?? string.Empty;
+        _currElecTextBox.Text = defaults.CurrentElectricity?.ToString("0.##") ?? string.Empty;
+        SetPreviousWaterReadOnly(defaults.IsPreviousLocked);
+        SetPreviousElecReadOnly(defaults.IsPreviousLocked);
     }
 
     private void SetPreviousWaterReadOnly(bool readOnly)
@@ -434,12 +374,10 @@ public class MeterReadingTabControl : BaseTabControl
 
         try
         {
-            MeterReading? prevWater = ParseMeterReading(_prevWaterTextBox.Text, "มิเตอร์น้ำก่อนหน้า");
-            MeterReading? currWater = ParseMeterReading(_currWaterTextBox.Text, "มิเตอร์น้ำปัจจุบัน");
-            MeterReading? prevElec = ParseMeterReading(_prevElecTextBox.Text, "มิเตอร์ไฟฟ้าก่อนหน้า");
-            MeterReading? currElec = ParseMeterReading(_currElecTextBox.Text, "มิเตอร์ไฟฟ้าปัจจุบัน");
-
-            bool isExisting = _meterReadingRepository.Exists(selectedRoom.Id, billingPeriod);
+            var prevWater = MeterReadingInput.Parse(_prevWaterTextBox.Text, "มิเตอร์น้ำก่อนหน้า");
+            var currWater = MeterReadingInput.Parse(_currWaterTextBox.Text, "มิเตอร์น้ำปัจจุบัน");
+            var prevElec = MeterReadingInput.Parse(_prevElecTextBox.Text, "มิเตอร์ไฟฟ้าก่อนหน้า");
+            var currElec = MeterReadingInput.Parse(_currElecTextBox.Text, "มิเตอร์ไฟฟ้าปัจจุบัน");
 
             var result = _saveReadingService.Save(
                 selectedRoom.Id,
@@ -449,7 +387,7 @@ public class MeterReadingTabControl : BaseTabControl
                 prevElec,
                 currElec);
 
-            string savedMessage = isExisting
+            string savedMessage = result.IsUpdate
                 ? $"อัปเดตมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ"
                 : $"บันทึกมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ";
             _messageLabel.ForeColor = result.Warning is null
@@ -485,51 +423,27 @@ public class MeterReadingTabControl : BaseTabControl
             return;
         }
 
-        _periodSelector.SetBillingPeriod(BillingPeriod.Create(gridItem.BillingPeriodRaw));
+        var billingPeriod = gridItem.Reading.BillingPeriod;
+        var roomId = gridItem.Reading.RoomId;
+        _periodSelector.SetBillingPeriod(billingPeriod);
 
         // รีเฟรชรายชื่อห้องโดยบังคับรวมห้องนี้เข้ามาใน ComboBox แม้ว่าจะบันทึกไปแล้ว เพื่อให้สามารถเลือกแก้ไขได้
-        RefreshRoomList(gridItem.RoomId);
+        RefreshRoomList(roomId);
 
         // เลือกห้องใน ComboBox ตาม RoomId
         foreach (RoomItem roomItem in _roomComboBox.Items)
         {
-            if (roomItem.Id == gridItem.RoomId)
+            if (roomItem.Id == roomId)
             {
                 _roomComboBox.SelectedItem = roomItem;
                 break;
             }
         }
 
-        // โหลดข้อมูลค่ามิเตอร์ลง TextBox
-        var reading = _meterReadingRepository.Get(gridItem.RoomId, BillingPeriod.Create(gridItem.BillingPeriodRaw));
-        if (reading != null)
-        {
-            _prevWaterTextBox.Text = reading.PreviousWaterMeter.Value.ToString("0.##");
-            _currWaterTextBox.Text = reading.CurrentWaterMeter.Value.ToString("0.##");
-            _prevElecTextBox.Text = reading.PreviousElectricityMeter.Value.ToString("0.##");
-            _currElecTextBox.Text = reading.CurrentElectricityMeter.Value.ToString("0.##");
-            
-            SetPreviousWaterReadOnly(true);
-            SetPreviousElecReadOnly(true);
-        }
+        ApplyEntryDefaults(_entryService.GetEntryDefaults(roomId, billingPeriod));
 
         _messageLabel.ForeColor = ThemePalette.Current.InfoText;
         _messageLabel.Text = $"โหมดแก้ไข: รอบบิล {gridItem.BillingPeriodDisplay} ห้อง {gridItem.RoomNumber}";
-    }
-
-    private static MeterReading? ParseMeterReading(string text, string meterName)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            throw new InvalidMeterReadingException(meterName, "ต้องระบุค่ามิเตอร์");
-        }
-
-        if (!decimal.TryParse(text.Trim(), out var value))
-        {
-            throw new InvalidMeterReadingException(meterName, "ต้องระบุเป็นตัวเลขที่ถูกต้อง");
-        }
-
-        return MeterReading.Create(value);
     }
 
     private void ShowError(string message)
