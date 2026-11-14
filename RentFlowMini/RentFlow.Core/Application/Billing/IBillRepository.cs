@@ -14,4 +14,6 @@ public interface IBillRepository
     IReadOnlyCollection<Bill> GetAll();
 
     Bill? Get(BillId id);
+
+    Bill? Get(RoomId roomId, BillingPeriod billingPeriod);
 }

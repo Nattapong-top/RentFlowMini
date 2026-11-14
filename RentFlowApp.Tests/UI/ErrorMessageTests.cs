@@ -44,6 +44,8 @@ public class ErrorMessageTests
         public IReadOnlyCollection<Bill> GetAll() => [];
 
         public Bill? Get(BillId id) => null;
+
+        public Bill? Get(RoomId roomId, BillingPeriod billingPeriod) => null;
     }
 
     private sealed class FailingSettingsRepository(Exception? onGet, Exception? onSave) : IBillingSettingsRepository

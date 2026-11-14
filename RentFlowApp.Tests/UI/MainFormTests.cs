@@ -1070,4 +1070,47 @@ public class MainFormTests
             Assert.True(billRepo.Exists(room2.Id, period));
         });
     }
+
+    [Fact]
+    public void MainForm_MeterTab_WhenBillForPeriodIsPaid_RejectsMeterChange()
+    {
+        RunInSta(() =>
+        {
+            var roomRepo = new InMemoryRoomRepository();
+            var billRepo = new InMemoryBillRepository();
+            var meterRepo = new InMemoryMonthlyMeterReadingRepository();
+            var createRoomService = new CreateRoomService(roomRepo);
+            var period = BillingPeriod.Create(
+                DateTime.Now.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            var room = createRoomService.Create("101", 3000m, false);
+            var bill = Bill.Create(
+                room.Id,
+                period,
+                new BillingCalculationResult(
+                    Money.Create(3000m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(3000m)));
+            bill.RecordPayment(DateOnly.FromDateTime(DateTime.Today), PaymentMethod.Cash);
+            billRepo.Add(bill);
+
+            using var form = new MainForm(
+                createRoomService, roomRepo, monthlyMeterReadingRepository: meterRepo, billRepository: billRepo);
+            HiddenTestWindows.ShowHidden(form);
+            var tabControl = form.Controls.OfType<TabControl>().First();
+            var meterTab = tabControl.TabPages["MeterReadingTabPage"]!;
+            tabControl.SelectedTab = meterTab;
+
+            ((TextBox)meterTab.Controls.Find("CurrWaterTextBox", true).First()).Text = "10";
+            ((TextBox)meterTab.Controls.Find("CurrElecTextBox", true).First()).Text = "10";
+            ((Button)meterTab.Controls.Find("SaveMeterButton", true).First()).PerformClick();
+
+            var message = (Label)meterTab.Controls.Find("MeterMessageLabel", true).First();
+            Assert.Contains("ยกเลิกการรับชำระ", message.Text);
+            Assert.Empty(meterRepo.GetAll());
+        });
+    }
 }

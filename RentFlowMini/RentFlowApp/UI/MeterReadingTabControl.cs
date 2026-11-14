@@ -441,7 +441,7 @@ public class MeterReadingTabControl : BaseTabControl
 
             bool isExisting = _meterReadingRepository.Exists(selectedRoom.Id, billingPeriod);
 
-            _saveReadingService.Save(
+            var result = _saveReadingService.Save(
                 selectedRoom.Id,
                 billingPeriod,
                 prevWater,
@@ -449,10 +449,13 @@ public class MeterReadingTabControl : BaseTabControl
                 prevElec,
                 currElec);
 
-            _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
-            _messageLabel.Text = isExisting
+            string savedMessage = isExisting
                 ? $"อัปเดตมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ"
                 : $"บันทึกมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ";
+            _messageLabel.ForeColor = result.Warning is null
+                ? ThemePalette.Current.SuccessText
+                : ThemePalette.Current.InfoText;
+            _messageLabel.Text = result.Warning is null ? savedMessage : $"{savedMessage} {result.Warning}";
             
             RefreshRoomList();
             TryAutoLoadPreviousReadings();

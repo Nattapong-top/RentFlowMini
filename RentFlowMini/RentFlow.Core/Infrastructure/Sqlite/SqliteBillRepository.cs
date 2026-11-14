@@ -159,6 +159,19 @@ public sealed class SqliteBillRepository : IBillRepository
         return reader.Read() ? ReadBill(reader) : null;
     }
 
+    public Bill? Get(RoomId roomId, BillingPeriod billingPeriod)
+    {
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"{SelectColumns} WHERE RoomId = $roomId AND BillingPeriod = $billingPeriod;";
+        command.Parameters.AddWithValue("$roomId", roomId.Value.ToString());
+        command.Parameters.AddWithValue("$billingPeriod", billingPeriod.Value);
+
+        using var reader = command.ExecuteReader();
+
+        return reader.Read() ? ReadBill(reader) : null;
+    }
+
     private static void AddBillParameters(SqliteCommand command, Bill bill)
     {
         command.Parameters.AddWithValue("$id", bill.Id.Value.ToString());

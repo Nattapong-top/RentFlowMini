@@ -217,6 +217,24 @@ public sealed class SqliteBillRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void GetByRoomAndPeriod_ReturnsMatchingBillWithPaymentOrNull()
+    {
+        var repository = new SqliteBillRepository(_database);
+        var roomId = AddRoom("101");
+        var otherRoomId = AddRoom("102");
+        var bill = Bill.Create(roomId, September, RentOnly(), "N001");
+        bill.RecordPayment(new DateOnly(2026, 10, 3), PaymentMethod.Cash);
+        repository.Add(bill);
+        repository.Add(Bill.Create(otherRoomId, September, RentOnly(), "N002"));
+
+        var found = repository.Get(roomId, September);
+
+        Assert.Equal(bill.Id, found?.Id);
+        Assert.True(found!.IsPaid);
+        Assert.Null(repository.Get(roomId, BillingPeriod.Create("2026-10")));
+    }
+
+    [Fact]
     public void Update_AfterRecordingPayment_KeepsPaymentForNewRepository()
     {
         var repository = new SqliteBillRepository(_database);
