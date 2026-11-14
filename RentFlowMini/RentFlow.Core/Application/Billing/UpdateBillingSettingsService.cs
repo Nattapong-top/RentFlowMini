@@ -13,6 +13,20 @@ public sealed class UpdateBillingSettingsService
         _repository = repository;
     }
 
+    public BillingSettings GetCurrent() => _repository.Get();
+
+    public BillingSettings Update(BillingRateValues rates)
+    {
+        ArgumentNullException.ThrowIfNull(rates);
+
+        return Update(
+            Money.Create(rates.WaterRate),
+            Money.Create(rates.ElectricityRate),
+            Money.Create(rates.MotorcycleParkingRate),
+            Money.Create(rates.CarParkingRate),
+            Money.Create(rates.CableTvRate));
+    }
+
     public BillingSettings Update(
         Money waterRate,
         Money electricityRate,
