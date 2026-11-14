@@ -142,7 +142,7 @@ public class BillingSettingsTabControl : BaseTabControl
                 _addressTextBox.Text,
                 _bankAccountTextBox.Text));
 
-            _messageLabel.ForeColor = Color.DarkGreen;
+            _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _messageLabel.Text = "บันทึกข้อมูลหอพักสำเร็จเรียบร้อย";
         }
         catch (ArgumentException ex)
@@ -278,7 +278,7 @@ public class BillingSettingsTabControl : BaseTabControl
                 Money.Create(car),
                 Money.Create(cableTv));
 
-            _messageLabel.ForeColor = Color.DarkGreen;
+            _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _messageLabel.Text = "บันทึกราคากลางสำเร็จเรียบร้อย";
         }
         catch (ArgumentOutOfRangeException)
@@ -361,7 +361,7 @@ public class BillingSettingsTabControl : BaseTabControl
         {
             _backupService!.BackUpNow();
 
-            _messageLabel.ForeColor = Color.DarkGreen;
+            _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _messageLabel.Text = "สำรองข้อมูลเรียบร้อยแล้ว";
         }
         catch (InvalidOperationException ex)
@@ -437,7 +437,7 @@ public class BillingSettingsTabControl : BaseTabControl
 
     private void ShowError(string message)
     {
-        _messageLabel.ForeColor = Color.DarkRed;
+        _messageLabel.ForeColor = ThemePalette.Current.ErrorText;
         _messageLabel.Text = message;
     }
 }

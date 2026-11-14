@@ -13,6 +13,8 @@ internal static class Program
     static void Main()
     {
         ApplicationConfiguration.Initialize();
+        // ต้องตั้งก่อนสร้างหน้าต่างแรก ไม่อย่างนั้นหน้าต่างจะไม่เปลี่ยนตามโหมดมืดของ Windows
+        System.Windows.Forms.Application.SetColorMode(SystemColorMode.System);
 
         // กล่อง error มาตรฐานของ WinForms แสดง stack trace ให้ผู้ใช้เห็น จึงต้องดักไว้ก่อน
         System.Windows.Forms.Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);

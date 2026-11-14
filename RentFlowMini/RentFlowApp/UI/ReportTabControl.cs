@@ -292,7 +292,7 @@ public class ReportTabControl : BaseTabControl
         var totalRow = _yearlyGrid.Rows[_yearlyGrid.Rows.Count - 1];
         // ใช้ Font เดียวกับหัวตาราง เพราะเมธอดนี้ถูกเรียกซ้ำ ถ้าสร้างใหม่ทุกครั้งจะไม่ได้คืนทรัพยากร
         totalRow.DefaultCellStyle.Font = _yearlyGrid.ColumnHeadersDefaultCellStyle.Font;
-        totalRow.DefaultCellStyle.BackColor = Color.Gainsboro;
+        totalRow.DefaultCellStyle.BackColor = ThemePalette.Current.TotalRowBack;
         _yearlyGrid.ClearSelection();
     }
 
@@ -379,13 +379,13 @@ public class ReportTabControl : BaseTabControl
 
     private void ShowYearlyMessage(string message, bool isError)
     {
-        _yearlyMessageLabel.ForeColor = isError ? Color.Firebrick : Color.DarkGreen;
+        _yearlyMessageLabel.ForeColor = isError ? ThemePalette.Current.ErrorText : ThemePalette.Current.SuccessText;
         _yearlyMessageLabel.Text = message;
     }
 
     private void ShowMonthlyMessage(string message, bool isError)
     {
-        _monthlyMessageLabel.ForeColor = isError ? Color.Firebrick : Color.DarkGreen;
+        _monthlyMessageLabel.ForeColor = isError ? ThemePalette.Current.ErrorText : ThemePalette.Current.SuccessText;
         _monthlyMessageLabel.Text = message;
         // ซ่อนตอนไม่มีข้อความ เพื่อคืนพื้นที่ให้ตารางค้างชำระ
         _monthlyMessageLabel.Visible = message.Length > 0;
@@ -560,7 +560,7 @@ public class ReportTabControl : BaseTabControl
         _outstandingGrid.MultiSelect = false;
         _outstandingGrid.RowHeadersVisible = false;
         _outstandingGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        _outstandingGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
+        _outstandingGrid.AlternatingRowsDefaultCellStyle.BackColor = ThemePalette.Current.AlternatingRowBack;
         _outstandingGrid.RowTemplate.Height = 30;
         _outstandingGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         _outstandingGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
@@ -599,7 +599,7 @@ public class ReportTabControl : BaseTabControl
             _outstandingGrid.Rows[e.RowIndex].DataBoundItem is OutstandingGridItem { IsOverdue: true } &&
             _outstandingGrid.Columns[e.ColumnIndex].Name == "OverdueStatus")
         {
-            e.CellStyle.ForeColor = Color.Firebrick;
+            e.CellStyle.ForeColor = ThemePalette.Current.OverdueText;
             e.CellStyle.SelectionForeColor = Color.MistyRose;
         }
     }
@@ -644,7 +644,7 @@ public class ReportTabControl : BaseTabControl
         _receivedDetailLabel.Text = $"{report.ReceivedCount} บิล";
 
         _unpaidValueLabel.Text = report.UnpaidTotal.ToString("N2");
-        _unpaidValueLabel.ForeColor = report.UnpaidCount > 0 ? Color.Firebrick : SystemColors.ControlText;
+        _unpaidValueLabel.ForeColor = report.UnpaidCount > 0 ? ThemePalette.Current.OverdueText : SystemColors.ControlText;
         _unpaidDetailLabel.Text = report.OverdueCount > 0
             ? $"{report.UnpaidCount} บิล (เกินกำหนด {report.OverdueCount})"
             : $"{report.UnpaidCount} บิล";

@@ -186,7 +186,7 @@ public sealed class RoomTabControl : BaseTabControl
         _roomMessageLabel.Name = "RoomMessageLabel";
         _roomMessageLabel.Dock = DockStyle.Fill;
         _roomMessageLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _roomMessageLabel.ForeColor = Color.DarkGreen;
+        _roomMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
 
         layout.Controls.Add(roomNumberLabel, 0, 0);
         layout.Controls.Add(_roomNumberTextBox, 1, 0);
@@ -222,7 +222,7 @@ public sealed class RoomTabControl : BaseTabControl
         _roomGrid.RowHeadersVisible = false;
         _roomGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         _roomGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-        _roomGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
+        _roomGrid.AlternatingRowsDefaultCellStyle.BackColor = ThemePalette.Current.AlternatingRowBack;
         _roomGrid.SelectionChanged += RoomGrid_SelectionChanged;
         _roomGrid.CellDoubleClick += RoomGrid_CellDoubleClick;
         _roomGrid.RowTemplate.Height = 32;
@@ -420,13 +420,13 @@ public sealed class RoomTabControl : BaseTabControl
 
     private void ShowRoomSuccess(string message)
     {
-        _roomMessageLabel.ForeColor = Color.DarkGreen;
+        _roomMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
         _roomMessageLabel.Text = message;
     }
 
     private void ShowRoomError(string message)
     {
-        _roomMessageLabel.ForeColor = Color.DarkRed;
+        _roomMessageLabel.ForeColor = ThemePalette.Current.ErrorText;
         _roomMessageLabel.Text = message;
     }
 }
