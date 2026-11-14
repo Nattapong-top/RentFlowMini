@@ -1,5 +1,6 @@
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
+using RentFlowApp.Application.Settings;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Infrastructure.Billing;
 using RentFlowApp.Infrastructure.Sqlite;
@@ -28,7 +29,8 @@ public class MainForm : Form
         UpdateBillingSettingsService? updateBillingSettingsService = null,
         IInvoiceSettingsRepository? invoiceSettingsRepository = null,
         SqliteBackupService? backupService = null,
-        Func<string, bool>? confirmBillRevision = null)
+        Func<string, bool>? confirmBillRevision = null,
+        AppearanceModeService? appearanceModeService = null)
     {
         ArgumentNullException.ThrowIfNull(createRoomService);
         ArgumentNullException.ThrowIfNull(roomRepository);
@@ -52,7 +54,8 @@ public class MainForm : Form
             billingSettingsRepo,
             updateBillingSettingsSvc,
             invoiceSettingsRepo,
-            backupService);
+            backupService,
+            appearanceModeService);
 
         _meterReadingTabControl = new MeterReadingTabControl(
             roomRepository,

@@ -1,6 +1,7 @@
 using System.Globalization;
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Reports;
+using RentFlowApp.Application.Settings;
 using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Infrastructure.Sqlite;
@@ -29,11 +30,19 @@ public class BillingSettingsTabControl : BaseTabControl
     private readonly SqliteBackupService? _backupService;
     private readonly Label _lastBackupLabel = new();
 
+    private readonly AppearanceModeService? _appearanceModeService;
+    private readonly Func<bool> _confirmRestart;
+    private readonly Action _restartApplication;
+    private readonly ComboBox _appearanceModeComboBox = new();
+
     public BillingSettingsTabControl(
         IBillingSettingsRepository settingsRepository,
         UpdateBillingSettingsService updateSettingsService,
         IInvoiceSettingsRepository invoiceSettingsRepository,
-        SqliteBackupService? backupService = null)
+        SqliteBackupService? backupService = null,
+        AppearanceModeService? appearanceModeService = null,
+        Func<bool>? confirmRestart = null,
+        Action? restartApplication = null)
     {
         ArgumentNullException.ThrowIfNull(settingsRepository);
         ArgumentNullException.ThrowIfNull(updateSettingsService);
@@ -43,12 +52,16 @@ public class BillingSettingsTabControl : BaseTabControl
         _updateSettingsService = updateSettingsService;
         _invoiceSettingsRepository = invoiceSettingsRepository;
         _backupService = backupService;
+        _appearanceModeService = appearanceModeService;
+        _confirmRestart = confirmRestart ?? ShowRestartConfirmation;
+        _restartApplication = restartApplication ?? System.Windows.Forms.Application.Restart;
 
         Name = "BillingSettingsTabControl";
 
         InitializeComponents();
         LoadSettings();
         ShowLastBackupTime();
+        LoadAppearanceMode();
     }
 
     private void InitializeComponents()
@@ -62,16 +75,25 @@ public class BillingSettingsTabControl : BaseTabControl
         _messageLabel.TextAlign = ContentAlignment.MiddleLeft;
         _messageLabel.Font = new Font("Segoe UI", 11, FontStyle.Regular);
 
-        bool hasBackup = _backupService is not null;
-        var groupsLayout = hasBackup
-            ? CreateStandardLayout(3, [330f, 230f, 150f])
-            : CreateStandardLayout(2, [330f, 230f]);
-        groupsLayout.Padding = Padding.Empty;
-        groupsLayout.Controls.Add(BuildInputGroup(), 0, 0);
-        groupsLayout.Controls.Add(BuildInvoiceSettingsGroup(), 0, 1);
-        if (hasBackup)
+        var groups = new List<(GroupBox Group, float Height)>
         {
-            groupsLayout.Controls.Add(BuildBackupGroup(), 0, 2);
+            (BuildInputGroup(), 330f),
+            (BuildInvoiceSettingsGroup(), 230f)
+        };
+        if (_backupService is not null)
+        {
+            groups.Add((BuildBackupGroup(), 150f));
+        }
+        if (_appearanceModeService is not null)
+        {
+            groups.Add((BuildAppearanceGroup(), 130f));
+        }
+
+        var groupsLayout = CreateStandardLayout(groups.Count, [.. groups.Select(g => g.Height)]);
+        groupsLayout.Padding = Padding.Empty;
+        for (int row = 0; row < groups.Count; row++)
+        {
+            groupsLayout.Controls.Add(groups[row].Group, 0, row);
         }
 
         // เลื่อนเฉพาะฟอร์มกรอกข้อมูล เพื่อให้ผลการบันทึกยังเห็นอยู่บนจอเล็กแม้เลื่อนลงมากดปุ่มล่างสุด
@@ -80,7 +102,7 @@ public class BillingSettingsTabControl : BaseTabControl
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             AutoScroll = true,
-            AutoScrollMinSize = new Size(790, hasBackup ? 710 : 560)
+            AutoScrollMinSize = new Size(790, (int)groups.Sum(g => g.Height))
         };
         scrollPanel.Controls.Add(groupsLayout);
 
@@ -434,6 +456,84 @@ public class BillingSettingsTabControl : BaseTabControl
             ShowError("ไม่สามารถเปิดโฟลเดอร์ไฟล์สำรองได้ กรุณาลองใหม่อีกครั้ง");
         }
     }
+
+    private GroupBox BuildAppearanceGroup()
+    {
+        var group = new GroupBox
+        {
+            Name = "AppearanceGroup",
+            Text = "การแสดงผล",
+            Dock = DockStyle.Fill,
+            Padding = new Padding(12)
+        };
+
+        var panel = new Panel { Dock = DockStyle.Fill };
+
+        var modeLabel = new Label { Text = "โหมดสี:", AutoSize = false, TextAlign = ContentAlignment.MiddleLeft };
+        modeLabel.SetBounds(12, 12, 80, 30);
+
+        _appearanceModeComboBox.Name = "AppearanceModeComboBox";
+        _appearanceModeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        _appearanceModeComboBox.SetBounds(100, 12, 250, 30);
+        _appearanceModeComboBox.Items.AddRange([.. AppearanceModeOption.All]);
+
+        var saveButton = new Button
+        {
+            Name = "SaveAppearanceModeButton",
+            Text = "บันทึกโหมดสี",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold)
+        };
+        saveButton.SetBounds(370, 8, 200, 40);
+        saveButton.Click += SaveAppearanceModeButton_Click;
+
+        panel.Controls.AddRange([modeLabel, _appearanceModeComboBox, saveButton]);
+        group.Controls.Add(panel);
+        return group;
+    }
+
+    private void LoadAppearanceMode()
+    {
+        if (_appearanceModeService is null)
+        {
+            return;
+        }
+
+        var savedMode = _appearanceModeService.SavedMode;
+        _appearanceModeComboBox.SelectedItem = AppearanceModeOption.All.First(option => option.Mode == savedMode);
+    }
+
+    private void SaveAppearanceModeButton_Click(object? sender, EventArgs e)
+    {
+        var selected = ((AppearanceModeOption)_appearanceModeComboBox.SelectedItem!).Mode;
+
+        AppearanceModeSaveResult result;
+        try
+        {
+            result = _appearanceModeService!.Save(selected);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ShowError(ex.Message);
+            return;
+        }
+
+        if (result.NeedsRestart && _confirmRestart())
+        {
+            _restartApplication();
+            return;
+        }
+
+        _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
+        _messageLabel.Text = result.Message;
+    }
+
+    private bool ShowRestartConfirmation() =>
+        MessageBox.Show(
+            "บันทึกโหมดสีเรียบร้อยแล้ว ต้องเปิดโปรแกรมใหม่จึงจะใช้โหมดนี้\n\nต้องการเปิดโปรแกรมใหม่ตอนนี้หรือไม่",
+            AppInfo.Name,
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question,
+            MessageBoxDefaultButton.Button1) == DialogResult.Yes;
 
     private void ShowError(string message)
     {
