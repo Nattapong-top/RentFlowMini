@@ -145,7 +145,7 @@ public class MonthlyInvoicePrintingTests
         {
             var roomRepo = new InMemoryRoomRepository();
             var settingsRepo = new InMemoryInvoiceSettingsRepository();
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 new CreateRoomService(roomRepo),
                 roomRepo,
                 invoiceSettingsRepository: settingsRepo);

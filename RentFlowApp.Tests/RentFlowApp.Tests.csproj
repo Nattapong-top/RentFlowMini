@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RentFlowMini\RentFlow.Core\RentFlow.Core.csproj" />
     <ProjectReference Include="..\RentFlowMini\RentFlowApp\RentFlowApp.csproj" />
   </ItemGroup>
 

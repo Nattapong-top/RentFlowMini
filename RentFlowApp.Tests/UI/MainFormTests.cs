@@ -12,17 +12,17 @@ using static RentFlowApp.Tests.UI.InputTestHelper;
 
 namespace RentFlowApp.Tests.UI;
 
-public class RoomFormTests
+public class MainFormTests
 {
     [Fact]
-    public void RoomForm_UsesAppIcon()
+    public void MainForm_UsesAppIcon()
     {
         RunInSta(() =>
         {
             var roomRepo = new InMemoryRoomRepository();
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 new CreateRoomService(roomRepo), roomRepo, new CreateMonthlyBillService(new InMemoryBillRepository()));
-            using var appIcon = AppInfo.LoadIcon();
+            using var appIcon = AppIcon.Load();
 
             // ไอคอนเริ่มต้นของ WinForms ก็ขนาด 32 จึงเทียบข้อมูลรูปแทนการดูแค่ขนาด
             using var formStream = new MemoryStream();
@@ -34,7 +34,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_InitializesWithSixTabsAndDefaultRates()
+    public void MainForm_InitializesWithSixTabsAndDefaultRates()
     {
         RunInSta(() =>
         {
@@ -45,7 +45,7 @@ public class RoomFormTests
             var createBillService = new CreateMonthlyBillService(billRepo);
 
             // Act
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService);
 
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
@@ -79,14 +79,14 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_RoomTab_ContainsRentAndCableTvExemptionControls()
+    public void MainForm_RoomTab_ContainsRentAndCableTvExemptionControls()
     {
         RunInSta(() =>
         {
             var roomRepo = new InMemoryRoomRepository();
             var createRoomService = new CreateRoomService(roomRepo);
 
-            using var form = new RoomForm(createRoomService, roomRepo);
+            using var form = new MainForm(createRoomService, roomRepo);
             var roomTab = form.Controls.OfType<TabControl>().First().TabPages["RoomTabPage"]!;
 
             var rentBox = roomTab.Controls
@@ -102,7 +102,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_RoomTab_UsesResponsiveLayoutAndHidesRoomId()
+    public void MainForm_RoomTab_UsesResponsiveLayoutAndHidesRoomId()
     {
         RunInSta(() =>
         {
@@ -111,7 +111,7 @@ public class RoomFormTests
             createRoomService.Create("201", 2800, false);
             createRoomService.Create("101", 2500, true);
 
-            using var form = new RoomForm(createRoomService, roomRepo);
+            using var form = new MainForm(createRoomService, roomRepo);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var roomTab = tabControl.TabPages["RoomTabPage"]!;
             var grid = (DataGridView)roomTab.Controls.Find("RoomGrid", true).First();
@@ -132,7 +132,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_RoomTab_ShowsOccupancyAndTenantName()
+    public void MainForm_RoomTab_ShowsOccupancyAndTenantName()
     {
         RunInSta(() =>
         {
@@ -143,7 +143,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 2500, false);
             createTenantService.Create("สมชาย", "ใจดี", null, room.Id);
 
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 createRoomService,
                 roomRepo,
                 tenantRepository: tenantRepo);
@@ -156,14 +156,14 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_AddRoom_WithRentAndExemption_SavesRoom()
+    public void MainForm_AddRoom_WithRentAndExemption_SavesRoom()
     {
         RunInSta(() =>
         {
             var roomRepo = new InMemoryRoomRepository();
             var createRoomService = new CreateRoomService(roomRepo);
 
-            using var form = new RoomForm(createRoomService, roomRepo);
+            using var form = new MainForm(createRoomService, roomRepo);
             HiddenTestWindows.ShowHidden(form);
             var roomTab = SelectTab(form, "RoomTabPage");
 
@@ -189,7 +189,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_EditSelectedRoomRent_WithZero_UpdatesRoom()
+    public void MainForm_EditSelectedRoomRent_WithZero_UpdatesRoom()
     {
         RunInSta(() =>
         {
@@ -197,7 +197,7 @@ public class RoomFormTests
             var createRoomService = new CreateRoomService(roomRepo);
             var room = createRoomService.Create("101", 5000, true);
 
-            using var form = new RoomForm(createRoomService, roomRepo);
+            using var form = new MainForm(createRoomService, roomRepo);
             HiddenTestWindows.ShowHidden(form);
             var roomTab = SelectTab(form, "RoomTabPage");
             var grid = (DataGridView)roomTab.Controls
@@ -219,7 +219,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_DoubleClickRoomRow_StartsRentEditingImmediately()
+    public void MainForm_DoubleClickRoomRow_StartsRentEditingImmediately()
     {
         RunInSta(() =>
         {
@@ -227,7 +227,7 @@ public class RoomFormTests
             var createRoomService = new CreateRoomService(roomRepo);
             var room = createRoomService.Create("101", 5000, true);
 
-            using var form = new RoomForm(createRoomService, roomRepo);
+            using var form = new MainForm(createRoomService, roomRepo);
             HiddenTestWindows.ShowHidden(form);
             var roomTab = SelectTab(form, "RoomTabPage");
             var grid = (DataGridView)roomTab.Controls.Find("RoomGrid", true).First();
@@ -254,7 +254,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_InitializesWithTenantTabAndControls()
+    public void MainForm_InitializesWithTenantTabAndControls()
     {
         RunInSta(() =>
         {
@@ -265,7 +265,7 @@ public class RoomFormTests
             var createBillService = new CreateMonthlyBillService(billRepo);
 
             // Act
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService);
 
             // Assert
             var tabControl = form.Controls.OfType<TabControl>().FirstOrDefault();
@@ -301,7 +301,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_WhenRoomsExist_PopulatesRoomSelectionInBillingTab()
+    public void MainForm_WhenRoomsExist_PopulatesRoomSelectionInBillingTab()
     {
         RunInSta(() =>
         {
@@ -316,7 +316,7 @@ public class RoomFormTests
             var tenantRepo = TenantsLivingIn(room1.Id, room2.Id);
 
             // Act
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
             var billingTab = form.Controls.OfType<TabControl>().First().TabPages["BillingTabPage"]!;
             var comboBox = billingTab.Controls.Find("BillRoomComboBox", true).First() as ComboBox;
             Assert.NotNull(comboBox);
@@ -329,7 +329,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_CreateBill_WhenInputValid_CalculatesAndSavesBill()
+    public void MainForm_CreateBill_WhenInputValid_CalculatesAndSavesBill()
     {
         RunInSta(() =>
         {
@@ -342,7 +342,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101");
             var tenantRepo = TenantsLivingIn(room.Id);
 
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo, billRepository: billRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
@@ -383,7 +383,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_CreateBill_WhenCurrentMeterLowerThanPrevious_DisplaysErrorMessage()
+    public void MainForm_CreateBill_WhenCurrentMeterLowerThanPrevious_DisplaysErrorMessage()
     {
         RunInSta(() =>
         {
@@ -396,7 +396,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101");
             var tenantRepo = TenantsLivingIn(room.Id);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, tenantRepository: tenantRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages["BillingTabPage"]!;
@@ -431,7 +431,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_TenantTab_PopulatesOnlyAvailableRooms()
+    public void MainForm_TenantTab_PopulatesOnlyAvailableRooms()
     {
         RunInSta(() =>
         {
@@ -449,7 +449,7 @@ public class RoomFormTests
             createTenantService.Create("สมชาย", "ใจดี", null, room1.Id);
 
             // Act
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages["TenantTabPage"]!;
@@ -465,7 +465,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_TenantTab_AddTenant_WhenValidInput_AddsTenantToGrid()
+    public void MainForm_TenantTab_AddTenant_WhenValidInput_AddsTenantToGrid()
     {
         RunInSta(() =>
         {
@@ -479,7 +479,7 @@ public class RoomFormTests
 
             createRoomService.Create("101");
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages["TenantTabPage"]!;
@@ -513,7 +513,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_TenantTab_AddTenant_WhenMissingFirstName_DisplaysErrorMessage()
+    public void MainForm_TenantTab_AddTenant_WhenMissingFirstName_DisplaysErrorMessage()
     {
         RunInSta(() =>
         {
@@ -525,7 +525,7 @@ public class RoomFormTests
             var createBillService = new CreateMonthlyBillService(billRepo);
             var createTenantService = new CreateTenantService(tenantRepo);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages["TenantTabPage"]!;
@@ -549,7 +549,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_TenantTab_AddTenant_WhenInvalidPhoneNumber_DisplaysErrorMessage()
+    public void MainForm_TenantTab_AddTenant_WhenInvalidPhoneNumber_DisplaysErrorMessage()
     {
         RunInSta(() =>
         {
@@ -561,7 +561,7 @@ public class RoomFormTests
             var createBillService = new CreateMonthlyBillService(billRepo);
             var createTenantService = new CreateTenantService(tenantRepo);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, createTenantService, tenantRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var tenantTab = tabControl.TabPages["TenantTabPage"]!;
@@ -589,7 +589,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_WhenNoMeterReadingExists_DisplaysWarningMessage()
+    public void MainForm_BillingTab_WhenNoMeterReadingExists_DisplaysWarningMessage()
     {
         RunInSta(() =>
         {
@@ -599,7 +599,7 @@ public class RoomFormTests
             var createRoomService = new CreateRoomService(roomRepo);
             var room = createRoomService.Create("101");
 
-            using var form = new RoomForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
+            using var form = new MainForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages["BillingTabPage"]!;
@@ -614,7 +614,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_WhenMeterReadingExists_AutoLoadsFromRepository()
+    public void MainForm_BillingTab_WhenMeterReadingExists_AutoLoadsFromRepository()
     {
         RunInSta(() =>
         {
@@ -634,7 +634,7 @@ public class RoomFormTests
                 MeterReading.Create(560m));
             meterRepo.Add(reading);
 
-            using var form = new RoomForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
+            using var form = new MainForm(createRoomService, roomRepo, null, null, TenantsLivingIn(room.Id), meterRepo, null);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages["BillingTabPage"]!;
@@ -660,7 +660,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_WhenBillCreated_AutoAdvancesToNextRoom()
+    public void MainForm_BillingTab_WhenBillCreated_AutoAdvancesToNextRoom()
     {
         RunInSta(() =>
         {
@@ -674,7 +674,7 @@ public class RoomFormTests
             var room1 = createRoomService.Create("101");
             var room2 = createRoomService.Create("102");
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages["BillingTabPage"]!;
@@ -743,7 +743,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_ListsOnlyRoomsWithTenant()
+    public void MainForm_BillingTab_ListsOnlyRoomsWithTenant()
     {
         RunInSta(() =>
         {
@@ -757,7 +757,7 @@ public class RoomFormTests
             var leavingTenant = TestTenants.MoveInto(tenantRepo, leftRoom.Id);
             new MoveOutTenantService(tenantRepo).MoveOut(leavingTenant.Id, DateOnly.FromDateTime(DateTime.Now));
 
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 createRoomService,
                 roomRepo,
                 new CreateMonthlyBillService(new InMemoryBillRepository()),
@@ -770,7 +770,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_BillOfRoomThatBecameVacant_CanStillBeOpenedAndEdited()
+    public void MainForm_BillingTab_BillOfRoomThatBecameVacant_CanStillBeOpenedAndEdited()
     {
         RunInSta(() =>
         {
@@ -788,7 +788,7 @@ public class RoomFormTests
                 Tenant: BillTenantSnapshot.From(tenant)));
             new MoveOutTenantService(tenantRepo).MoveOut(tenant.Id, DateOnly.FromDateTime(DateTime.Now));
 
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 createRoomService, roomRepo, createBillService, null, tenantRepo, billRepository: billRepo,
                 confirmBillRevision: _ => true);
             HiddenTestWindows.ShowHidden(form);
@@ -811,7 +811,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_WhenCableTvExemptionChanges_NewBillFollowsAndIssuedBillStaysTheSame()
+    public void MainForm_WhenCableTvExemptionChanges_NewBillFollowsAndIssuedBillStaysTheSame()
     {
         RunInSta(() =>
         {
@@ -825,7 +825,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room.Id, october);
             AddMeterReading(meterRepo, room.Id, november);
 
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 createRoomService,
                 roomRepo,
                 new CreateMonthlyBillService(billRepo),
@@ -864,7 +864,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_WhenExistingBillIsEdited_UpdatesSameBillWithoutDuplicateError()
+    public void MainForm_BillingTab_WhenExistingBillIsEdited_UpdatesSameBillWithoutDuplicateError()
     {
         RunInSta(() =>
         {
@@ -879,7 +879,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 3000m, true);
             AddMeterReading(meterRepo, room.Id, period);
 
-            using var form = new RoomForm(
+            using var form = new MainForm(
                 createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo,
                 confirmBillRevision: _ => true);
             HiddenTestWindows.ShowHidden(form);
@@ -919,7 +919,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_WhenMeterChangesAfterBillCreated_ShowsMetersFromBill()
+    public void MainForm_BillingTab_WhenMeterChangesAfterBillCreated_ShowsMetersFromBill()
     {
         RunInSta(() =>
         {
@@ -936,7 +936,7 @@ public class RoomFormTests
             var room = createRoomService.Create("101", 3000m, true);
             AddMeterReading(meterRepo, room.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room.Id), meterRepo, billRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages["BillingTabPage"]!;
@@ -976,7 +976,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_WhenPriceChangesInSettingsTab_NewBillUsesNewPriceAndIssuedBillStaysTheSame()
+    public void MainForm_WhenPriceChangesInSettingsTab_NewBillUsesNewPriceAndIssuedBillStaysTheSame()
     {
         RunInSta(() =>
         {
@@ -993,7 +993,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room1.Id, period);
             AddMeterReading(meterRepo, room2.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages["BillingTabPage"]!;
@@ -1027,7 +1027,7 @@ public class RoomFormTests
     }
 
     [Fact]
-    public void RoomForm_BillingTab_WhenAnotherRoomIsSelectedDuringEdit_CreatesNewBillForThatRoom()
+    public void MainForm_BillingTab_WhenAnotherRoomIsSelectedDuringEdit_CreatesNewBillForThatRoom()
     {
         RunInSta(() =>
         {
@@ -1044,7 +1044,7 @@ public class RoomFormTests
             AddMeterReading(meterRepo, room1.Id, period);
             AddMeterReading(meterRepo, room2.Id, period);
 
-            using var form = new RoomForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
+            using var form = new MainForm(createRoomService, roomRepo, createBillService, null, TenantsLivingIn(room1.Id, room2.Id), meterRepo, billRepo);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var billingTab = tabControl.TabPages["BillingTabPage"]!;

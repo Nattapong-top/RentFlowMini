@@ -26,7 +26,7 @@ internal static class Program
                 MessageBoxIcon.Error);
         };
 
-        RoomForm mainForm;
+        MainForm mainForm;
         try
         {
             var storage = SqliteAppStorage.Open(GetDataFolder());
@@ -42,7 +42,7 @@ internal static class Program
 
             BackUpIfNoneToday(storage.Backups);
 
-            mainForm = new RoomForm(
+            mainForm = new MainForm(
                 new CreateRoomService(storage.Rooms),
                 storage.Rooms,
                 new CreateMonthlyBillService(storage.Bills),

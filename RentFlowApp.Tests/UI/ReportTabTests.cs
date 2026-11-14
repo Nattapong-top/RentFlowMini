@@ -411,13 +411,13 @@ public class ReportTabTests
     }
 
     [Fact]
-    public void RoomForm_OpensOnReportTab_AndRefreshesReportWhenReopened()
+    public void MainForm_OpensOnReportTab_AndRefreshesReportWhenReopened()
     {
         RunInSta(() =>
         {
             var rooms = new InMemoryRoomRepository();
             var bills = new InMemoryBillRepository();
-            using var form = new RoomForm(new CreateRoomService(rooms), rooms, billRepository: bills);
+            using var form = new MainForm(new CreateRoomService(rooms), rooms, billRepository: bills);
             HiddenTestWindows.ShowHidden(form);
             var tabControl = form.Controls.OfType<TabControl>().First();
             var reportPage = tabControl.TabPages["ReportTabPage"]!;
