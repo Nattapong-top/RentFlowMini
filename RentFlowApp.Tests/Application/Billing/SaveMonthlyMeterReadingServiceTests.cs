@@ -193,4 +193,26 @@ public class SaveMonthlyMeterReadingServiceTests
         Assert.Null(result.Warning);
         Assert.True(readings.Exists(roomId, October));
     }
+
+    [Fact]
+    public void Save_WhenPeriodHasNoReadingYet_ReportsNewReading()
+    {
+        var service = new SaveMonthlyMeterReadingService(new InMemoryMonthlyMeterReadingRepository());
+
+        var result = SaveCurrent(service, RoomId.New(), October, 110m);
+
+        Assert.False(result.IsUpdate);
+    }
+
+    [Fact]
+    public void Save_WhenPeriodAlreadyHasReading_ReportsUpdate()
+    {
+        var service = new SaveMonthlyMeterReadingService(new InMemoryMonthlyMeterReadingRepository());
+        var roomId = RoomId.New();
+        SaveCurrent(service, roomId, October, 110m);
+
+        var result = SaveCurrent(service, roomId, October, 115m);
+
+        Assert.True(result.IsUpdate);
+    }
 }
