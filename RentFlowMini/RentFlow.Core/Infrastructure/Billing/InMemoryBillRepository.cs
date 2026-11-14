@@ -48,4 +48,14 @@ public sealed class InMemoryBillRepository : IBillRepository
     public IReadOnlyCollection<Bill> GetAll() => _bills.AsReadOnly();
 
     public Bill? Get(BillId id) => _bills.FirstOrDefault(b => b.Id == id);
+
+    public Bill? Get(RoomId roomId, BillingPeriod billingPeriod)
+    {
+        ArgumentNullException.ThrowIfNull(roomId);
+        ArgumentNullException.ThrowIfNull(billingPeriod);
+
+        return _bills.FirstOrDefault(
+            bill => bill.RoomId == roomId &&
+                    bill.BillingPeriod == billingPeriod);
+    }
 }

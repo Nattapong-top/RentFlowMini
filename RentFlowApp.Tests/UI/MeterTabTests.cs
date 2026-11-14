@@ -1,6 +1,7 @@
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Rooms;
+using RentFlowApp.Domain.Billing;
 using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Forms;
 using RentFlowApp.Infrastructure.Billing;
@@ -22,6 +23,30 @@ public class MeterTabTests
         {
             Rooms = new InMemoryRoomRepository();
             Readings = new InMemoryMonthlyMeterReadingRepository();
+            Bills = new InMemoryBillRepository();
+        }
+
+        public InMemoryBillRepository Bills { get; }
+
+        public void AddBill(RoomId roomId, bool isPaid)
+        {
+            var bill = Bill.Create(
+                roomId,
+                CurrentPeriod,
+                new BillingCalculationResult(
+                    Money.Create(3000m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(0m),
+                    Money.Create(3000m)));
+            if (isPaid)
+            {
+                bill.RecordPayment(DateOnly.FromDateTime(DateTime.Today), PaymentMethod.Cash);
+            }
+
+            Bills.Add(bill);
         }
 
         public InMemoryRoomRepository Rooms { get; }
@@ -45,7 +70,7 @@ public class MeterTabTests
 
         public void Show()
         {
-            Control = new MeterReadingTabControl(Rooms, Readings, new SaveMonthlyMeterReadingService(Readings));
+            Control = new MeterReadingTabControl(Rooms, Readings, new SaveMonthlyMeterReadingService(Readings, Bills));
             _form.Controls.Add(Control);
             HiddenTestWindows.ShowHidden(_form);
         }
@@ -110,6 +135,47 @@ public class MeterTabTests
             Assert.Equal(
                 $"บันทึกมิเตอร์ห้อง 101 รอบบิล {ThaiCalendar.FormatPeriod(CurrentPeriod)} สำเร็จ",
                 tab.Find<Label>("MeterMessageLabel").Text);
+        });
+    }
+
+    [Fact]
+    public void Save_WhenBillForPeriodIsPaid_ShowsErrorWithoutSaving()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new MeterTab();
+            var roomId = tab.AddRoom("101");
+            tab.AddBill(roomId, isPaid: true);
+            tab.Show();
+            tab.FillCurrentReadings();
+
+            tab.Find<Button>("SaveMeterButton").PerformClick();
+
+            var message = tab.Find<Label>("MeterMessageLabel");
+            Assert.Contains("ยกเลิกการรับชำระ", message.Text);
+            Assert.Equal(ThemePalette.Current.ErrorText, message.ForeColor);
+            Assert.Empty(tab.Readings.GetAll());
+        });
+    }
+
+    [Fact]
+    public void Save_WhenBillForPeriodIsUnpaid_SavesAndShowsRefreshWarning()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new MeterTab();
+            var roomId = tab.AddRoom("101");
+            tab.AddBill(roomId, isPaid: false);
+            tab.Show();
+            tab.FillCurrentReadings();
+
+            tab.Find<Button>("SaveMeterButton").PerformClick();
+
+            var message = tab.Find<Label>("MeterMessageLabel");
+            Assert.StartsWith("บันทึกมิเตอร์ห้อง 101", message.Text);
+            Assert.Contains("ดึงข้อมูลห้องใหม่", message.Text);
+            Assert.Equal(ThemePalette.Current.InfoText, message.ForeColor);
+            Assert.Single(tab.Readings.GetAll());
         });
     }
 

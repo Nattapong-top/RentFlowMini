@@ -96,4 +96,26 @@ public class InMemoryBillRepositoryTests
             RoomId.New(),
             null!));
     }
+
+    [Fact]
+    public void GetByRoomAndPeriod_ReturnsMatchingBillOrNull()
+    {
+        var repository = new InMemoryBillRepository();
+        var roomId = RoomId.New();
+        var september = BillingPeriod.Create("2026-09");
+        var calculation = new BillingCalculationResult(
+            Money.Create(2800m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(0m),
+            Money.Create(2800m));
+        var bill = Bill.Create(roomId, september, calculation);
+        repository.Add(bill);
+
+        Assert.Equal(bill.Id, repository.Get(roomId, september)?.Id);
+        Assert.Null(repository.Get(roomId, BillingPeriod.Create("2026-10")));
+        Assert.Null(repository.Get(RoomId.New(), september));
+    }
 }

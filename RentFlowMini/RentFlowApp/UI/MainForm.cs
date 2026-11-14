@@ -41,7 +41,7 @@ public class MainForm : Form
         var createTenantSvc = createTenantService ?? new CreateTenantService(tenantRepo);
         var billingSettingsRepo = billingSettingsRepository ?? new InMemoryBillingSettingsRepository();
         var updateBillingSettingsSvc = updateBillingSettingsService ?? new UpdateBillingSettingsService(billingSettingsRepo);
-        var saveMonthlyMeterReadingSvc = new SaveMonthlyMeterReadingService(monthlyMeterReadingRepo);
+        var saveMonthlyMeterReadingSvc = new SaveMonthlyMeterReadingService(monthlyMeterReadingRepo, billRepo);
         var invoiceSettingsRepo = invoiceSettingsRepository ?? new InMemoryInvoiceSettingsRepository();
 
         _roomTabControl = new RoomTabControl(
