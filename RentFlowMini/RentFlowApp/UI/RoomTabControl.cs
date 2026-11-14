@@ -7,8 +7,7 @@ namespace RentFlowApp.Forms;
 public sealed class RoomTabControl : BaseTabControl
 {
     private readonly CreateRoomService _createRoomService;
-    private readonly IRoomEditor _roomRepository;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly RoomListService _roomListService;
     private readonly UpdateRoomRentService _updateRoomRentService;
 
     private readonly TextBox _roomNumberTextBox = new();
@@ -21,14 +20,16 @@ public sealed class RoomTabControl : BaseTabControl
     private readonly Label _roomMessageLabel = new();
     private RoomId? _editingRoomId;
 
-    private sealed record RoomGridItem(
-        RoomId RoomId,
-        int Sequence,
-        string RoomNumber,
-        string OccupancyStatus,
-        string TenantName,
-        string MonthlyRent,
-        string CableTvExempt);
+    // แถวในตารางผูกคอลัมน์ด้วยชื่อ property จึงห่อ RoomListItem ไว้ และจัดรูปแบบเฉพาะส่วนที่แสดงผล
+    private sealed record RoomGridItem(RoomListItem Room)
+    {
+        public int Sequence => Room.Sequence;
+        public string RoomNumber => Room.RoomNumber;
+        public string OccupancyStatus => Room.OccupancyStatus;
+        public string TenantName => Room.TenantName;
+        public string MonthlyRent => Room.MonthlyRent.ToString("N2");
+        public string CableTvExempt => Room.IsCableTvExempt ? "ใช่" : "ไม่";
+    }
 
     public event EventHandler? RoomsChanged;
 
@@ -42,8 +43,7 @@ public sealed class RoomTabControl : BaseTabControl
         ArgumentNullException.ThrowIfNull(tenantRepository);
 
         _createRoomService = createRoomService;
-        _roomRepository = roomRepository;
-        _tenantRepository = tenantRepository;
+        _roomListService = new RoomListService(roomRepository, tenantRepository);
         _updateRoomRentService = new UpdateRoomRentService(roomRepository);
 
         Name = "RoomTabControl";
@@ -53,24 +53,8 @@ public sealed class RoomTabControl : BaseTabControl
 
     public void RefreshRoomList()
     {
-        var rooms = _roomRepository.GetAll().ToList();
-        var tenantsByRoomId = _tenantRepository.GetAll()
-            .Where(tenant => tenant.RoomId is not null)
-            .ToDictionary(tenant => tenant.RoomId!, tenant => $"{tenant.FirstName} {tenant.LastName}");
-
-        _roomGrid.DataSource = rooms
-            .Select((room, index) =>
-            {
-                var hasTenant = tenantsByRoomId.TryGetValue(room.Id, out var tenantName);
-                return new RoomGridItem(
-                    RoomId: room.Id,
-                    Sequence: index + 1,
-                    RoomNumber: room.RoomNumber.Value,
-                    OccupancyStatus: hasTenant ? "ไม่ว่าง" : "ว่าง",
-                    TenantName: hasTenant ? tenantName! : "-",
-                    MonthlyRent: room.MonthlyRent.Amount.ToString("N2"),
-                    CableTvExempt: room.IsCableTvExempt ? "ใช่" : "ไม่");
-            })
+        _roomGrid.DataSource = _roomListService.GetRooms()
+            .Select(room => new RoomGridItem(room))
             .ToList();
 
         UpdateEditButtonAvailability();
@@ -295,11 +279,9 @@ public sealed class RoomTabControl : BaseTabControl
 
     private void AddRoomButton_Click(object? sender, EventArgs e)
     {
-        if (!decimal.TryParse(
-                _roomMonthlyRentTextBox.Text.Trim(),
-                out var monthlyRent) || monthlyRent < 0)
+        if (!RoomRentInput.TryParse(_roomMonthlyRentTextBox.Text, out var monthlyRent, out var rentError))
         {
-            ShowRoomError("กรุณาระบุค่าเช่ารายเดือนเป็นจำนวนเงินที่ถูกต้อง");
+            ShowRoomError(rentError);
             return;
         }
 
@@ -354,11 +336,9 @@ public sealed class RoomTabControl : BaseTabControl
             return;
         }
 
-        if (!decimal.TryParse(
-                _roomMonthlyRentTextBox.Text.Trim(),
-                out var monthlyRent) || monthlyRent < 0)
+        if (!RoomRentInput.TryParse(_roomMonthlyRentTextBox.Text, out var monthlyRent, out var rentError))
         {
-            ShowRoomError("กรุณาระบุค่าเช่ารายเดือนเป็นจำนวนเงินที่ถูกต้อง");
+            ShowRoomError(rentError);
             return;
         }
 
@@ -405,10 +385,10 @@ public sealed class RoomTabControl : BaseTabControl
 
     private void BeginRoomRentEditing(RoomGridItem selectedRoom)
     {
-        _editingRoomId = selectedRoom.RoomId;
-        _roomNumberTextBox.Text = selectedRoom.RoomNumber;
+        _editingRoomId = selectedRoom.Room.RoomId;
+        _roomNumberTextBox.Text = selectedRoom.Room.RoomNumber;
         _roomMonthlyRentTextBox.Text = selectedRoom.MonthlyRent;
-        _roomCableTvExemptCheckBox.Checked = selectedRoom.CableTvExempt == "ใช่";
+        _roomCableTvExemptCheckBox.Checked = selectedRoom.Room.IsCableTvExempt;
         _roomNumberTextBox.ReadOnly = true;
         _editRoomRentButton.Text = "บันทึกค่าเช่า";
         _editRoomRentButton.Enabled = true;
