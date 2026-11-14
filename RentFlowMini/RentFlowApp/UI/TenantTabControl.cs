@@ -179,7 +179,7 @@ public class TenantTabControl : BaseTabControl
 
         _tenantMessageLabel.Name = "TenantMessageLabel";
         _tenantMessageLabel.SetBounds(345, 93, 800, 25);
-        _tenantMessageLabel.ForeColor = Color.DarkGreen;
+        _tenantMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
 
         panel.Controls.AddRange(
         [
@@ -227,7 +227,7 @@ public class TenantTabControl : BaseTabControl
         _tenantGrid.MultiSelect = false;
         _tenantGrid.RowHeadersVisible = false;
         _tenantGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        _tenantGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
+        _tenantGrid.AlternatingRowsDefaultCellStyle.BackColor = ThemePalette.Current.AlternatingRowBack;
         _tenantGrid.RowTemplate.Height = 30;
         _tenantGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         _tenantGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
@@ -415,12 +415,12 @@ public class TenantTabControl : BaseTabControl
 
         if (item.HasOutstanding && _tenantGrid.Columns[e.ColumnIndex].Name == "OutstandingAmount")
         {
-            e.CellStyle.ForeColor = Color.Firebrick;
+            e.CellStyle.ForeColor = ThemePalette.Current.OverdueText;
             e.CellStyle.SelectionForeColor = Color.MistyRose;
         }
         else if (item.IsMovedOut)
         {
-            e.CellStyle.ForeColor = Color.Gray;
+            e.CellStyle.ForeColor = ThemePalette.Current.MutedText;
         }
     }
 
@@ -457,7 +457,7 @@ public class TenantTabControl : BaseTabControl
             TenantsChanged?.Invoke(this, EventArgs.Empty);
             _tenantFirstNameTextBox.Focus();
 
-            _tenantMessageLabel.ForeColor = Color.DarkGreen;
+            _tenantMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _tenantMessageLabel.Text = successMessage;
         }
         catch (ArgumentException ex)
@@ -516,7 +516,7 @@ public class TenantTabControl : BaseTabControl
 
         if (tenant.IsMovedOut)
         {
-            _tenantMessageLabel.ForeColor = Color.DarkBlue;
+            _tenantMessageLabel.ForeColor = ThemePalette.Current.InfoText;
             _tenantMessageLabel.Text = $"{tenant.FullName} ย้ายออกแล้ว จึงแก้ไขข้อมูลไม่ได้";
             return;
         }
@@ -539,7 +539,7 @@ public class TenantTabControl : BaseTabControl
             .Cast<TenantRoomOption>()
             .First(option => option.Id == tenant.RoomId);
 
-        _tenantMessageLabel.ForeColor = Color.DarkBlue;
+        _tenantMessageLabel.ForeColor = ThemePalette.Current.InfoText;
         _tenantMessageLabel.Text = $"กำลังแก้ไขข้อมูล {tenant.FullName}";
 
         // ย้ายออกจากตาราง เพราะ Enter ในตารางจะเลื่อนแถวแทนการบันทึก
@@ -580,7 +580,7 @@ public class TenantTabControl : BaseTabControl
 
             TenantsChanged?.Invoke(this, EventArgs.Empty);
 
-            _tenantMessageLabel.ForeColor = Color.DarkGreen;
+            _tenantMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _tenantMessageLabel.Text = $"บันทึกการย้ายออกของ {tenant.FullName} สำเร็จแล้ว";
         }
         catch (InvalidOperationException ex)
@@ -630,7 +630,7 @@ public class TenantTabControl : BaseTabControl
 
     private void ShowTenantError(string message)
     {
-        _tenantMessageLabel.ForeColor = Color.DarkRed;
+        _tenantMessageLabel.ForeColor = ThemePalette.Current.ErrorText;
         _tenantMessageLabel.Text = message;
     }
 }

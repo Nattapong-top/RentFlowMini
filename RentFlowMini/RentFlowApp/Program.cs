@@ -1,8 +1,10 @@
 using Microsoft.Data.Sqlite;
 using RentFlowApp.Application.Billing;
 using RentFlowApp.Application.Rooms;
+using RentFlowApp.Application.Settings;
 using RentFlowApp.Application.Tenants;
 using RentFlowApp.Forms;
+using RentFlowApp.Infrastructure.Settings;
 using RentFlowApp.Infrastructure.Sqlite;
 
 namespace RentFlowApp;
@@ -13,6 +15,11 @@ internal static class Program
     static void Main()
     {
         ApplicationConfiguration.Initialize();
+
+        var appearanceModeService = new AppearanceModeService(
+            new JsonFileAppearanceSettings(Path.Combine(GetDataFolder(), JsonFileAppearanceSettings.FileName)));
+        // ต้องตั้งก่อนสร้างหน้าต่างแรก ไม่อย่างนั้นหน้าต่างจะไม่เปลี่ยนสีตามโหมดที่เลือก
+        System.Windows.Forms.Application.SetColorMode(ToColorMode(appearanceModeService.AppliedMode));
 
         // กล่อง error มาตรฐานของ WinForms แสดง stack trace ให้ผู้ใช้เห็น จึงต้องดักไว้ก่อน
         System.Windows.Forms.Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -52,7 +59,8 @@ internal static class Program
                 storage.Bills,
                 billingSettingsRepository: storage.Settings,
                 invoiceSettingsRepository: storage.Settings,
-                backupService: storage.Backups);
+                backupService: storage.Backups,
+                appearanceModeService: appearanceModeService);
         }
         catch (InvalidOperationException ex)
         {
@@ -86,6 +94,13 @@ internal static class Program
                 MessageBoxIcon.Warning);
         }
     }
+
+    private static SystemColorMode ToColorMode(AppearanceMode mode) => mode switch
+    {
+        AppearanceMode.Light => SystemColorMode.Classic,
+        AppearanceMode.Dark => SystemColorMode.Dark,
+        _ => SystemColorMode.System
+    };
 
     private static void ShowStartupError(Exception exception, string message)
     {

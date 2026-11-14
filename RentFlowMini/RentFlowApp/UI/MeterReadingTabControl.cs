@@ -203,7 +203,7 @@ public class MeterReadingTabControl : BaseTabControl
         _meterGrid.RowHeadersVisible = false;
         _meterGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         _meterGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-        _meterGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
+        _meterGrid.AlternatingRowsDefaultCellStyle.BackColor = ThemePalette.Current.AlternatingRowBack;
         _meterGrid.RowTemplate.Height = 30;
         _meterGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _meterGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
@@ -449,7 +449,7 @@ public class MeterReadingTabControl : BaseTabControl
                 prevElec,
                 currElec);
 
-            _messageLabel.ForeColor = Color.DarkGreen;
+            _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _messageLabel.Text = isExisting
                 ? $"อัปเดตมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ"
                 : $"บันทึกมิเตอร์ห้อง {selectedRoom.RoomNumber} รอบบิล {ThaiCalendar.FormatPeriod(billingPeriod)} สำเร็จ";
@@ -510,7 +510,7 @@ public class MeterReadingTabControl : BaseTabControl
             SetPreviousElecReadOnly(true);
         }
 
-        _messageLabel.ForeColor = Color.DarkBlue;
+        _messageLabel.ForeColor = ThemePalette.Current.InfoText;
         _messageLabel.Text = $"โหมดแก้ไข: รอบบิล {gridItem.BillingPeriodDisplay} ห้อง {gridItem.RoomNumber}";
     }
 
@@ -531,7 +531,7 @@ public class MeterReadingTabControl : BaseTabControl
 
     private void ShowError(string message)
     {
-        _messageLabel.ForeColor = Color.DarkRed;
+        _messageLabel.ForeColor = ThemePalette.Current.ErrorText;
         _messageLabel.Text = message;
     }
 }

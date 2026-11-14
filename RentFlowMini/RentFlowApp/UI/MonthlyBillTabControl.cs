@@ -449,7 +449,7 @@ public class MonthlyBillTabControl : BaseTabControl
         resultGroup.Name = "ResultGroup";
         resultGroup.Text = SummaryTitle;
         resultGroup.Padding = new Padding(10);
-        resultGroup.BackColor = Color.White;
+        resultGroup.BackColor = ThemePalette.Current.SummaryBack;
 
         var panel = new Panel
         {
@@ -464,19 +464,19 @@ public class MonthlyBillTabControl : BaseTabControl
             Top = 6,
             Width = 350,
             Height = 70,
-            BackColor = Color.FromArgb(246, 248, 251)
+            BackColor = ThemePalette.Current.SummaryHeaderBack
         };
 
         _resultRoomLabel.Name = "ResultRoomLabel";
         _resultRoomLabel.SetBounds(8, 6, 150, 26);
         _resultRoomLabel.Font = new Font("Segoe UI", 13.5f, FontStyle.Bold);
-        _resultRoomLabel.ForeColor = Color.FromArgb(24, 76, 120);
+        _resultRoomLabel.ForeColor = ThemePalette.Current.SummaryHeadingText;
         _resultRoomLabel.Text = "ห้อง -";
 
         _resultInvoiceNumberLabel.Name = "ResultInvoiceNumberLabel";
         _resultInvoiceNumberLabel.SetBounds(160, 6, 182, 24);
         _resultInvoiceNumberLabel.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
-        _resultInvoiceNumberLabel.ForeColor = Color.FromArgb(24, 76, 120);
+        _resultInvoiceNumberLabel.ForeColor = ThemePalette.Current.SummaryHeadingText;
         _resultInvoiceNumberLabel.TextAlign = ContentAlignment.MiddleRight;
         _resultInvoiceNumberLabel.Text = "ใบแจ้งหนี้ เลขที่ : -";
 
@@ -484,27 +484,27 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultTenantLabel.SetBounds(8, 32, 200, 21);
         _resultTenantLabel.AutoEllipsis = true;
         _resultTenantLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Regular);
-        _resultTenantLabel.ForeColor = Color.FromArgb(50, 50, 50);
+        _resultTenantLabel.ForeColor = ThemePalette.Current.SummaryTenantText;
         _resultTenantLabel.Text = "ผู้เช่า: -";
 
         _resultPeriodLabel.Name = "ResultPeriodLabel";
         _resultPeriodLabel.SetBounds(210, 32, 132, 21);
         _resultPeriodLabel.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
-        _resultPeriodLabel.ForeColor = Color.FromArgb(70, 95, 125);
+        _resultPeriodLabel.ForeColor = ThemePalette.Current.SummaryPeriodText;
         _resultPeriodLabel.TextAlign = ContentAlignment.MiddleRight;
         _resultPeriodLabel.Text = "(รอบเดือนที่ -)";
 
         _resultCreatedAtLabel.Name = "ResultCreatedAtLabel";
         _resultCreatedAtLabel.SetBounds(150, 51, 192, 18);
         _resultCreatedAtLabel.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
-        _resultCreatedAtLabel.ForeColor = Color.DimGray;
+        _resultCreatedAtLabel.ForeColor = ThemePalette.Current.SummaryDateText;
         _resultCreatedAtLabel.TextAlign = ContentAlignment.MiddleRight;
         _resultCreatedAtLabel.Text = "วันที่ออกบิล: -";
 
         _resultDueDateLabel.Name = "ResultDueDateLabel";
         _resultDueDateLabel.SetBounds(8, 51, 142, 18);
         _resultDueDateLabel.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
-        _resultDueDateLabel.ForeColor = Color.DimGray;
+        _resultDueDateLabel.ForeColor = ThemePalette.Current.SummaryDateText;
         _resultDueDateLabel.Text = "ครบกำหนด: -";
 
         headerPanel.Controls.AddRange([
@@ -519,7 +519,7 @@ public class MonthlyBillTabControl : BaseTabControl
             Top = 76,
             Width = 350,
             Height = 1,
-            BackColor = Color.FromArgb(226, 232, 240)
+            BackColor = ThemePalette.Current.SummaryDivider
         };
 
         // Item Lines
@@ -528,7 +528,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultRentLabel.SetBounds(160, 82, 190, 22);
         _resultRentLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
         _resultRentLabel.TextAlign = ContentAlignment.MiddleRight;
-        _resultRentLabel.ForeColor = Color.FromArgb(30, 41, 59);
+        _resultRentLabel.ForeColor = ThemePalette.Current.SummaryAmountText;
         _resultRentLabel.Text = "-";
 
         var waterHeader = new Label { Text = "ค่าน้ำประปา", Left = 10, Top = 107, Width = 150, Height = 22, Font = new Font("Segoe UI", 10.5f) };
@@ -536,13 +536,13 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultWaterAmountLabel.SetBounds(160, 107, 190, 22);
         _resultWaterAmountLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
         _resultWaterAmountLabel.TextAlign = ContentAlignment.MiddleRight;
-        _resultWaterAmountLabel.ForeColor = Color.FromArgb(30, 41, 59);
+        _resultWaterAmountLabel.ForeColor = ThemePalette.Current.SummaryAmountText;
         _resultWaterAmountLabel.Text = "-";
 
         _resultWaterDetailsLabel.Name = "ResultWaterDetailsLabel";
         _resultWaterDetailsLabel.SetBounds(22, 131, 328, 19);
         _resultWaterDetailsLabel.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
-        _resultWaterDetailsLabel.ForeColor = Color.FromArgb(100, 116, 139);
+        _resultWaterDetailsLabel.ForeColor = ThemePalette.Current.SummaryDetailText;
         _resultWaterDetailsLabel.Text = "-";
 
         var elecHeader = new Label { Text = "ค่าไฟฟ้า", Left = 10, Top = 153, Width = 150, Height = 22, Font = new Font("Segoe UI", 10.5f) };
@@ -550,13 +550,13 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultElecAmountLabel.SetBounds(160, 153, 190, 22);
         _resultElecAmountLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
         _resultElecAmountLabel.TextAlign = ContentAlignment.MiddleRight;
-        _resultElecAmountLabel.ForeColor = Color.FromArgb(30, 41, 59);
+        _resultElecAmountLabel.ForeColor = ThemePalette.Current.SummaryAmountText;
         _resultElecAmountLabel.Text = "-";
 
         _resultElecDetailsLabel.Name = "ResultElecDetailsLabel";
         _resultElecDetailsLabel.SetBounds(22, 177, 328, 19);
         _resultElecDetailsLabel.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
-        _resultElecDetailsLabel.ForeColor = Color.FromArgb(100, 116, 139);
+        _resultElecDetailsLabel.ForeColor = ThemePalette.Current.SummaryDetailText;
         _resultElecDetailsLabel.Text = "-";
 
         var motorcycleHeader = new Label { Text = "ค่าจอดมอเตอร์ไซค์", Left = 10, Top = 199, Width = 150, Height = 22, Font = new Font("Segoe UI", 10.5f) };
@@ -564,7 +564,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultMotorcycleParkingLabel.SetBounds(160, 199, 190, 22);
         _resultMotorcycleParkingLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
         _resultMotorcycleParkingLabel.TextAlign = ContentAlignment.MiddleRight;
-        _resultMotorcycleParkingLabel.ForeColor = Color.FromArgb(30, 41, 59);
+        _resultMotorcycleParkingLabel.ForeColor = ThemePalette.Current.SummaryAmountText;
         _resultMotorcycleParkingLabel.Text = "-";
 
         var carHeader = new Label { Text = "ค่าจอดรถยนต์", Left = 10, Top = 224, Width = 150, Height = 22, Font = new Font("Segoe UI", 10.5f) };
@@ -572,7 +572,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultCarParkingLabel.SetBounds(160, 224, 190, 22);
         _resultCarParkingLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
         _resultCarParkingLabel.TextAlign = ContentAlignment.MiddleRight;
-        _resultCarParkingLabel.ForeColor = Color.FromArgb(30, 41, 59);
+        _resultCarParkingLabel.ForeColor = ThemePalette.Current.SummaryAmountText;
         _resultCarParkingLabel.Text = "-";
 
         var cableTvHeader = new Label { Text = "ค่าเคเบิลทีวี (Cable TV)", Left = 10, Top = 249, Width = 150, Height = 22, Font = new Font("Segoe UI", 10.5f) };
@@ -580,7 +580,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _resultCableTvLabel.SetBounds(160, 249, 190, 22);
         _resultCableTvLabel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
         _resultCableTvLabel.TextAlign = ContentAlignment.MiddleRight;
-        _resultCableTvLabel.ForeColor = Color.FromArgb(30, 41, 59);
+        _resultCableTvLabel.ForeColor = ThemePalette.Current.SummaryAmountText;
         _resultCableTvLabel.Text = "-";
 
         // Total Highlight Box
@@ -590,7 +590,7 @@ public class MonthlyBillTabControl : BaseTabControl
             Top = 275,
             Width = 350,
             Height = 65,
-            BackColor = Color.FromArgb(238, 246, 255),
+            BackColor = ThemePalette.Current.SummaryTotalBack,
             BorderStyle = BorderStyle.FixedSingle
         };
 
@@ -602,13 +602,13 @@ public class MonthlyBillTabControl : BaseTabControl
             Width = 110,
             Height = 30,
             Font = new Font("Segoe UI", 12f, FontStyle.Bold),
-            ForeColor = Color.FromArgb(30, 58, 138)
+            ForeColor = ThemePalette.Current.SummaryTotalTitleText
         };
 
         _resultTotalLabel.Name = "ResultTotalLabel";
         _resultTotalLabel.SetBounds(120, 12, 215, 38);
         _resultTotalLabel.Font = new Font("Segoe UI", 15f, FontStyle.Bold);
-        _resultTotalLabel.ForeColor = Color.FromArgb(29, 78, 216);
+        _resultTotalLabel.ForeColor = ThemePalette.Current.SummaryTotalText;
         _resultTotalLabel.TextAlign = ContentAlignment.MiddleRight;
         _resultTotalLabel.Text = "-";
 
@@ -655,7 +655,7 @@ public class MonthlyBillTabControl : BaseTabControl
         // ใช้ความกว้างตายตัวและเลื่อนแนวนอน เพื่อไม่ให้ยอดเงินถูกตัดบนจอเล็ก
         _billGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
         _billGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-        _billGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 248, 252);
+        _billGrid.AlternatingRowsDefaultCellStyle.BackColor = ThemePalette.Current.AlternatingRowBack;
         _billGrid.RowTemplate.Height = 30;
         _billGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _billGrid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
@@ -920,7 +920,7 @@ public class MonthlyBillTabControl : BaseTabControl
             _billGrid.Columns[e.ColumnIndex].Name == "PaymentStatus" &&
             _billGrid.Rows[e.RowIndex].DataBoundItem is BillGridItem { IsOverdue: true })
         {
-            e.CellStyle.ForeColor = Color.Firebrick;
+            e.CellStyle.ForeColor = ThemePalette.Current.OverdueText;
             e.CellStyle.SelectionForeColor = Color.MistyRose;
         }
     }
@@ -943,7 +943,7 @@ public class MonthlyBillTabControl : BaseTabControl
         int overdueCount = unpaidBills.Count(bill => bill.IsOverdue(today));
         decimal unpaidTotal = unpaidBills.Sum(bill => bill.Total.Amount);
 
-        _outstandingSummaryLabel.ForeColor = overdueCount > 0 ? Color.Firebrick : SystemColors.ControlText;
+        _outstandingSummaryLabel.ForeColor = overdueCount > 0 ? ThemePalette.Current.OverdueText : SystemColors.ControlText;
         _outstandingSummaryLabel.Text = unpaidBills.Count == 0
             ? "ไม่มีบิลค้างชำระ"
             : $"ค้างชำระ {unpaidBills.Count} บิล รวม {unpaidTotal:N2} บาท (เกินกำหนด {overdueCount} บิล)";
@@ -1023,7 +1023,7 @@ public class MonthlyBillTabControl : BaseTabControl
 
             ShowRevisionDraft();
 
-            _billMessageLabel.ForeColor = Color.DarkBlue;
+            _billMessageLabel.ForeColor = ThemePalette.Current.InfoText;
             _billMessageLabel.Text = latest.Notice is null
                 ? PulledRoomDataMessage
                 : $"{PulledRoomDataMessage} {latest.Notice}";
@@ -1201,7 +1201,7 @@ public class MonthlyBillTabControl : BaseTabControl
             RefreshBillGrid();
             SelectBillRow(bill.Id);
 
-            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _billMessageLabel.Text = successMessage(selectedItem.RoomNumber);
         }
         catch (InvalidOperationException ex)
@@ -1473,7 +1473,7 @@ public class MonthlyBillTabControl : BaseTabControl
             _currWaterTextBox.Text = existingReading.CurrentWaterMeter.Value.ToString("0.##");
             _prevElecTextBox.Text = existingReading.PreviousElectricityMeter.Value.ToString("0.##");
             _currElecTextBox.Text = existingReading.CurrentElectricityMeter.Value.ToString("0.##");
-            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _billMessageLabel.Text = $"โหลดข้อมูลมิเตอร์รอบบิล {ThaiCalendar.FormatPeriod(currentPeriod)} เรียบร้อย";
             return;
         }
@@ -1495,7 +1495,7 @@ public class MonthlyBillTabControl : BaseTabControl
         _currWaterTextBox.Clear();
         _currElecTextBox.Clear();
 
-        _billMessageLabel.ForeColor = Color.DarkRed;
+        _billMessageLabel.ForeColor = ThemePalette.Current.ErrorText;
         _billMessageLabel.Text = CreateMonthlyBillService.MissingMeterReadingMessage;
     }
 
@@ -1608,7 +1608,7 @@ public class MonthlyBillTabControl : BaseTabControl
             RefreshRoomList(forceIncludeRoomId: null);
 
             // ข้อความผลการออกบิลสำคัญกว่าเหตุผลที่คำนวณร่างของห้องถัดไปไม่ได้ ซึ่งดูได้จากกล่องสรุปที่เป็น "-"
-            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _billMessageLabel.Text =
                 $"สร้างบิลสำหรับห้อง {selectedRoom.RoomNumber} รอบ {ThaiCalendar.FormatPeriod(bill.BillingPeriod)} สำเร็จเรียบร้อย";
         }
@@ -1650,7 +1650,7 @@ public class MonthlyBillTabControl : BaseTabControl
                     $"ยอดเดิม {FormatBaht(preview.OldTotal)}\n" +
                     $"ยอดใหม่ {FormatBaht(preview.NewTotal)}"))
             {
-                _billMessageLabel.ForeColor = Color.DarkBlue;
+                _billMessageLabel.ForeColor = ThemePalette.Current.InfoText;
                 _billMessageLabel.Text = "ยกเลิกการบันทึก บิลยังเป็นยอดเดิม";
                 return;
             }
@@ -1663,7 +1663,7 @@ public class MonthlyBillTabControl : BaseTabControl
             RefreshBillGrid();
             RefreshRoomList(forceIncludeRoomId: null);
 
-            _billMessageLabel.ForeColor = Color.DarkGreen;
+            _billMessageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _billMessageLabel.Text =
                 $"บันทึกการแก้ไขบิลห้อง {selectedRoom.RoomNumber} รอบ {period} สำเร็จเรียบร้อย" +
                 // ยังไม่เก็บประวัติการแก้ยอด กระดาษที่ผู้เช่าถืออยู่จึงอาจเป็นยอดเก่า
@@ -1731,14 +1731,14 @@ public class MonthlyBillTabControl : BaseTabControl
         if (bill.IsPaid)
         {
             SetEditingBill(null);
-            _billMessageLabel.ForeColor = Color.DarkBlue;
+            _billMessageLabel.ForeColor = ThemePalette.Current.InfoText;
             _billMessageLabel.Text = $"บิลห้อง {roomNum} ชำระแล้ว: หากต้องการแก้ไข กรุณายกเลิกการรับชำระก่อน";
             return;
         }
 
         SetEditingBill(bill);
 
-        _billMessageLabel.ForeColor = Color.DarkBlue;
+        _billMessageLabel.ForeColor = ThemePalette.Current.InfoText;
         _billMessageLabel.Text = $"แก้ไขบิลห้อง {roomNum} รอบ {ThaiCalendar.FormatPeriod(bill.BillingPeriod)}: แก้ได้เฉพาะค่าจอดรถและ Cable TV";
 
         // ย้ายออกจากตาราง เพราะ Enter ในตารางจะเลื่อนแถวแทนการบันทึก
@@ -1820,7 +1820,7 @@ public class MonthlyBillTabControl : BaseTabControl
 
     private void ShowBillError(string message)
     {
-        _billMessageLabel.ForeColor = Color.DarkRed;
+        _billMessageLabel.ForeColor = ThemePalette.Current.ErrorText;
         _billMessageLabel.Text = message;
     }
 }
