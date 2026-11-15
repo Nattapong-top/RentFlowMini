@@ -4,7 +4,7 @@
 
 **วันที่สรุป:** 2026-11-03
 **อ้างอิง commit:** `bec330c`
-**สถานะโดยรวม:** มีระบบห้องพัก ผู้เช่า ตั้งค่าราคากลาง บันทึกมิเตอร์รายเดือน และสร้างบิลประจำเดือนครบ 6 รายการ ทำงานได้ใน WinForms และเก็บข้อมูลถาวรใน SQLite; automated tests ผ่าน 578 รายการ (ล่าสุด 2026-11-15)
+**สถานะโดยรวม:** มีระบบห้องพัก ผู้เช่า ตั้งค่าราคากลาง บันทึกมิเตอร์รายเดือน และสร้างบิลประจำเดือนครบ 6 รายการ ทำงานได้ใน WinForms และเก็บข้อมูลถาวรใน SQLite; automated tests ผ่าน 593 รายการ (ล่าสุด 2026-11-15)
 
 ## 1. โครงสร้างโปรเจกต์
 
@@ -135,7 +135,7 @@ RentFlowMini/
 ## 3. Flow การทำงานหลัก
 
 ```text
-[ตั้งค่า]      BillingSettingsTabControl → UpdateBillingSettingsService → IBillingSettingsRepository
+[ตั้งค่า]      BillingSettingsTabControl → UpdateBillingSettingsService / BillingRatesInput / InvoiceSettingsService / BackupStatusText → IBillingSettingsRepository, IInvoiceSettingsRepository
 [ห้องพัก]      RoomTabControl → CreateRoomService / UpdateRoomRentService / RoomListService / RoomRentInput → IRoomEditor, ITenantRepository
 [ผู้เช่า]      TenantTabControl → CreateTenantService → ITenantRepository
 [มิเตอร์]      MeterReadingTabControl → MeterReadingEntryService / MeterReadingInput / SaveMonthlyMeterReadingService → IMonthlyMeterReadingRepository, IRoomRepository
@@ -163,7 +163,7 @@ RentFlowMini/
 
 ## 5. การทดสอบและ Build
 
-- `dotnet test` ผ่าน 578 รายการ (ล้มเหลว 0, ข้าม 0) เมื่อ 2026-11-15
+- `dotnet test` ผ่าน 593 รายการ (ล้มเหลว 0, ข้าม 0) เมื่อ 2026-11-15
 - มี unit tests สำหรับ Domain, Application และ In-Memory repository
 - มี integration tests สำหรับ SQLite ซึ่งใช้ไฟล์จริงในโฟลเดอร์ชั่วคราว รวมถึงการกดหน้าจอแล้วเปิดแอปใหม่
 - มี UI tests ของ `MainForm` (เดิมชื่อ `RoomForm`) 22 รายการ ครอบคลุมแท็บห้องพัก, ผู้เช่า และสร้างบิล (รวมการโหลดมิเตอร์อัตโนมัติ, คำเตือนเมื่อไม่มีมิเตอร์ และการเลื่อนไปห้องถัดไป)

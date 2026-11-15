@@ -1,16 +1,11 @@
-using System.Globalization;
 using RentFlowApp.Application.Billing;
-using RentFlowApp.Application.Reports;
 using RentFlowApp.Application.Settings;
-using RentFlowApp.Domain.Billing;
-using RentFlowApp.Domain.ValueObjects;
 using RentFlowApp.Infrastructure.Sqlite;
 
 namespace RentFlowApp.Forms;
 
 public class BillingSettingsTabControl : BaseTabControl
 {
-    private readonly IBillingSettingsRepository _settingsRepository;
     private readonly UpdateBillingSettingsService _updateSettingsService;
 
     private readonly TextBox _waterRateTextBox = new();
@@ -21,7 +16,7 @@ public class BillingSettingsTabControl : BaseTabControl
     private readonly Button _saveButton = new();
     private readonly Label _messageLabel = new();
 
-    private readonly IInvoiceSettingsRepository _invoiceSettingsRepository;
+    private readonly InvoiceSettingsService _invoiceSettingsService;
     private readonly TextBox _propertyNameTextBox = new();
     private readonly TextBox _addressTextBox = new();
     private readonly TextBox _bankAccountTextBox = new();
@@ -48,9 +43,8 @@ public class BillingSettingsTabControl : BaseTabControl
         ArgumentNullException.ThrowIfNull(updateSettingsService);
         ArgumentNullException.ThrowIfNull(invoiceSettingsRepository);
 
-        _settingsRepository = settingsRepository;
         _updateSettingsService = updateSettingsService;
-        _invoiceSettingsRepository = invoiceSettingsRepository;
+        _invoiceSettingsService = new InvoiceSettingsService(invoiceSettingsRepository);
         _backupService = backupService;
         _appearanceModeService = appearanceModeService;
         _confirmRestart = confirmRestart ?? ShowRestartConfirmation;
@@ -159,17 +153,17 @@ public class BillingSettingsTabControl : BaseTabControl
     {
         try
         {
-            _invoiceSettingsRepository.Save(InvoiceSettings.Create(
+            _invoiceSettingsService.Save(
                 _propertyNameTextBox.Text,
                 _addressTextBox.Text,
-                _bankAccountTextBox.Text));
+                _bankAccountTextBox.Text);
 
             _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _messageLabel.Text = "บันทึกข้อมูลหอพักสำเร็จเรียบร้อย";
         }
         catch (ArgumentException ex)
         {
-            ShowError(ex.ParamName is null ? ex.Message : ex.Message.Split(" (Parameter")[0]);
+            ShowError(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
@@ -241,14 +235,14 @@ public class BillingSettingsTabControl : BaseTabControl
     {
         try
         {
-            var settings = _settingsRepository.Get();
+            var settings = _updateSettingsService.GetCurrent();
             _waterRateTextBox.Text = settings.WaterRate.Amount.ToString("0.##");
             _elecRateTextBox.Text = settings.ElectricityRate.Amount.ToString("0.##");
             _motorcycleRateTextBox.Text = settings.MotorcycleParkingRate.Amount.ToString("0.##");
             _carRateTextBox.Text = settings.CarParkingRate.Amount.ToString("0.##");
             _cableTvRateTextBox.Text = settings.CableTvRate.Amount.ToString("0.##");
 
-            var invoiceSettings = _invoiceSettingsRepository.Get();
+            var invoiceSettings = _invoiceSettingsService.GetCurrent();
             _propertyNameTextBox.Text = invoiceSettings.PropertyName;
             _addressTextBox.Text = invoiceSettings.Address;
             _bankAccountTextBox.Text = invoiceSettings.BankAccountDetails;
@@ -261,51 +255,25 @@ public class BillingSettingsTabControl : BaseTabControl
 
     private void SaveButton_Click(object? sender, EventArgs e)
     {
-        if (!decimal.TryParse(_waterRateTextBox.Text.Trim(), out var water) || water < 0)
+        if (!BillingRatesInput.TryParse(
+                _waterRateTextBox.Text,
+                _elecRateTextBox.Text,
+                _motorcycleRateTextBox.Text,
+                _carRateTextBox.Text,
+                _cableTvRateTextBox.Text,
+                out var rates,
+                out var rateError))
         {
-            ShowError("กรุณาระบุค่าน้ำประปาเป็นตัวเลขที่ไม่ติดลบ");
-            return;
-        }
-
-        if (!decimal.TryParse(_elecRateTextBox.Text.Trim(), out var elec) || elec < 0)
-        {
-            ShowError("กรุณาระบุค่าไฟฟ้าเป็นตัวเลขที่ไม่ติดลบ");
-            return;
-        }
-
-        if (!decimal.TryParse(_motorcycleRateTextBox.Text.Trim(), out var motorcycle) || motorcycle < 0)
-        {
-            ShowError("กรุณาระบุค่าจอดรถมอเตอร์ไซค์เป็นตัวเลขที่ไม่ติดลบ");
-            return;
-        }
-
-        if (!decimal.TryParse(_carRateTextBox.Text.Trim(), out var car) || car < 0)
-        {
-            ShowError("กรุณาระบุค่าจอดรถยนต์เป็นตัวเลขที่ไม่ติดลบ");
-            return;
-        }
-
-        if (!decimal.TryParse(_cableTvRateTextBox.Text.Trim(), out var cableTv) || cableTv < 0)
-        {
-            ShowError("กรุณาระบุค่า Cable TV เป็นตัวเลขที่ไม่ติดลบ");
+            ShowError(rateError);
             return;
         }
 
         try
         {
-            _updateSettingsService.Update(
-                Money.Create(water),
-                Money.Create(elec),
-                Money.Create(motorcycle),
-                Money.Create(car),
-                Money.Create(cableTv));
+            _updateSettingsService.Update(rates);
 
             _messageLabel.ForeColor = ThemePalette.Current.SuccessText;
             _messageLabel.Text = "บันทึกราคากลางสำเร็จเรียบร้อย";
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            ShowError("อัตราค่าบริการต้องไม่ติดลบ");
         }
         catch (InvalidOperationException ex)
         {
@@ -367,9 +335,7 @@ public class BillingSettingsTabControl : BaseTabControl
 
         try
         {
-            _lastBackupLabel.Text = _backupService.LastBackupTime is { } time
-                ? $"สำรองล่าสุด: {ThaiCalendar.FormatDate(time)} {time.ToString("HH:mm", CultureInfo.InvariantCulture)}"
-                : "ยังไม่มีไฟล์สำรอง";
+            _lastBackupLabel.Text = BackupStatusText.Describe(_backupService.LastBackupTime);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
