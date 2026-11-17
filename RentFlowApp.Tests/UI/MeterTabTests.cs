@@ -73,10 +73,17 @@ public class MeterTabTests
         public void Show(Size? clientSize = null)
         {
             Control = new MeterReadingTabControl(Rooms, Readings, new SaveMonthlyMeterReadingService(Readings, Bills));
-            _form.Controls.Add(Control);
-            if (clientSize is not null)
+            if (clientSize is null)
             {
-                _form.ClientSize = clientSize.Value;
+                _form.Controls.Add(Control);
+            }
+            else
+            {
+                // Windows ย่อหน้าต่างไม่ให้เกินจอของเครื่อง เช่นเครื่อง CI ที่จอกว้าง 1024px
+                // จึงวางแท็บในแผงที่กำหนดขนาดเอง เพราะ control ภายในหน้าต่างไม่ถูกย่อตามจอ
+                var host = new Panel { Size = clientSize.Value };
+                host.Controls.Add(Control);
+                _form.Controls.Add(host);
             }
 
             HiddenTestWindows.ShowHidden(_form);
