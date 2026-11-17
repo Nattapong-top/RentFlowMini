@@ -58,7 +58,7 @@ public class MeterReadingTabControl : BaseTabControl
 
     private void InitializeComponents()
     {
-        var layout = CreateStandardLayout(3, [50f, 320f, -1f]);
+        var layout = CreateStandardLayout(3, [50f, 350f, -1f]);
         var titleLabel = CreateTitleLabel("บันทึกมิเตอร์น้ำประปา-ไฟฟ้าประจำเดือน");
         var inputGroup = BuildInputGroup();
         var listGroup = BuildListGroup();
@@ -163,9 +163,13 @@ public class MeterReadingTabControl : BaseTabControl
         _saveButton.Click += SaveButton_Click;
 
         // Message Label
+        // ข้อความแจ้งยาวได้ถึง 3 บรรทัด (เช่น เตือนบิลสองรอบพร้อมการปรับเลขรอบถัดไป) จึงต้องกว้างเต็มพื้นที่และสูงพอ ไม่งั้นส่วนที่บอกให้ทำต่อจะถูกตัด
+        const int messageLines = 3;
         _messageLabel.Name = "MeterMessageLabel";
-        _messageLabel.SetBounds(245, 230, 500, 30);
-        _messageLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _messageLabel.SetBounds(245, 233, 500, TextRenderer.MeasureText("ก", Font).Height * messageLines + 4);
+        _messageLabel.TextAlign = ContentAlignment.TopLeft;
+        panel.Resize += (s, e) =>
+            _messageLabel.Width = Math.Max(0, panel.ClientSize.Width - _messageLabel.Left - 12);
 
         panel.Controls.AddRange(
         [
@@ -394,7 +398,7 @@ public class MeterReadingTabControl : BaseTabControl
                 ? ThemePalette.Current.SuccessText
                 : ThemePalette.Current.InfoText;
             _messageLabel.Text = result.Warning is null ? savedMessage : $"{savedMessage} {result.Warning}";
-            
+
             RefreshRoomList();
             TryAutoLoadPreviousReadings();
         }

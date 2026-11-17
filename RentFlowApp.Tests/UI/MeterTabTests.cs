@@ -28,11 +28,13 @@ public class MeterTabTests
 
         public InMemoryBillRepository Bills { get; }
 
-        public void AddBill(RoomId roomId, bool isPaid)
+        public void AddBill(RoomId roomId, bool isPaid) => AddBill(roomId, CurrentPeriod, isPaid);
+
+        public void AddBill(RoomId roomId, BillingPeriod period, bool isPaid)
         {
             var bill = Bill.Create(
                 roomId,
-                CurrentPeriod,
+                period,
                 new BillingCalculationResult(
                     Money.Create(3000m),
                     Money.Create(0m),
@@ -68,10 +70,15 @@ public class MeterTabTests
                 MeterReading.Create(10m));
         }
 
-        public void Show()
+        public void Show(Size? clientSize = null)
         {
             Control = new MeterReadingTabControl(Rooms, Readings, new SaveMonthlyMeterReadingService(Readings, Bills));
             _form.Controls.Add(Control);
+            if (clientSize is not null)
+            {
+                _form.ClientSize = clientSize.Value;
+            }
+
             HiddenTestWindows.ShowHidden(_form);
         }
 
@@ -178,6 +185,43 @@ public class MeterTabTests
             Assert.Single(tab.Readings.GetAll());
         });
     }
+
+    [Fact]
+    public void MessageLabel_OnCommonLaptopWidth_ShowsLongestSaveMessageWithoutClipping()
+    {
+        RunInSta(() =>
+        {
+            using var tab = new MeterTab();
+            var roomId = tab.AddRoom("101");
+            var previousPeriod = CurrentPeriod.GetPrevious();
+            var service = new SaveMonthlyMeterReadingService(tab.Readings, tab.Bills);
+            service.Save(roomId, previousPeriod, Meter(0m), Meter(60m), Meter(0m), Meter(520m));
+            service.Save(roomId, CurrentPeriod, Meter(60m), Meter(75m), Meter(520m), Meter(580m));
+            tab.AddBill(roomId, CurrentPeriod, isPaid: false);
+            tab.AddBill(roomId, previousPeriod, isPaid: false);
+            // ข้อความยาวที่สุดที่การบันทึกสร้างได้: เตือนบิลของรอบที่แก้ แจ้งการปรับรอบถัดไป และเตือนบิลของรอบถัดไป
+            var warning = service.Save(roomId, previousPeriod, Meter(0m), Meter(50m), Meter(0m), Meter(500m)).Warning;
+            tab.Show(new Size(1350, 700));
+            var label = tab.Find<Label>("MeterMessageLabel");
+
+            label.Text = $"อัปเดตมิเตอร์ห้อง 101 รอบบิล {ThaiCalendar.FormatPeriod(previousPeriod)} สำเร็จ {warning}";
+
+            var needed = TextRenderer.MeasureText(
+                label.Text,
+                label.Font,
+                new Size(label.ClientSize.Width, int.MaxValue),
+                TextFormatFlags.WordBreak);
+            Assert.True(
+                needed.Height <= label.ClientSize.Height,
+                $"ข้อความต้องสูง {needed.Height}px แต่ช่องสูง {label.ClientSize.Height}px กว้าง {label.ClientSize.Width}px");
+            Assert.True(label.Right <= label.Parent!.ClientSize.Width, "ช่องข้อความต้องไม่ล้นขอบขวา");
+            Assert.True(
+                label.Bottom <= label.Parent.ClientSize.Height,
+                $"ช่องข้อความต้องไม่ล้นขอบล่าง (ล่างสุด {label.Bottom}px, กรอบสูง {label.Parent.ClientSize.Height}px)");
+        });
+    }
+
+    private static MeterReading Meter(decimal value) => MeterReading.Create(value);
 
     [Fact]
     public void ReadingList_SortsRoomsByNumber()

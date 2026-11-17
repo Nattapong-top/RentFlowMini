@@ -119,14 +119,26 @@ public class MeterReadingEntryServiceTests
     }
 
     [Fact]
-    public void GetEntryDefaults_WhenPeriodIsRecorded_ReturnsSavedValuesWithPreviousLocked()
+    public void GetEntryDefaults_WhenPeriodAndPreviousPeriodAreRecorded_ReturnsSavedValuesWithPreviousLocked()
+    {
+        var room = AddRoom("101");
+        SaveReading(room, September, 40, 50, 150, 200);
+        SaveReading(room, October, 50, 55, 200, 260);
+
+        var defaults = CreateService().GetEntryDefaults(room, October);
+
+        Assert.Equal(new MeterEntryDefaults(50, 200, 55, 260, IsPreviousLocked: true), defaults);
+    }
+
+    [Fact]
+    public void GetEntryDefaults_WhenPeriodIsRecordedButPreviousPeriodIsNot_LetsUserCorrectPrevious()
     {
         var room = AddRoom("101");
         SaveReading(room, October, 50, 55, 200, 260);
 
         var defaults = CreateService().GetEntryDefaults(room, October);
 
-        Assert.Equal(new MeterEntryDefaults(50, 200, 55, 260, IsPreviousLocked: true), defaults);
+        Assert.Equal(new MeterEntryDefaults(50, 200, 55, 260, IsPreviousLocked: false), defaults);
     }
 
     [Fact]
