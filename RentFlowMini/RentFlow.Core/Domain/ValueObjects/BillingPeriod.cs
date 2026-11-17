@@ -79,6 +79,13 @@ public sealed record BillingPeriod
         return new BillingPeriod(prevYear, prevMonth);
     }
 
+    public BillingPeriod GetNext()
+    {
+        return Month == 12
+            ? new BillingPeriod(Year + 1, 1)
+            : new BillingPeriod(Year, Month + 1);
+    }
+
     public DateOnly GetPaymentDueDate()
     {
         return new DateOnly(Year, Month, 5).AddMonths(1);

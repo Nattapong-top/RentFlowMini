@@ -24,6 +24,16 @@ public class BillingPeriodTests
         Assert.Equal(new DateOnly(expectedYear, expectedMonth, 5), dueDate);
     }
 
+    [Theory]
+    [InlineData("2026-09", "2026-10")]
+    [InlineData("2026-12", "2027-01")]
+    public void GetNext_ReturnsFollowingMonthAndRollsOverTheYear(string value, string expected)
+    {
+        var next = BillingPeriod.Create(value).GetNext();
+
+        Assert.Equal(BillingPeriod.Create(expected), next);
+    }
+
     [Fact]
     public void ToBuddhistValue_ReturnsBuddhistEraFormat()
     {

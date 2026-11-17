@@ -215,4 +215,137 @@ public class SaveMonthlyMeterReadingServiceTests
 
         Assert.True(result.IsUpdate);
     }
+
+    private static readonly BillingPeriod September = BillingPeriod.Create("2026-09");
+
+    private static MeterReadingSaveResult SaveReadings(
+        SaveMonthlyMeterReadingService service,
+        RoomId roomId,
+        BillingPeriod period,
+        decimal previousWater,
+        decimal currentWater,
+        decimal previousElectricity,
+        decimal currentElectricity) =>
+        service.Save(
+            roomId,
+            period,
+            MeterReading.Create(previousWater),
+            MeterReading.Create(currentWater),
+            MeterReading.Create(previousElectricity),
+            MeterReading.Create(currentElectricity));
+
+    [Fact]
+    public void Save_WhenNextPeriodIsRecorded_MovesItsPreviousReadingsToTheCorrectedCurrentReadings()
+    {
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var service = new SaveMonthlyMeterReadingService(readings, new InMemoryBillRepository());
+        var roomId = RoomId.New();
+        SaveReadings(service, roomId, September, 40m, 60m, 400m, 520m);
+        SaveReadings(service, roomId, October, 60m, 75m, 520m, 580m);
+
+        var result = SaveReadings(service, roomId, September, 40m, 50m, 400m, 500m);
+
+        var october = readings.Get(roomId, October)!;
+        Assert.Equal(50m, october.PreviousWaterMeter.Value);
+        Assert.Equal(75m, october.CurrentWaterMeter.Value);
+        Assert.Equal(500m, october.PreviousElectricityMeter.Value);
+        Assert.Equal(580m, october.CurrentElectricityMeter.Value);
+        Assert.NotNull(result.Warning);
+        Assert.Contains("ปรับเลขก่อนหน้า", result.Warning);
+    }
+
+    [Fact]
+    public void Save_WhenCorrectedCurrentReadingExceedsNextPeriodCurrentReading_RejectsAndNamesNextPeriod()
+    {
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var service = new SaveMonthlyMeterReadingService(readings, new InMemoryBillRepository());
+        var roomId = RoomId.New();
+        SaveReadings(service, roomId, September, 40m, 60m, 400m, 520m);
+        SaveReadings(service, roomId, October, 60m, 75m, 520m, 580m);
+
+        var ex = Assert.Throws<InvalidMeterReadingException>(() =>
+            SaveReadings(service, roomId, September, 40m, 80m, 400m, 520m));
+
+        Assert.Contains("ตุลาคม 2569", ex.Message);
+        Assert.Contains("75", ex.Message);
+        Assert.Equal(60m, readings.Get(roomId, September)!.CurrentWaterMeter.Value);
+        Assert.Equal(60m, readings.Get(roomId, October)!.PreviousWaterMeter.Value);
+    }
+
+    [Fact]
+    public void Save_WhenCorrectedElectricityReadingExceedsNextPeriodCurrentReading_RejectsAndNamesNextPeriod()
+    {
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var service = new SaveMonthlyMeterReadingService(readings, new InMemoryBillRepository());
+        var roomId = RoomId.New();
+        SaveReadings(service, roomId, September, 40m, 60m, 400m, 520m);
+        SaveReadings(service, roomId, October, 60m, 75m, 520m, 580m);
+
+        var ex = Assert.Throws<InvalidMeterReadingException>(() =>
+            SaveReadings(service, roomId, September, 40m, 60m, 400m, 600m));
+
+        Assert.Contains("มิเตอร์ไฟฟ้า", ex.Message);
+        Assert.Contains("ตุลาคม 2569", ex.Message);
+        Assert.Contains("580", ex.Message);
+        Assert.Equal(520m, readings.Get(roomId, September)!.CurrentElectricityMeter.Value);
+        Assert.Equal(520m, readings.Get(roomId, October)!.PreviousElectricityMeter.Value);
+    }
+
+    [Fact]
+    public void Save_WhenNextPeriodBillIsPaid_RejectsCorrectionAndKeepsBothPeriods()
+    {
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var bills = new InMemoryBillRepository();
+        var service = new SaveMonthlyMeterReadingService(readings, bills);
+        var roomId = RoomId.New();
+        SaveReadings(service, roomId, September, 40m, 60m, 400m, 520m);
+        SaveReadings(service, roomId, October, 60m, 75m, 520m, 580m);
+        AddBill(bills, roomId, October, isPaid: true);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            SaveReadings(service, roomId, September, 40m, 50m, 400m, 500m));
+
+        Assert.Contains("ตุลาคม 2569", ex.Message);
+        Assert.Contains("ยกเลิกการรับชำระ", ex.Message);
+        Assert.Equal(60m, readings.Get(roomId, September)!.CurrentWaterMeter.Value);
+        Assert.Equal(60m, readings.Get(roomId, October)!.PreviousWaterMeter.Value);
+    }
+
+    [Fact]
+    public void Save_WhenNextPeriodBillIsPaidButCurrentReadingsAreUnchanged_SavesCorrectedPreviousReadings()
+    {
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var bills = new InMemoryBillRepository();
+        var service = new SaveMonthlyMeterReadingService(readings, bills);
+        var roomId = RoomId.New();
+        SaveReadings(service, roomId, September, 40m, 60m, 400m, 520m);
+        SaveReadings(service, roomId, October, 60m, 75m, 520m, 580m);
+        AddBill(bills, roomId, October, isPaid: true);
+
+        var result = SaveReadings(service, roomId, September, 45m, 60m, 410m, 520m);
+
+        Assert.Null(result.Warning);
+        Assert.Equal(45m, readings.Get(roomId, September)!.PreviousWaterMeter.Value);
+        Assert.Equal(410m, readings.Get(roomId, September)!.PreviousElectricityMeter.Value);
+        Assert.Equal(60m, readings.Get(roomId, October)!.PreviousWaterMeter.Value);
+    }
+
+    [Fact]
+    public void Save_WhenNextPeriodHasUnpaidBill_CorrectsItsReadingsAndWarnsToRefreshThatBill()
+    {
+        var readings = new InMemoryMonthlyMeterReadingRepository();
+        var bills = new InMemoryBillRepository();
+        var service = new SaveMonthlyMeterReadingService(readings, bills);
+        var roomId = RoomId.New();
+        SaveReadings(service, roomId, September, 40m, 60m, 400m, 520m);
+        SaveReadings(service, roomId, October, 60m, 75m, 520m, 580m);
+        AddBill(bills, roomId, October, isPaid: false);
+
+        var result = SaveReadings(service, roomId, September, 40m, 50m, 400m, 500m);
+
+        Assert.Equal(50m, readings.Get(roomId, October)!.PreviousWaterMeter.Value);
+        Assert.NotNull(result.Warning);
+        Assert.Contains("บิลรอบ ตุลาคม 2569", result.Warning);
+        Assert.Contains("ดึงข้อมูลห้องใหม่", result.Warning);
+    }
 }

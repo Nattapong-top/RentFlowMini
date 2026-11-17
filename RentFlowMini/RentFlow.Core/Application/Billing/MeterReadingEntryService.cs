@@ -63,18 +63,19 @@ public sealed class MeterReadingEntryService
         ArgumentNullException.ThrowIfNull(billingPeriod);
 
         var existing = _readings.Get(roomId, billingPeriod);
+        var previous = _readings.Get(roomId, billingPeriod.GetPrevious());
         if (existing is not null)
         {
+            // ถ้าไม่มีรอบก่อน เลขก่อนหน้าคือเลขที่ผู้ใช้พิมพ์เอง จึงต้องแก้ได้เมื่อพิมพ์ผิด
             return new MeterEntryDefaults(
                 existing.PreviousWaterMeter.Value,
                 existing.PreviousElectricityMeter.Value,
                 existing.CurrentWaterMeter.Value,
                 existing.CurrentElectricityMeter.Value,
-                IsPreviousLocked: true);
+                IsPreviousLocked: previous is not null);
         }
 
         // เลขก่อนหน้าของรอบนี้คือเลขปัจจุบันของรอบก่อน จึงล็อกไว้ไม่ให้พิมพ์ทับจนเลขสองเดือนไม่ต่อกัน
-        var previous = _readings.Get(roomId, billingPeriod.GetPrevious());
         if (previous is not null)
         {
             return new MeterEntryDefaults(
