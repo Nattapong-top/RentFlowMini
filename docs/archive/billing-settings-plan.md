@@ -1,11 +1,13 @@
 ﻿# แผนการ Implement: การตั้งค่าราคากลาง (Billing Settings)
 
-เอกสารนี้กำหนดแผนการทำงานสำหรับ **Phase 1: การตั้งค่าราคากลาง** ตามข้อกำหนดใน `docs/billing-charges-design.md` โดยใช้แนวทาง **Micro Development** ทำงานจากหน่วยย่อยในหน่วยความจำ (In-Memory) และ UI ก่อน แล้วจึงเชื่อมต่อฐานข้อมูล SQL Server ในลำดับถัดไป
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
+
+เอกสารนี้กำหนดแผนการทำงานสำหรับ **Phase 1: การตั้งค่าราคากลาง** ตามข้อกำหนดใน `docs/archive/billing-charges-design.md` โดยใช้แนวทาง **Micro Development** ทำงานจากหน่วยย่อยในหน่วยความจำ (In-Memory) และ UI ก่อน แล้วจึงเชื่อมต่อฐานข้อมูล SQL Server ในลำดับถัดไป
 
 **สถานะ:** ขั้นตอนที่ 1 (In-Memory, Service & UI) เสร็จสิ้นแล้ว  
 **วันที่:** 2026-10-17  
 **ขอบเขต:** การจัดการราคากลาง 5 รายการ (น้ำ, ไฟ, ค่าจอดมอเตอร์ไซค์, ค่าจอดรถยนต์, Cable TV)  
-**เอกสารอ้างอิง:** `docs/billing-charges-design.md`, `RentFlowApp/Domain/Billing/BillingSettings.cs`, `RentFlowApp/Application/Billing/IBillingSettingsRepository.cs`
+**เอกสารอ้างอิง:** `docs/archive/billing-charges-design.md`, `RentFlowApp/Domain/Billing/BillingSettings.cs`, `RentFlowApp/Application/Billing/IBillingSettingsRepository.cs`
 
 ---
 

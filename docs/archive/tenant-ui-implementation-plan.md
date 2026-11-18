@@ -1,8 +1,10 @@
 # แผนการ Implement Tenant UI (แท็บจัดการผู้เช่าใน RoomForm เชื่อมต่อ InMemory)
 
-เอกสารนี้เป็นแผนการพัฒนา UI สำหรับจัดการผู้เช่า (Tenant) ในรูปแบบแท็บที่ 3 บน [RoomForm](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/UI/RoomForm.cs) โดยเชื่อมต่อกับ Backend ผ่าน [InMemoryTenantRepository](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Infrastructure/Tenants/InMemoryTenantRepository.cs) และ [CreateTenantService](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Application/Tenants/CreateTenantService.cs) ที่มีอยู่แล้ว **เน้นการสร้าง UI ให้ครบถ้วนก่อน โดยยังไม่สร้างตาราง SQL Server หรือ migration ในขั้นตอนนี้**
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
 
-- **เอกสารอ้างอิง:** [roadmap.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/roadmap.md), [tenant-implementation-plan.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/tenant-implementation-plan.md)
+เอกสารนี้เป็นแผนการพัฒนา UI สำหรับจัดการผู้เช่า (Tenant) ในรูปแบบแท็บที่ 3 บน `RoomForm` โดยเชื่อมต่อกับ Backend ผ่าน `InMemoryTenantRepository` และ `CreateTenantService` ที่มีอยู่แล้ว **เน้นการสร้าง UI ให้ครบถ้วนก่อน โดยยังไม่สร้างตาราง SQL Server หรือ migration ในขั้นตอนนี้**
+
+- **เอกสารอ้างอิง:** [roadmap.md](../roadmap.md), [tenant-implementation-plan.md](tenant-implementation-plan.md)
 - **แนวทางหลัก:** Micro Development — เน้นพัฒนา UI ทีละขั้นตอน พร้อมเขียน UI Tests ตรวจสอบพฤติกรรม
 
 ---
@@ -10,7 +12,7 @@
 ## 1. เป้าหมายและขอบเขตงาน (Scope & Objectives)
 
 ### 1.1 ขอบเขตงานรอบนี้ (In Scope)
-1. **เพิ่มแท็บที่ 3 ใน [RoomForm](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/UI/RoomForm.cs):** แท็บ `"ผู้เช่า (Tenants)"` ต่อจากแท็บ "ห้องพัก" และ "สร้างบิลประจำเดือน"
+1. **เพิ่มแท็บที่ 3 ใน `RoomForm`:** แท็บ `"ผู้เช่า (Tenants)"` ต่อจากแท็บ "ห้องพัก" และ "สร้างบิลประจำเดือน"
 2. **หน้าจอรับข้อมูลและแสดงผล (UI Controls):**
    - ช่องกรอก: ชื่อผู้เช่า (`FirstName`), นามสกุล (`LastName`), เบอร์โทรศัพท์ (`PhoneNumber` จำกัด MaxLength 10 ตัวอักษร, รับเฉพาะตัวเลขใน UI และตรวจใน Domain ให้เป็นตัวเลข 9-10 หลักหรือเว้นว่าง)
    - Dropdown เลือกห้องพัก (`RoomId`): กรองแสดงเฉพาะ **ห้องว่าง** ที่ยังไม่มีผู้เช่าปัจจุบัน พร้อมตัวเลือกเริ่มต้น `-- ไม่ระบุห้องพัก --`
@@ -18,9 +20,9 @@
    - Label: แสดงข้อความแจ้งเตือนสถานะสำเร็จ (สีเขียว) หรือข้อผิดพลาด (สีแดง)
    - ตาราง DataGridView: แสดงรายการผู้เช่าทั้งหมด พร้อมชื่อห้องพักที่ผูกอยู่
 3. **การเชื่อมต่อ Backend:**
-   - ใช้ [CreateTenantService](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Application/Tenants/CreateTenantService.cs) และ [ITenantRepository](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Application/Tenants/ITenantRepository.cs)
-   - ใช้ [InMemoryTenantRepository](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Infrastructure/Tenants/InMemoryTenantRepository.cs) สำหรับทั้งการรันแอปพลิเคชันและการทดสอบ
-4. **Automated UI Tests:** เขียน Unit Test บน Thread STA ใน [RoomFormTests](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowApp.Tests/UI/RoomFormTests.cs) ครอบคลุมการแสดงผลแท็บ, การกรองห้องว่าง และการเพิ่มผู้เช่า
+   - ใช้ `CreateTenantService` และ `ITenantRepository`
+   - ใช้ `InMemoryTenantRepository` สำหรับทั้งการรันแอปพลิเคชันและการทดสอบ
+4. **Automated UI Tests:** เขียน Unit Test บน Thread STA ใน `RoomFormTests` ครอบคลุมการแสดงผลแท็บ, การกรองห้องว่าง และการเพิ่มผู้เช่า
 
 ### 1.2 สิ่งที่ยังไม่ทำในรอบนี้ (Deferred / Out of Scope)
 - ❌ **SQL Server Persistence:** ยังไม่สร้างไฟล์ `003_CreateTenants.sql` และยังไม่สร้าง `SqlServerTenantRepository` (ใช้ In-Memory ก่อน)
@@ -90,7 +92,7 @@ graph TD
 ## 4. ลำดับขั้นตอนการพัฒนา (Implementation Phases)
 
 ### Phase 1: ขยาย Constructor และแท็บใน RoomForm
-- ปรับปรุง Constructor ของ [RoomForm](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/UI/RoomForm.cs):
+- ปรับปรุง Constructor ของ `RoomForm`:
   ```csharp
   public RoomForm(
       CreateRoomService createRoomService,
@@ -104,7 +106,7 @@ graph TD
 - เชื่อมต่อ `SelectedIndexChanged` ของ `TabControl`: เมื่อเลือกแท็บผู้เช่า ให้รีเฟรช ComboBox ห้องว่าง และตารางผู้เช่า
 
 ### Phase 2: สร้างและจัดวาง UI Controls
-- สร้างฟังก์ชัน `BuildTenantTab(TabPage page)` ใน [RoomForm.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/UI/RoomForm.cs)
+- สร้างฟังก์ชัน `BuildTenantTab(TabPage page)` ใน `RoomForm.cs`
 - วาง Labels, TextBoxes, ComboBox, Button, MessageLabel และ DataGridView ตาม Layout ที่กำหนด
 
 ### Phase 3: พัฒนา Business & Event Logic
@@ -123,23 +125,23 @@ graph TD
    - เมื่อสำเร็จ: ล้าง TextBox, อัปเดตตาราง Grid, รีเฟรช ComboBox ห้องว่าง และแสดงข้อความสีเขียว
 
 ### Phase 4: เขียน Automated Tests สำหรับ UI (RoomFormTests)
-- เขียน Tests ภายใต้ [RoomFormTests.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowApp.Tests/UI/RoomFormTests.cs) รันใน Thread STA:
+- เขียน Tests ภายใต้ `RoomFormTests.cs` รันใน Thread STA:
   1. `RoomForm_InitializesWithThreeTabs`: ตรวจสอบว่ามี 3 แท็บ และแท็บที่ 3 ชื่อ `"ผู้เช่า (Tenants)"`
   2. `RoomForm_TenantTab_PopulatesOnlyAvailableRooms`: สร้างห้อง 101, 102 แล้วให้ 101 มีผู้เช่า ตรวจสอบว่า ComboBox มีแค่ตัวเลือกไม่มีห้อง กับห้อง 102
   3. `RoomForm_AddTenant_WhenValidInput_AddsTenantToGrid`: ทดสอบการกรอกข้อมูลและกดปุ่มเพิ่ม ตรวจสอบว่ามีข้อมูลขึ้นใน DataGridView และ Message แสดงสถานะสำเร็จ
   4. `RoomForm_AddTenant_WhenMissingName_ShowsErrorMessage`: ทดสอบกรณีกรอกไม่ครบ ตรวจสอบว่าแสดง Error ภาษาไทยถูกต้อง
 
 ### Phase 5: เชื่อมต่อใน Program.cs ด้วย InMemory
-- อัปเดต [Program.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Program.cs):
+- อัปเดต `Program.cs`:
   - สร้าง `ITenantRepository tenantRepository = new InMemoryTenantRepository();`
   - สร้าง `var createTenantService = new CreateTenantService(tenantRepository);`
-  - ส่งผ่านเข้าไปใน Constructor ของ [RoomForm](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/UI/RoomForm.cs)
+  - ส่งผ่านเข้าไปใน Constructor ของ `RoomForm`
 
 ---
 
 ## 5. Definition of Done (เกณฑ์ความสำเร็จรอบนี้)
 
-- [x] [RoomForm](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/UI/RoomForm.cs) มีแท็บ "ผู้เช่า (Tenants)" ครบถ้วน สวยงาม สอดคล้องกับแท็บห้องและบิล
+- [x] `RoomForm` มีแท็บ "ผู้เช่า (Tenants)" ครบถ้วน สวยงาม สอดคล้องกับแท็บห้องและบิล
 - [x] ใช้งานผ่าน `InMemoryTenantRepository` ได้สมบูรณ์ทั้งตอนกดใช้งานและตอนรันเทสต์
 - [x] Dropdown ห้องพักแสดงเฉพาะห้องว่าง และมีตัวเลือกไม่ระบุห้อง
 - [x] เพิ่มผู้เช่าแล้วแสดงใน DataGridView ทันที

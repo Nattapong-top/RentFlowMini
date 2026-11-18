@@ -6,7 +6,7 @@
 
 RentFlowMini เป็นโปรเจกต์สำหรับฝึกพัฒนาซอฟต์แวร์ โดยเน้นการเขียนโปรแกรมเชิงวัตถุ (Object-Oriented Programming: OOP), Clean Architecture และการพัฒนาแบบทดสอบนำ (Test-Driven Development: TDD)
 
-ปัจจุบันโปรแกรมรองรับการจัดการห้องพักและผู้เช่า ตั้งค่าราคากลาง บันทึกมิเตอร์น้ำ-ไฟรายเดือน และสร้างบิลประจำเดือน ดูรายละเอียดล่าสุดที่ [docs/current-code-status.md](docs/current-code-status.md)
+ปัจจุบันโปรแกรมรองรับการจัดการห้องพักและผู้เช่า ตั้งค่าราคากลาง บันทึกมิเตอร์น้ำ-ไฟรายเดือน และสร้างบิลประจำเดือน ดูรายละเอียดล่าสุดที่ [docs/current-code-status.md](docs/current-code-status.md) และดูสารบัญเอกสารทั้งหมดที่ [docs/README.md](docs/README.md)
 
 ## เทคโนโลยีที่ใช้
 

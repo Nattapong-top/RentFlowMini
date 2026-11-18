@@ -8,15 +8,15 @@
 
 **ปรับปรุงล่าสุด:** 2026-10-18
 
-**ผู้ยืนยันคำศัพท์:** ป๋า & จุก
+**ผู้ยืนยันคำศัพท์:** เจ้าของโปรเจ็กต์
 
 ## Domain Terms
 
 | คำศัพท์ที่ใช้ | คำพ้อง / ภาษาอื่น | ความหมายในโปรเจ็กต์ | ชื่อใน code | แหล่งอ้างอิง |
 |---------------|-------------------|----------------------|-------------|---------------|
-| น้ำประปา | น้ำ, Tap Water | สาธารณูปโภคน้ำประปาในห้องพัก (คำย่อ "น้ำ" ห้ามใช้ใน UI/เอกสารทางการ) | WaterMeter / WaterRate | `docs/billing-charges-design.md` |
-| ไฟฟ้า | ไฟ, Electricity | สาธารณูปโภคไฟฟ้าในห้องพัก (คำย่อ "ไฟ" ห้ามใช้ใน UI/เอกสารทางการ) | ElectricityMeter / ElectricityRate | `docs/billing-charges-design.md` |
-| รอบบิล | Billing Period | รอบเดือนสำหรับการคำนวณและออกบิล (รูปแบบ YYYY-MM) | BillingPeriod | `docs/billing-charges-design.md` |
+| น้ำประปา | น้ำ, Tap Water | สาธารณูปโภคน้ำประปาในห้องพัก (คำย่อ "น้ำ" ห้ามใช้ใน UI/เอกสารทางการ) | WaterMeter / WaterRate | `docs/archive/billing-charges-design.md` |
+| ไฟฟ้า | ไฟ, Electricity | สาธารณูปโภคไฟฟ้าในห้องพัก (คำย่อ "ไฟ" ห้ามใช้ใน UI/เอกสารทางการ) | ElectricityMeter / ElectricityRate | `docs/archive/billing-charges-design.md` |
+| รอบบิล | Billing Period | รอบเดือนสำหรับการคำนวณและออกบิล (รูปแบบ YYYY-MM) | BillingPeriod | `docs/archive/billing-charges-design.md` |
 
 ## Technical Terms
 

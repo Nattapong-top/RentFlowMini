@@ -1,11 +1,13 @@
 ﻿# แผนการ Implement: เฟส 2 บันทึกมิเตอร์น้ำ-ไฟประจำเดือน (Monthly Meter Reading)
 
-เอกสารนี้กำหนดแผนการทำงานสำหรับ **Phase 2: การบันทึกและจัดการมิเตอร์น้ำ-ไฟประจำเดือน** ตามข้อกำหนดใน `docs/billing-charges-design.md` โดยใช้แนวทาง **Micro Development** และรักษามาตรฐาน UI ให้สอดคล้องกับระบบปัจจุบัน (เช่น ใช้ Font 11F, แยกไฟล์ UI, ป้องกันกรอกตัวหนังสือ)
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
+
+เอกสารนี้กำหนดแผนการทำงานสำหรับ **Phase 2: การบันทึกและจัดการมิเตอร์น้ำ-ไฟประจำเดือน** ตามข้อกำหนดใน `docs/archive/billing-charges-design.md` โดยใช้แนวทาง **Micro Development** และรักษามาตรฐาน UI ให้สอดคล้องกับระบบปัจจุบัน (เช่น ใช้ Font 11F, แยกไฟล์ UI, ป้องกันกรอกตัวหนังสือ)
 
 **สถานะ:** กำลังวางแผนและรออนุมัติ  
 **วันที่:** 2026-10-17  
 **ขอบเขต:** บันทึกมิเตอร์น้ำ-ไฟประจำเดือนของห้องพัก ป้องกันการบันทึกซ้ำ และตรวจสอบค่ามิเตอร์ปัจจุบันต้องไม่น้อยกว่าค่าก่อนหน้า  
-**เอกสารอ้างอิง:** `docs/billing-charges-design.md`, `RentFlowApp/Domain/Billing/MonthlyMeterReading.cs`, `RentFlowApp/Application/Billing/IMonthlyMeterReadingRepository.cs`
+**เอกสารอ้างอิง:** `docs/archive/billing-charges-design.md`, `RentFlowApp/Domain/Billing/MonthlyMeterReading.cs`, `RentFlowApp/Application/Billing/IMonthlyMeterReadingRepository.cs`
 
 ---
 

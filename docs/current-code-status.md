@@ -149,7 +149,7 @@ RentFlowMini/
 
 ### แอปที่รันจริง
 
-`Program.cs` เปิดฐานข้อมูลผ่าน `SqliteAppStorage` ที่ `%LocalAppData%\RentFlowMiniApp\rentflow.db` และเก็บห้อง ผู้เช่า มิเตอร์ บิล และการตั้งค่าถาวร ถ้าเปิดไฟล์ไม่ได้จะแสดงข้อความภาษาไทยแล้วปิดแอป โดยไม่สร้างไฟล์ใหม่ทับ แบบตารางอยู่ใน [แผนเปลี่ยนเป็น SQLite](sqlite-migration-plan.md)
+`Program.cs` เปิดฐานข้อมูลผ่าน `SqliteAppStorage` ที่ `%LocalAppData%\RentFlowMiniApp\rentflow.db` และเก็บห้อง ผู้เช่า มิเตอร์ บิล และการตั้งค่าถาวร ถ้าเปิดไฟล์ไม่ได้จะแสดงข้อความภาษาไทยแล้วปิดแอป โดยไม่สร้างไฟล์ใหม่ทับ แบบตารางอยู่ใน [แผนเปลี่ยนเป็น SQLite](archive/sqlite-migration-plan.md)
 
 `SqliteBackupService` สำรองข้อมูลด้วยคำสั่งสำรองของ SQLite ลง `%LocalAppData%\RentFlowMiniApp\Backups`:
 

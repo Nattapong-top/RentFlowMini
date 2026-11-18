@@ -5,14 +5,14 @@
 **วันที่อัปเดต:** 2026-11-07  
 **สถานะ:** ระยะ 0-1 เสร็จแล้ว; ระยะ 2-3 เสร็จในส่วน In-Memory และ UI แต่ยังขาดการเก็บข้อมูลถาวรและการบังคับกฎบางข้อใน service; ระยะ 4 (Cable/Parking) ได้รับการยืนยันและ implement แล้ว
 
-> **การเปลี่ยนแผน (2026-11-06):** เจ้าของโครงการตัดสินใจใช้ SQLite แทน SQL Server รายละเอียดอยู่ใน [แผนเปลี่ยนเป็น SQLite](sqlite-migration-plan.md) โค้ด SQL Server ถูกลบแล้ว ข้อความในระยะ 0-4 ที่พูดถึง SQL Server เป็นบันทึกของแผนเดิม
+> **การเปลี่ยนแผน (2026-11-06):** เจ้าของโครงการตัดสินใจใช้ SQLite แทน SQL Server รายละเอียดอยู่ใน [แผนเปลี่ยนเป็น SQLite](archive/sqlite-migration-plan.md) โค้ด SQL Server ถูกลบแล้ว ข้อความในระยะ 0-4 ที่พูดถึง SQL Server เป็นบันทึกของแผนเดิม
 
 ## 1. เป้าหมายและหลักการ
 
 - พัฒนาทีละระยะโดยเริ่มจาก Domain contract และ tests ก่อน persistence และ UI
 - ไม่เพิ่มฟีเจอร์ใหม่บนสัญญาที่ขัดแย้งกันหรือยังไม่มีข้อกำหนดที่ยืนยันแล้ว
 - รักษากติกาเดิมของ UC-01 ได้แก่ billing period รูปแบบ `YYYY-MM`, การตรวจ meter และการป้องกันบิลซ้ำ
-- ใช้เอกสารนี้กำหนดลำดับระดับโครงการ ส่วนรายละเอียด UC-01 ให้ดูที่ [implementation plan](implementation-plan.md) และ [ข้อกำหนด UC-01](uc-01-create-monthly-bill.md)
+- ใช้เอกสารนี้กำหนดลำดับระดับโครงการ ส่วนรายละเอียด UC-01 ให้ดูที่ [implementation plan](archive/implementation-plan.md) และ [ข้อกำหนด UC-01](archive/uc-01-create-monthly-bill.md)
 
 ## 2. สถานะปัจจุบัน (Baseline)
 
@@ -31,7 +31,7 @@
 ### สิ่งที่ยังไม่อยู่ใน baseline
 
 - การคัดลอกไฟล์สำรองออกนอกเครื่องอัตโนมัติ
-- กติกาห้ามออกบิลห้องที่ไม่มีผู้เช่า และกติกาอื่นใน [room-tenant-vacancy-todo.md](room-tenant-vacancy-todo.md) ซึ่งควรทำก่อนใส่ข้อมูลจริง
+- กติกาห้ามออกบิลห้องที่ไม่มีผู้เช่า และกติกาอื่นใน [room-tenant-vacancy-todo.md](archive/room-tenant-vacancy-todo.md) ซึ่งควรทำก่อนใส่ข้อมูลจริง
 - การบังคับในระดับ service ว่าต้องมีผู้เช่าและมิเตอร์ก่อนสร้างบิล
 - ค่าตั้งต้นการจอดรถรายห้อง
 - การแก้ไขค่าเช่า ค่าน้ำ และค่าไฟของบิลเดิม (ปัจจุบันแก้ได้เฉพาะช่องติ๊กค่าจอดรถและยกเว้น Cable TV)
@@ -69,9 +69,9 @@ Sqlite --> DB[(rentflow.db)]
 
 ### ระยะ 1: Tenant foundation — เสร็จแล้ว
 
-ดูรายละเอียดแผน implement ได้ที่ [Tenant foundation implementation plan](tenant-implementation-plan.md)
+ดูรายละเอียดแผน implement ได้ที่ [Tenant foundation implementation plan](archive/tenant-implementation-plan.md)
 
-**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository, `SqlServerTenantRepository` พร้อม `003_CreateTenants.sql`, WinForms UI และ tests ของ Tenant ผ่านแล้ว ([tenant-sql-persistence-plan.md](tenant-sql-persistence-plan.md)); แก้ไขและย้ายออกได้แล้ว แต่ยังไม่มีการลบผู้เช่า
+**ความคืบหน้าล่าสุด:** Domain model, Application service, In-Memory repository, `SqlServerTenantRepository` พร้อม `003_CreateTenants.sql`, WinForms UI และ tests ของ Tenant ผ่านแล้ว ([tenant-sql-persistence-plan.md](archive/tenant-sql-persistence-plan.md)); แก้ไขและย้ายออกได้แล้ว แต่ยังไม่มีการลบผู้เช่า
 
 **เงื่อนไขเริ่มต้น:** ระยะ 0 ยังผ่าน และยังไม่เพิ่มกติกา Cable/Parking เข้ามาปะปน
 
@@ -89,7 +89,7 @@ Sqlite --> DB[(rentflow.db)]
 
 ### ระยะ 2: Meter persistence — In-Memory เสร็จแล้ว, SQL Server ยังไม่เริ่ม
 
-**ความคืบหน้าล่าสุด:** มี `MonthlyMeterReading`, `IMonthlyMeterReadingRepository`, `InMemoryMonthlyMeterReadingRepository`, `SaveMonthlyMeterReadingService` (upsert) และแท็บบันทึกมิเตอร์ ([billing-meter-reading-plan.md](billing-meter-reading-plan.md), [billing-meter-reading-ui-plan.md](billing-meter-reading-ui-plan.md)); ยังไม่มี schema และ SQL Server repository
+**ความคืบหน้าล่าสุด:** มี `MonthlyMeterReading`, `IMonthlyMeterReadingRepository`, `InMemoryMonthlyMeterReadingRepository`, `SaveMonthlyMeterReadingService` (upsert) และแท็บบันทึกมิเตอร์ ([billing-meter-reading-plan.md](archive/billing-meter-reading-plan.md), [billing-meter-reading-ui-plan.md](archive/billing-meter-reading-ui-plan.md)); ยังไม่มี schema และ SQL Server repository
 
 **เงื่อนไขเริ่มต้น:** มี contract ของ Tenant ที่ผ่านแล้ว และยังรักษา `MeterReading` validation เดิม
 
@@ -121,7 +121,7 @@ Sqlite --> DB[(rentflow.db)]
 
 ### ระยะ 4: ตัดสินใจ Cable/Parking — ยืนยันและ implement แล้ว
 
-**ความคืบหน้าล่าสุด:** กติกาถูกยืนยันใน [billing-charges-design.md](billing-charges-design.md) และ implement ใน `BillingSettings`, `BillingCalculator`, `Bill`, `CreateMonthlyBillService` และแท็บสร้างบิลแล้ว (เลือกจอดรถรายรอบบิล, ยกเว้น Cable TV ตามห้อง); ยังเหลือค่าตั้งต้นการจอดรถรายห้อง และ schema/migration ของ SQL Server
+**ความคืบหน้าล่าสุด:** กติกาถูกยืนยันใน [billing-charges-design.md](archive/billing-charges-design.md) และ implement ใน `BillingSettings`, `BillingCalculator`, `Bill`, `CreateMonthlyBillService` และแท็บสร้างบิลแล้ว (เลือกจอดรถรายรอบบิล, ยกเว้น Cable TV ตามห้อง); ยังเหลือค่าตั้งต้นการจอดรถรายห้อง และ schema/migration ของ SQL Server
 
 เงื่อนไขเดิมของระยะนี้ (เก็บไว้อ้างอิง):
 
@@ -154,15 +154,15 @@ Sqlite --> DB[(rentflow.db)]
 4. สถานะเกินกำหนดและตัวกรองค้างชำระแบบข้ามเดือน — เสร็จแล้ว
 5. ปรับแท็บผู้เช่า: ตารางซ่อนรหัส แก้ไข ย้ายออก ค้นหา ยอดค้างชำระ วันเข้าอยู่ เงินประกัน และเก็บผู้เช่าไว้ในบิล — เสร็จแล้ว
 6. แท็บรายงานอย่างง่าย: สรุปรอบบิล ยอดแยกประเภทและช่องทาง รายการค้างชำระทุกเดือน สรุปรายปี และส่งออก Excel/PDF ทั้งรายเดือนและรายปี — เสร็จแล้ว
-7. เก็บข้อมูลทั้งหมดรวมถึงการตั้งค่าใน SQLite ก่อนใช้งานจริง ตาม [แผนเปลี่ยนเป็น SQLite](sqlite-migration-plan.md) — เสร็จแล้ว รวมระบบสำรองและกู้คืนข้อมูล
+7. เก็บข้อมูลทั้งหมดรวมถึงการตั้งค่าใน SQLite ก่อนใช้งานจริง ตาม [แผนเปลี่ยนเป็น SQLite](archive/sqlite-migration-plan.md) — เสร็จแล้ว รวมระบบสำรองและกู้คืนข้อมูล
 
 **ยังไม่ทำ:** ค่าปรับ, การจ่ายบางส่วน, การรวมยอดค้างเข้าบิลเดือนถัดไป, ใบเสร็จแยก และการส่ง SMS หรือ LINE
 
 ## 5. เอกสารและไฟล์อ้างอิง
 
 - สถานะโค้ด: [current-code-status.md](current-code-status.md)
-- แผนรายละเอียด UC-01: [implementation-plan.md](implementation-plan.md)
-- ข้อกำหนด UC-01: [uc-01-create-monthly-bill.md](uc-01-create-monthly-bill.md)
+- แผนรายละเอียด UC-01: [implementation-plan.md](archive/implementation-plan.md)
+- ข้อกำหนด UC-01: [uc-01-create-monthly-bill.md](archive/uc-01-create-monthly-bill.md)
 - Pattern ห้องพัก: `RentFlowApp/Room.cs`, `Application/Rooms/IRoomRepository.cs`, `Application/Rooms/CreateRoomService.cs`
 - Pattern billing: `Domain/Billing/BillingCalculator.cs`, `Domain/Billing/Bill.cs`, `Application/Billing/CreateMonthlyBillService.cs`
 - Tests: `RentFlowApp.Tests/Domain`, `RentFlowApp.Tests/Application`, `RentFlowApp.Tests/Infrastructure` และ `RentFlowApp.Tests/UI`
