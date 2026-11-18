@@ -1,10 +1,12 @@
 # TODO: การคืนสถานะห้องเมื่อผู้เช่าย้ายออก
 
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
+
 เอกสารนี้บันทึกงานที่ยังต้องออกแบบและ Implement เพื่อให้ห้องเปลี่ยนจาก `ไม่ว่าง` กลับเป็น `ว่าง` เมื่อผู้เช่าย้ายออก
 
 **สถานะ:** TODO รอการยืนยัน business rule
 **ขอบเขตเบื้องต้น:** Tenant และ Room occupancy
-**เอกสารอ้างอิง:** `docs/room-ui-design.md`, `docs/room-rent-cable-tv-design.md`, `docs/billing-charges-design.md`
+**เอกสารอ้างอิง:** `docs/archive/room-ui-design.md`, `docs/archive/room-rent-cable-tv-design.md`, `docs/archive/billing-charges-design.md`
 
 ## สถานะปัจจุบัน
 

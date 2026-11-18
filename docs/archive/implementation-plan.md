@@ -1,12 +1,14 @@
 # แผนการ Implement UC-01: สร้างบิลประจำเดือน
 
-เอกสารนี้ใช้เป็นแผนทำงานสำหรับ UC-01 รุ่น MVP โดยแบ่งงานเป็นเรื่องเล็ก ๆ เพื่อให้ป๋าตรวจสอบผลลัพธ์ได้ทีละขั้น และลดความเสี่ยงจากการทำหลายส่วนพร้อมกัน
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
+
+เอกสารนี้ใช้เป็นแผนทำงานสำหรับ UC-01 รุ่น MVP โดยแบ่งงานเป็นเรื่องเล็ก ๆ เพื่อให้เจ้าของโปรเจ็กต์ตรวจสอบผลลัพธ์ได้ทีละขั้น และลดความเสี่ยงจากการทำหลายส่วนพร้อมกัน
 
 เอกสารที่เกี่ยวข้อง:
 
 - [UC-01: สร้างบิลประจำเดือน](uc-01-create-monthly-bill.md)
-- [Current Code Status](current-code-status.md)
-- มาตรฐาน [Micro Development](../.ai/standards/micro_development.md)
+- [Current Code Status](../current-code-status.md)
+- มาตรฐาน [Micro Development](../../.ai/standards/micro_development.md)
 
 ## 1. ขอบเขต MVP
 

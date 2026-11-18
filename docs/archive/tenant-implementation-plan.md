@@ -1,6 +1,8 @@
 # Tenant Foundation Implementation Plan
 
-เอกสารนี้เป็นแผน implement ระยะ 1 ของ Tenant foundation ตาม [roadmap](roadmap.md)
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
+
+เอกสารนี้เป็นแผน implement ระยะ 1 ของ Tenant foundation ตาม [roadmap](../roadmap.md)
 
 **สถานะ:** Implement ระยะ Domain, Application และ In-Memory Repository แล้ว; รอการเชื่อมต่อ UI และ SQL Server
 **ขอบเขตที่ทำแล้ว:** Domain, Application และ In-Memory Repository

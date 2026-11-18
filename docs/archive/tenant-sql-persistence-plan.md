@@ -1,8 +1,10 @@
 # แผนการ Implement SQL Server Persistence สำหรับข้อมูลผู้เช่า (Tenant)
 
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
+
 เอกสารนี้เป็นแผนการพัฒนาการจัดเก็บข้อมูลผู้เช่า (Tenant) ลงสู่ฐานข้อมูล SQL Server จริง เพื่อให้ข้อมูลคงอยู่ถาวร (Persistent) แทนการใช้หน่วยความจำชั่วคราว (In-Memory) โดยเดินตามแนวทาง Micro Development และสถาปัตยกรรม Clean Architecture ของ RentFlowMini
 
-- **เอกสารอ้างอิง:** [roadmap.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/roadmap.md), [tenant-implementation-plan.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/tenant-implementation-plan.md), [tenant-ui-implementation-plan.md](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/docs/tenant-ui-implementation-plan.md)
+- **เอกสารอ้างอิง:** [roadmap.md](../roadmap.md), [tenant-implementation-plan.md](tenant-implementation-plan.md), [tenant-ui-implementation-plan.md](tenant-ui-implementation-plan.md)
 - **สถานะเริ่มต้น:** Domain, Application, UI (WinForms) และ In-Memory Repository ทำงานครบถ้วนและผ่านการทดสอบ 80 เทสต์เรียบร้อยแล้ว
 
 ### สถานะการดำเนินงานล่าสุด
@@ -17,10 +19,10 @@
 
 ### 1.1 เป้าหมายหลัก
 1. สร้างฐานข้อมูล Schema สำหรับจัดเก็บข้อมูลผู้เช่าใน SQL Server ผ่านไฟล์ migration script `003_CreateTenants.sql`
-2. สร้าง `SqlServerTenantRepository` ที่ implement อินเทอร์เฟซ [ITenantRepository](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Application/Tenants/ITenantRepository.cs)
+2. สร้าง `SqlServerTenantRepository` ที่ implement อินเทอร์เฟซ `ITenantRepository`
 3. ป้องกันปัญหาความซ้ำซ้อนของข้อมูล (Data Integrity) ในระดับฐานข้อมูล โดยกำหนดให้ **1 ห้องพักมีผู้เช่าปัจจุบันได้ไม่เกิน 1 คน** แต่ผู้เช่าสามารถไม่มีห้องพักได้หลายคน
 4. เขียน Integration Tests ทดสอบการทำงานกับ SQL Server จริงให้ครอบคลุมทุกกรณี
-5. ปรับปรุง [Program.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Program.cs) ให้เชื่อมต่อ `SqlServerTenantRepository` เพื่อใช้งานใน Production
+5. ปรับปรุง `Program.cs` ให้เชื่อมต่อ `SqlServerTenantRepository` เพื่อใช้งานใน Production
 6. อัปเดต GitHub Actions Workflow (`.github/workflows/dotnet.yml`) ให้รันสคริปต์ตารางผู้เช่าในกระบวนการ CI อัตโนมัติ
 
 ### 1.2 สิ่งที่ยังไม่อยู่ในขอบเขตงานนี้ (Out of Scope)
@@ -146,7 +148,7 @@ graph TD
 - ทุก Test ต้องมี `finally` block สำหรับลบข้อมูลทดสอบ (`DeleteTestTenant`, `DeleteTestRoom`) เพื่อไม่ให้กระทบ Test อื่น
 
 ### Phase 4: เชื่อมต่อใน Program.cs สำหรับ Production
-- ใน [Program.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Program.cs):
+- ใน `Program.cs`:
   ```csharp
   ITenantRepository tenantRepository =
       new SqlServerTenantRepository(connectionString);
@@ -167,6 +169,6 @@ graph TD
 - [x] `SqlServerTenantRepository` ผ่าน Integration Tests ทุกกรณีใน environment ที่เชื่อมต่อ SQL Server ได้
 
 - [x] ป้องกันการผูกห้องซ้ำในระดับ SQL Server ด้วย Filtered Unique Index
-- [x] [Program.cs](file:///e:/IT/Developer/Programmer/RentFlow_With_C_Sharp/RentFlowMini/RentFlowMini/RentFlowApp/Program.cs) สร้าง `SqlServerTenantRepository` แล้ว
+- [x] `Program.cs` สร้าง `SqlServerTenantRepository` แล้ว
 - [x] Release build ผ่านโดยไม่มี warning หรือ error (`dotnet build -c Release`)
 - [x] ไม่มี secret หรือ credential ปรากฏใน repository

@@ -1,10 +1,12 @@
 ﻿# แผนการ Implement: การคำนวณและสร้างบิลประจำเดือนฉบับสมบูรณ์ (Billing Calculation & UI Implementation Plan)
 
-เอกสารนี้กำหนดแผนการทำงานและขั้นตอนการพัฒนาสำหรับการคำนวณและสร้างบิลประจำเดือน (Phase 3 & 4) ตามข้อกำหนดใน `docs/billing-charges-design.md` โดยยึดมั่นตามหลักการ **TDD (Test-Driven Development) และ Micro Development** ซึ่งกำหนดให้ **ทุกๆ Task ต้องมี Unit Test หรือ UI Test ประกอบและผ่าน 100% ในทันที** ก่อนจะถือว่า Task นั้นเสร็จสิ้น
+> **เอกสารเก็บประวัติ:** เป็นแผนหรือแบบที่เขียนไว้ก่อนลงมือ เนื้อหาอาจไม่ตรงกับโค้ดปัจจุบัน ดูสถานะล่าสุดที่ [current-code-status.md](../current-code-status.md) และสารบัญเอกสารที่ [README.md](../README.md)
+
+เอกสารนี้กำหนดแผนการทำงานและขั้นตอนการพัฒนาสำหรับการคำนวณและสร้างบิลประจำเดือน (Phase 3 & 4) ตามข้อกำหนดใน `docs/archive/billing-charges-design.md` โดยยึดมั่นตามหลักการ **TDD (Test-Driven Development) และ Micro Development** ซึ่งกำหนดให้ **ทุกๆ Task ต้องมี Unit Test หรือ UI Test ประกอบและผ่าน 100% ในทันที** ก่อนจะถือว่า Task นั้นเสร็จสิ้น
 
 **สถานะ:** Task 1-2 และ 4 เสร็จแล้ว; Task 3 เสร็จบางส่วน (ดูหัวข้อ 4)  
 **วันที่:** 2026-10-18 (อัปเดตสถานะ 2026-11-03)  
-**เอกสารอ้างอิง:** `docs/billing-charges-design.md`, `docs/uc-01-create-monthly-bill.md`, `docs/billing-settings-plan.md`, `.ai/standards/tdd.md`
+**เอกสารอ้างอิง:** `docs/archive/billing-charges-design.md`, `docs/archive/uc-01-create-monthly-bill.md`, `docs/archive/billing-settings-plan.md`, `.ai/standards/tdd.md`
 
 ---
 
